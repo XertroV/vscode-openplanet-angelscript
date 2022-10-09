@@ -1,3 +1,5 @@
+import { ConvertNadeoType } from "./convert_nadeo";
+
 export enum DBAllowSymbol
 {
     None = 0,
@@ -2242,6 +2244,8 @@ export function AddNadeoTypesFromOpenplanet(input: any) {
             let tyDeets = input['ns'][k][ty];
             console.log(`${ty} has deets: ${tyDeets}`);
             ConvertNadeoType(ty, tyDeets);
+            // todo
+            throw('todo')
         }
     }
 }
