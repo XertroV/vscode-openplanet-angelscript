@@ -1,9 +1,9 @@
 {
-	"name": "unreal-angelscript",
-	"displayName": "Unreal Angelscript",
-	"description": "Implements support for unreal-bound angelscript files.",
+	"name": "openplanet-angelscript",
+	"displayName": "Openplanet Angelscript",
+	"description": "Implements support for openplanet angelscript plugins.",
 	"version": "0.0.1",
-	"publisher": "Hazelight",
+	"publisher": "XertroV",
 	"engines": {
 		"vscode": "^1.65.0"
 	},

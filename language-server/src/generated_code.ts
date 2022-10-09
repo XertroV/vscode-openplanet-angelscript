@@ -1,5 +1,6 @@
 import { assert } from 'console';
 import * as scriptfiles from './as_parser';
+import { getAccPrefix } from './as_parser';
 import * as typedb from './database';
 
 export function ProcessScriptTypeGeneratedCode(dbtype : typedb.DBType, asmodule : scriptfiles.ASModule)
@@ -19,24 +20,24 @@ export function ProcessScriptTypeGeneratedCode(dbtype : typedb.DBType, asmodule 
 
         let nsType = typedb.DeclareNamespace(dbtype.namespace, dbtype.name, decl);
 
-        // Code that all UObject classes have
-        AddGeneratedCodeForUObject(asmodule, dbtype, nsType);
+        // // Code that all UObject classes have
+        // AddGeneratedCodeForUObject(asmodule, dbtype, nsType);
 
-        // Code that only actor components have
-        if (dbtype.inheritsFrom("UActorComponent"))
-            AddGeneratedCodeForUActorComponent(asmodule, dbtype, nsType);
+        // // Code that only actor components have
+        // if (dbtype.inheritsFrom("UActorComponent"))
+        //     AddGeneratedCodeForUActorComponent(asmodule, dbtype, nsType);
 
-        // Code that only actors have
-        if (dbtype.inheritsFrom("AActor"))
-            AddGeneratedCodeForAActor(asmodule, dbtype, nsType);
+        // // Code that only actors have
+        // if (dbtype.inheritsFrom("AActor"))
+        //     AddGeneratedCodeForAActor(asmodule, dbtype, nsType);
 
         // Code that only subsystems have
         if (dbtype.inheritsFrom("USubsystem"))
             AddGeneratedCodeForSubsystem(asmodule, dbtype, nsType);
 
-        // Hazelight-specific generated code only if it's configured on
-        if (scriptfiles.GetScriptSettings().useAngelscriptHaze)
-            AddHazeGeneratedCode(asmodule, dbtype, nsType);
+        // // Hazelight-specific generated code only if it's configured on
+        // if (scriptfiles.GetScriptSettings().useAngelscriptHaze)
+        //     AddHazeGeneratedCode(asmodule, dbtype, nsType);
 
         // Merge namespace into the type database
         asmodule.namespaces.push(nsType);
@@ -78,94 +79,71 @@ function AddProperty(dbtype : typedb.DBType, name : string) : typedb.DBProperty
     return prop;
 }
 
-function AddGeneratedCodeForUObject(asmodule : scriptfiles.ASModule, dbtype : typedb.DBType, nsType : typedb.DBNamespace)
-{
-    {
-        let method = AddGlobalFunction(asmodule, dbtype, nsType, "StaticClass");
-        method.returnType = "UClass";
-        method.documentation = "Gets the descriptor for the class generated for the specified type.";
-        method.args = [];
-    }
-}
+// function AddGeneratedCodeForUObject(asmodule : scriptfiles.ASModule, dbtype : typedb.DBType, nsType : typedb.DBNamespace)
+// {
+//     {
+//         let method = AddGlobalFunction(asmodule, dbtype, nsType, "StaticClass");
+//         method.returnType = "UClass";
+//         method.documentation = "Gets the descriptor for the class generated for the specified type.";
+//         method.args = [];
+//     }
+// }
 
-function AddGeneratedCodeForUActorComponent(asmodule : scriptfiles.ASModule, dbtype : typedb.DBType, nsType : typedb.DBNamespace)
-{
-    {
-        let method = AddGlobalFunction(asmodule, dbtype, nsType, "Get");
-        method.returnType = dbtype.name;
-        method.documentation = "Get the component of this type from an actor. Specified name is optional.";
-        method.args = [
-            new typedb.DBArg().init("AActor", "Actor"),
-            new typedb.DBArg().init("FName", "WithName", "NAME_None"),
-        ];
-    }
+// function AddGeneratedCodeForUActorComponent(asmodule : scriptfiles.ASModule, dbtype : typedb.DBType, nsType : typedb.DBNamespace)
+// {
+//     {
+//         let method = AddGlobalFunction(asmodule, dbtype, nsType, getAccPrefix);
+//         method.returnType = dbtype.name;
+//         method.documentation = "Get the component of this type from an actor. Specified name is optional.";
+//         method.args = [
+//             new typedb.DBArg().init("AActor", "Actor"),
+//             new typedb.DBArg().init("FName", "WithName", "NAME_None"),
+//         ];
+//     }
 
-    {
-        let method = AddGlobalFunction(asmodule, dbtype, nsType, "GetOrCreate");
-        method.returnType = dbtype.name;
-        method.documentation = "Get a component of a particular type on an actor, create it if it doesn't exist. Specified name is optional.";
-        method.args = [
-            new typedb.DBArg().init("AActor", "Actor"),
-            new typedb.DBArg().init("FName", "WithName", "NAME_None"),
-        ];
-    }
+//     {
+//         let method = AddGlobalFunction(asmodule, dbtype, nsType, "GetOrCreate");
+//         method.returnType = dbtype.name;
+//         method.documentation = "Get a component of a particular type on an actor, create it if it doesn't exist. Specified name is optional.";
+//         method.args = [
+//             new typedb.DBArg().init("AActor", "Actor"),
+//             new typedb.DBArg().init("FName", "WithName", "NAME_None"),
+//         ];
+//     }
 
-    {
-        let method = AddGlobalFunction(asmodule, dbtype, nsType, "Create");
-        method.returnType = dbtype.name;
-        method.documentation = "Always create a new component of this type on an actor.";
-        method.args = [
-            new typedb.DBArg().init("AActor", "Actor"),
-            new typedb.DBArg().init("FName", "WithName", "NAME_None"),
-        ];
-    }
-}
+//     {
+//         let method = AddGlobalFunction(asmodule, dbtype, nsType, "Create");
+//         method.returnType = dbtype.name;
+//         method.documentation = "Always create a new component of this type on an actor.";
+//         method.args = [
+//             new typedb.DBArg().init("AActor", "Actor"),
+//             new typedb.DBArg().init("FName", "WithName", "NAME_None"),
+//         ];
+//     }
+// }
 
-function AddGeneratedCodeForAActor(asmodule : scriptfiles.ASModule, dbtype : typedb.DBType, nsType : typedb.DBNamespace)
-{
-    {
-        let method = AddGlobalFunction(asmodule, dbtype, nsType, "Spawn");
-        method.returnType = dbtype.name;
-        method.documentation = "Spawn a new actor of this type into the world.";
-        method.args = [
-            new typedb.DBArg().init("FVector", "Location", "FVector::ZeroVector"),
-            new typedb.DBArg().init("FRotator", "Rotation", "FRotator::ZeroRotator"),
-            new typedb.DBArg().init("FName", "Name", "NAME_None"),
-            new typedb.DBArg().init("bool", "bDeferredSpawn", "false"),
-            new typedb.DBArg().init("ULevel", "Level", "nullptr"),
-        ];
-    }
-}
+// function AddGeneratedCodeForAActor(asmodule : scriptfiles.ASModule, dbtype : typedb.DBType, nsType : typedb.DBNamespace)
+// {
+//     {
+//         let method = AddGlobalFunction(asmodule, dbtype, nsType, "Spawn");
+//         method.returnType = dbtype.name;
+//         method.documentation = "Spawn a new actor of this type into the world.";
+//         method.args = [
+//             new typedb.DBArg().init("FVector", "Location", "FVector::ZeroVector"),
+//             new typedb.DBArg().init("FRotator", "Rotation", "FRotator::ZeroRotator"),
+//             new typedb.DBArg().init("FName", "Name", "NAME_None"),
+//             new typedb.DBArg().init("bool", "bDeferredSpawn", "false"),
+//             new typedb.DBArg().init("ULevel", "Level", "nullptr"),
+//         ];
+//     }
+// }
 
 function AddGeneratedCodeForSubsystem(asmodule : scriptfiles.ASModule, dbtype : typedb.DBType, nsType : typedb.DBNamespace)
 {
-    if (dbtype.inheritsFrom("ULocalPlayerSubsystem"))
-    {
-        {
-            let method = AddGlobalFunction(asmodule, dbtype, nsType, "Get");
-            method.returnType = dbtype.name;
-            method.documentation = "Get the "+dbtype.getDisplayName()+" subsystem for this local player.";
-            method.args = [
-                new typedb.DBArg().init("ULocalPlayer", "LocalPlayer"),
-            ];
-        }
-
-        {
-            let method = AddGlobalFunction(asmodule, dbtype, nsType, "Get");
-            method.returnType = dbtype.name;
-            method.documentation = "Get the "+dbtype.getDisplayName()+" subsystem for this player controller.";
-            method.args = [
-                new typedb.DBArg().init("APlayerController", "PlayerController"),
-            ];
-        }
-    }
-    else
-    {
-        let method = AddGlobalFunction(asmodule, dbtype, nsType, "Get");
-        method.returnType = dbtype.name;
-        method.documentation = "Get the relevant "+dbtype.getDisplayName()+" subsystem.";
-        method.args = [];
-    }
+    let method = AddGlobalFunction(asmodule, dbtype, nsType, getAccPrefix);
+    method.returnType = dbtype.name;
+    method.documentation = "Get the relevant "+dbtype.getDisplayName()+" subsystem.";
+    method.args = [];
 }
 
 function AddGeneratedCodeForDelegate(dbtype : typedb.DBType, asmodule : scriptfiles.ASModule)
@@ -200,19 +178,19 @@ function AddGeneratedCodeForDelegate(dbtype : typedb.DBType, asmodule : scriptfi
             }
         }
 
-        {
-            let method = AddMethod(dbtype, "AddUFunction");
-            method.returnType = "void";
-            method.documentation = "Add a new binding to this event. Make sure the function you're binding is a UFUNCTION().";
-            method.isDelegateBindFunction = true;
-            method.delegateBindType = dbtype.name;
-            method.delegateObjectParam = 0;
-            method.delegateFunctionParam = 1;
-            method.args = [
-                new typedb.DBArg().init("UObject", "Object"),
-                new typedb.DBArg().init("FName", "FunctionName"),
-            ];
-        }
+        // {
+        //     let method = AddMethod(dbtype, "AddUFunction");
+        //     method.returnType = "void";
+        //     method.documentation = "Add a new binding to this event. Make sure the function you're binding is a UFUNCTION().";
+        //     method.isDelegateBindFunction = true;
+        //     method.delegateBindType = dbtype.name;
+        //     method.delegateObjectParam = 0;
+        //     method.delegateFunctionParam = 1;
+        //     method.args = [
+        //         new typedb.DBArg().init("UObject", "Object"),
+        //         new typedb.DBArg().init("FName", "FunctionName"),
+        //     ];
+        // }
 
         {
             let method = AddMethod(dbtype, "Unbind");
@@ -311,135 +289,4 @@ function AddGeneratedCodeForDelegate(dbtype : typedb.DBType, asmodule : scriptfi
     }
 
     return dbtype;
-}
-
-function AddHazeGeneratedCode(asmodule : scriptfiles.ASModule, dbtype : typedb.DBType, nsType : typedb.DBNamespace)
-{
-    if (dbtype.inheritsFrom("UHazeComposableSettings"))
-        AddGeneratedCodeForUHazeComposableSettings(asmodule, dbtype, nsType);
-    else if (dbtype.inheritsFrom("UHazeEffectEventHandler"))
-        AddGeneratedCodeForUHazeEffectEventHandler(asmodule, dbtype, nsType);
-}
-
-function AddGeneratedCodeForUHazeComposableSettings(asmodule : scriptfiles.ASModule, dbtype : typedb.DBType, nsType : typedb.DBNamespace)
-{
-    {
-        let method = AddGlobalFunction(asmodule, dbtype, nsType, "GetSettings");
-        method.returnType = dbtype.name;
-        method.documentation = "Get the result settings asset for a specific actor.";
-        method.args = [
-            new typedb.DBArg().init("AHazeActor", "Actor"),
-        ];
-    }
-
-    {
-        let method = AddGlobalFunction(asmodule, dbtype, nsType, "TakeTransientSettings");
-        method.returnType = dbtype.name;
-        method.documentation = "Grab a transient settings asset that can be used to temporarily overried values. Must be returned with Actor.ReturnTransientSettings to apply new values.";
-        method.args = [
-            new typedb.DBArg().init("AHazeActor", "Actor"),
-            new typedb.DBArg().init("FInstigator", "Instigator"),
-            new typedb.DBArg().init("EHazeSettingsPriority", "Priority", "EHazeSettingsPriority::Script"),
-        ];
-    }
-
-    dbtype.forEachSymbol(function (sym : typedb.DBSymbol)
-    {
-        if (!(sym instanceof typedb.DBProperty))
-            return;
-        let dbprop : typedb.DBProperty = sym;
-        if (!dbprop.isUProperty)
-            return;
-
-        {
-            let overrideProp = AddProperty(dbtype, "bOverride_"+dbprop.name);
-            overrideProp.moduleOffset = dbprop.moduleOffset;
-            overrideProp.typename = "bool";
-        }
-
-        let setName = dbprop.name;
-        if (setName[0] == 'b' && setName.length >= 2 && setName[1] == setName[1].toUpperCase())
-            setName = setName.substring(1);
-
-        dbprop.auxiliarySymbols = [];
-
-        {
-            let method = AddGlobalFunction(asmodule, dbtype, nsType, "Set"+setName);
-            method.returnType = "void";
-            method.documentation = "Apply a transient override for this composable settings property.";
-            method.moduleOffset = dbprop.moduleOffset;
-            method.args = [
-                new typedb.DBArg().init("AHazeActor", "Actor"),
-                new typedb.DBArg().init(dbprop.typename, "NewValue"),
-                new typedb.DBArg().init("FInstigator", "Instigator"),
-                new typedb.DBArg().init("EHazeSettingsPriority", "Priority", "EHazeSettingsPriority::Script"),
-            ];
-
-            method.auxiliarySymbols = [{symbol_name: dbprop.name, container_type: dbtype.name}, {symbol_name: "Clear"+dbprop.name, container_type: nsType.getQualifiedNamespace()}];
-            dbprop.auxiliarySymbols.push({symbol_name: method.name, container_type: nsType.getQualifiedNamespace()});
-        }
-
-        {
-            let method = AddGlobalFunction(asmodule, dbtype, nsType, "Clear"+setName);
-            method.returnType = "void";
-            method.documentation = "Clear a previously applied transient override.";
-            method.moduleOffset = dbprop.moduleOffset;
-            method.args = [
-                new typedb.DBArg().init("AHazeActor", "Actor"),
-                new typedb.DBArg().init("FInstigator", "Instigator"),
-                new typedb.DBArg().init("EHazeSettingsPriority", "Priority", "EHazeSettingsPriority::Script"),
-            ];
-
-            method.auxiliarySymbols = [{symbol_name: dbprop.name, container_type: dbtype.name}, {symbol_name: "Set"+dbprop.name, container_type: nsType.getQualifiedNamespace()}];
-            dbprop.auxiliarySymbols.push({symbol_name: method.name, container_type: nsType.getQualifiedNamespace()});
-        }
-    });
-}
-
-function AddGeneratedCodeForUHazeEffectEventHandler(asmodule : scriptfiles.ASModule, dbtype : typedb.DBType, nsType : typedb.DBNamespace)
-{
-    dbtype.forEachSymbol(function (sym : typedb.DBSymbol)
-    {
-        if (!(sym instanceof typedb.DBMethod))
-            return;
-        let dbfunc : typedb.DBMethod = sym;
-        if (!dbfunc.isUFunction)
-            return;
-        if (!dbfunc.isBlueprintEvent)
-            return;
-        if (dbfunc.isBlueprintOverride)
-            return;
-        if (dbfunc.args && dbfunc.args.length > 1)
-            return;
-        if (dbfunc.returnType && dbfunc.returnType != "void")
-            return;
-
-        {
-            let method = AddGlobalFunction(asmodule, dbtype, nsType, "Trigger_"+dbfunc.name);
-            method.returnType = "void";
-            if (dbfunc.documentation)
-                method.documentation = dbfunc.documentation;
-            else
-                method.documentation = `Trigger the effect event ${dbfunc.name} on all handlers for ${dbtype.getDisplayName()}`;
-            method.moduleOffset = dbfunc.moduleOffset;
-
-            let actorType = "AHazeActor";
-            if (dbtype.macroMeta && dbtype.macroMeta.has("requireactortype"))
-                actorType = dbtype.macroMeta.get("requireactortype");
-
-            method.args = [
-                new typedb.DBArg().init(actorType, "Actor"),
-            ];
-
-            if (dbfunc.args && dbfunc.args.length == 1)
-            {
-                method.args.push(
-                    new typedb.DBArg().init(dbfunc.args[0].typename, dbfunc.args[0].name)
-                );
-            }
-
-            method.auxiliarySymbols = [{symbol_name: dbfunc.name, container_type: dbtype.name}];
-            dbfunc.auxiliarySymbols = [{symbol_name: method.name, container_type: nsType.getQualifiedNamespace()}];
-        }
-    });
 }

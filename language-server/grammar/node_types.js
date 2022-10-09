@@ -55,7 +55,7 @@ module.exports = {
     VariableDeclMulti: indexed ? i++ : "VariableDeclMulti",
     FunctionDecl: indexed ? i++ : "FunctionDecl",
     DelegateDecl: indexed ? i++ : "DelegateDecl",
-    EventDecl: indexed ? i++ : "EventDecl",
+    // EventDecl: indexed ? i++ : "EventDecl",
     ConstructorDecl: indexed ? i++ : "ConstructorDecl",
     DestructorDecl: indexed ? i++ : "ConstructorDecl",
 

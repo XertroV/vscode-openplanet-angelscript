@@ -12,6 +12,8 @@ const lexer = moo.compile({
     rparen:  ')',
     lsqbracket:  '[',
     rsqbracket:  ']',
+    //lbrace:  '{',
+    //rbrace:  '}',
     dot: ".",
     semicolon: ";",
     ns: "::",
@@ -36,7 +38,7 @@ const lexer = moo.compile({
     hex_number: /0[xX][0-9A-Fa-f]*/,
     octal_number: /0[oO][0-8]*/,
     binary_number: /0[bB][01]*/,
-    identifier: { match: /[A-Za-z_][A-Za-z0-9_]*/, 
+    identifier: { match: /[A-Za-z_][A-Za-z0-9_]*/,
         type: moo.keywords({
             if_token: "if",
             enum_token: "enum",
@@ -61,24 +63,18 @@ const lexer = moo.compile({
             for_token: "for",
             case_token: "case",
             switch_token: "switch",
-            cast_token: "Cast",
+            cast_token: "cast",
             namespace_token: "namespace",
-            ufunction: 'UFUNCTION',
-            uproperty: 'UPROPERTY',
-            uclass: 'UCLASS',
-            uenum: 'UENUM',
-            umeta: 'UMETA',
-            ustruct: 'USTRUCT',
             bool_token: ['true', 'false'],
-            nullptr_token: 'nullptr',
+            // nullptr_token: 'nullptr',
             this_token: 'this',
-            access_token: 'access',
+            // access_token: 'access',
 
             // This is a hack to help disambiguate syntax.
             // A statement of `TArray<int> Var` might be parsed as
             // ((TArray < int) > Var) as well, so we hardcode the template types
             // we know to avoid this in most situations.
-            template_basetype: ['TArray', 'TMap', 'TSet', 'TSubclassOf', 'TSoftObjectPtr', 'TSoftClassPtr', 'TInstigated', 'TPerPlayer'],
+            template_basetype: ['array', 'MwFastBuffer'],
         })
     },
     number: /[0-9]+/,
@@ -390,17 +386,9 @@ global_statement -> %import_token _ function_signature _ "from" _ (%dqstring | %
     }
 %}
 
-global_declaration -> ufunction_macro:? ((%mixin_token | %local_token) _):? function_signature {%
-    function (d) {
-        return ExtendedCompound(d, {
-            ...d[2],
-            macro: d[0],
-            scoping: d[1] ? d[1][0][0].value : undefined,
-        });
-    }
-%}
+global_declaration -> function_decl {% id %}
 global_declaration -> delegate_decl {% id %}
-global_declaration-> event_decl {% id %}
+global_declaration -> event_decl {% id %}
 global_declaration -> var_decl {% id %}
 global_declaration -> typename {%
     function (d) { return {
@@ -409,14 +397,14 @@ global_declaration -> typename {%
         typename: d[0],
     }; }
 %}
-global_declaration -> ustruct_macro:? %struct_token _ %identifier {%
-    function (d) { return {
-        ...Compound(d, n.StructDefinition, null),
-        name: Identifier(d[3]),
-        macro: d[0],
-    }}
-%}
-global_declaration -> uclass_macro:? %class_token _ %identifier ( _ %colon):? (_ %identifier):? {%
+# global_declaration -> %struct_token _ %identifier {%
+#     function (d) { return {
+#         ...Compound(d, n.StructDefinition, null),
+#         name: Identifier(d[3]),
+#         macro: d[0],
+#     }}
+# %}
+global_declaration -> %class_token _ %identifier ( _ %colon):? (_ %identifier):? {%
     function (d) { return {
         ...Compound(d, n.ClassDefinition, null),
         name: Identifier(d[3]),
@@ -424,7 +412,7 @@ global_declaration -> uclass_macro:? %class_token _ %identifier ( _ %colon):? (_
         superclass: d[5] ? Identifier(d[5][1]) : null,
     }}
 %}
-global_declaration -> uenum_macro:? %enum_token _ %identifier {%
+global_declaration -> %enum_token _ %identifier {%
     function (d) { return {
         ...Compound(d, n.EnumDefinition, null),
         name: Identifier(d[3]),
@@ -432,14 +420,15 @@ global_declaration -> uenum_macro:? %enum_token _ %identifier {%
     }}
 %}
 
-global_declaration -> "asset" _ %identifier _ "of" _ typename {%
-    function (d) { return {
-        ...Compound(d, n.AssetDefinition, null),
-        name: Identifier(d[2]),
-        typename: d[6],
-    }; }
-%}
+# global_declaration -> "asset" _ %identifier _ "of" _ typename {%
+#     function (d) { return {
+#         ...Compound(d, n.AssetDefinition, null),
+#         name: Identifier(d[2]),
+#         typename: d[6],
+#     }; }
+# %}
 
+# todo
 global_declaration -> "settings" _ %identifier _ "for" _ typename {%
     function (d) { return {
         ...Compound(d, n.AssetDefinition, null),
@@ -459,7 +448,7 @@ global_declaration -> %namespace_token _ namespace_definition_name {%
     }; }
 %}
 
-class_declaration -> uproperty_macro:? (access_specifier _):? var_decl {%
+class_declaration -> (access_specifier _):? var_decl {%
     function (d) {
         return ExtendedCompound(d, {
             ...d[2],
@@ -468,7 +457,7 @@ class_declaration -> uproperty_macro:? (access_specifier _):? var_decl {%
         });
     }
 %}
-class_declaration -> uproperty_macro:? (access_specifier _):? typename {%
+class_declaration -> (access_specifier _):? typename {%
     function (d) {
         return ExtendedCompound(d, {
             ...Compound(d, n.VariableDecl, null),
@@ -480,7 +469,7 @@ class_declaration -> uproperty_macro:? (access_specifier _):? typename {%
     }
 %}
 
-class_declaration -> ufunction_macro:? (access_specifier _):? function_signature {%
+class_declaration -> (access_specifier _):? function_signature {%
     function (d) {
         return ExtendedCompound(d, {
             ...d[2],
@@ -490,7 +479,7 @@ class_declaration -> ufunction_macro:? (access_specifier _):? function_signature
     }
 %}
 
-class_declaration -> access_specifier _ ufunction_macro function_signature {%
+class_declaration -> access_specifier _ function_signature {%
     function (d) {
         return ExtendedCompound(d, {
             ...d[3],
@@ -633,6 +622,7 @@ var_decl_multi_part -> %identifier (_ "=" _ expression):? {%
     }
 %}
 
+function_decl -> function_signature {% id %}
 delegate_decl -> "delegate" _ function_signature {%
     function (d) { return Compound(d, n.DelegateDecl, [d[2]]); }
 %}
@@ -679,24 +669,24 @@ function_return -> %void_token {%
     function (d) { return null; }
 %}
 
-ufunction_macro -> %ufunction _ %lparen _ macro_list _ %rparen _ {%
-    function (d) { return Compound(d, n.Macro, d[4]); }
-%}
-uproperty_macro -> %uproperty _ %lparen _ macro_list _ %rparen _ {%
-    function (d) { return Compound(d, n.Macro, d[4]); }
-%}
-uclass_macro -> %uclass _ %lparen _ macro_list _ %rparen _ {%
-    function (d) { return Compound(d, n.Macro, d[4]); }
-%}
-ustruct_macro -> %ustruct _ %lparen _ macro_list _ %rparen _ {%
-    function (d) { return Compound(d, n.Macro, d[4]); }
-%}
-uenum_macro -> %uenum _ %lparen _ macro_list _ %rparen _ {%
-    function (d) { return Compound(d, n.Macro, d[4]); }
-%}
-umeta_macro -> _ %umeta _ %lparen _ macro_list _ %rparen {%
-    function (d) { return Compound(d, n.Macro, d[4]); }
-%}
+# ufunction_macro -> %ufunction _ %lparen _ macro_list _ %rparen _ {%
+#     function (d) { return Compound(d, n.Macro, d[4]); }
+# %}
+# uproperty_macro -> %uproperty _ %lparen _ macro_list _ %rparen _ {%
+#     function (d) { return Compound(d, n.Macro, d[4]); }
+# %}
+# uclass_macro -> %uclass _ %lparen _ macro_list _ %rparen _ {%
+#     function (d) { return Compound(d, n.Macro, d[4]); }
+# %}
+# ustruct_macro -> %ustruct _ %lparen _ macro_list _ %rparen _ {%
+#     function (d) { return Compound(d, n.Macro, d[4]); }
+# %}
+# uenum_macro -> %uenum _ %lparen _ macro_list _ %rparen _ {%
+#     function (d) { return Compound(d, n.Macro, d[4]); }
+# %}
+# umeta_macro -> _ %umeta _ %lparen _ macro_list _ %rparen {%
+#     function (d) { return Compound(d, n.Macro, d[4]); }
+# %}
 
 parameter_list -> null {%
     function(d) { return []; }
@@ -762,7 +752,7 @@ macro_list -> macro_argument (_ "," _ macro_argument):* (_ %comma):? {%
     }
 %}
 
-macro_argument -> macro_identifier {% 
+macro_argument -> macro_identifier {%
     function (d) { return {
         ...Compound(d, n.MacroArgument, null),
         name: d[0],
@@ -894,7 +884,7 @@ expr_leaf -> lvalue {% id %}
 expr_leaf -> constant {% id %}
 
 # INCOMPLETE: a unary operator where we haven't typed an operand yet
-expr_leaf -> unary_operator {% 
+expr_leaf -> unary_operator {%
     function (d) { return {
         ...Compound(d, n.UnaryOperation, []),
         operator: Operator(d[0]),
@@ -905,7 +895,7 @@ lvalue -> %identifier {%
     function(d, l) { return Identifier(d[0]); }
 %}
 
-lvalue -> %this_token {% 
+lvalue -> %this_token {%
     function (d) { return Literal(n.This, d[0]); }
 %}
 
@@ -1006,7 +996,7 @@ argumentlist -> _ %comma {%
     function(d) { return null; }
 %}
 argumentlist -> _ (%comma _):* (argument _ (%comma _):+ ):* argument (_ %comma):* {%
-    function(d) { 
+    function(d) {
         let args = [];
         if (d[2])
         {
@@ -1091,11 +1081,11 @@ constant -> "f" %dqstring {%
 
 constant -> const_number {% id %}
 
-constant -> %bool_token {% 
+constant -> %bool_token {%
     function (d) { return Literal(n.ConstBool, d[0]); }
 %}
 
-constant -> %nullptr_token {% 
+constant -> %nullptr_token {%
     function (d) { return Literal(n.ConstNullptr, d[0]); }
 %}
 
@@ -1247,11 +1237,11 @@ func_qualifiers -> _ (func_qualifier __ ):* func_qualifier {%
     }
 %}
 
-func_qualifier -> (%const_token | %final_token | %override_token | %property_token) {% 
+func_qualifier -> (%const_token | %final_token | %override_token | %property_token) {%
     function (d) { return d[0][0]; }
 %}
 
-func_qualifier -> %identifier {% 
+func_qualifier -> %identifier {%
     function (d) { return d[0].value; }
 %}
 
@@ -1293,7 +1283,7 @@ __ -> _ %prepocessor_statement _ {%
     function (d) { return null; }
 %}
 
-case_label -> %lparen _ case_label _ %rparen {% 
+case_label -> %lparen _ case_label _ %rparen {%
     function (d) { return d[2]; }
 %}
 case_label -> ("-" _):? %number {%
@@ -1320,7 +1310,7 @@ enum_statement -> enum_decl (_ %comma enum_decl):* (_ %comma):? {%
     }
 %}
 
-enum_decl -> comment_documentation:? %identifier umeta_macro:? {%
+enum_decl -> comment_documentation:? %identifier {%
     function (d) { return {
         ...Compound(d, n.EnumValue, null),
         name: Identifier(d[1]),
@@ -1329,7 +1319,7 @@ enum_decl -> comment_documentation:? %identifier umeta_macro:? {%
    }; }
 %}
 
-enum_decl -> comment_documentation:? %identifier _ "=" _ expression umeta_macro:? {%
+enum_decl -> comment_documentation:? %identifier _ "=" _ expression {%
     function (d) { return {
         ...Compound(d, n.EnumValue, null),
         name: Identifier(d[1]),

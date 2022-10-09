@@ -74,7 +74,7 @@ export function UpdateScriptModuleDiagnostics(asmodule : scriptfiles.ASModule, i
     let diagnostics = new Array<Diagnostic>();
     if (!asmodule.rootscope)
         return;
-    
+
     // Go through all the parsed scopes and add diagnostics
     AddScopeDiagnostics(asmodule.rootscope, diagnostics);
 
@@ -181,7 +181,7 @@ function VerifyDelegateBinds(asmodule : scriptfiles.ASModule, diagnostics : Arra
         let objType = scriptfiles.ResolveTypeFromExpression(delegateBind.scope, delegateBind.node_object);
         if (!objType)
             continue;
-        
+
         let foundFunc = objType.findFirstSymbol(funcName, typedb.DBAllowSymbol.Functions);
         if (!foundFunc || !(foundFunc instanceof typedb.DBMethod))
         {
@@ -207,20 +207,6 @@ function VerifyDelegateBinds(asmodule : scriptfiles.ASModule, diagnostics : Arra
                 message: "Function "+funcName+" does not exist in type "+objType.name,
                 source: "angelscript",
                 data: data,
-            });
-            continue;
-        }
-
-        if (!foundFunc.isUFunction)
-        {
-            // Function exists but isn't UFUNCTION
-            diagnostics.push(<Diagnostic> {
-                severity: DiagnosticSeverity.Error,
-                range: asmodule.getRange(
-                    delegateBind.statement.start_offset + delegateBind.node_expression.start,
-                    delegateBind.statement.start_offset + delegateBind.node_expression.end),
-                message: "Function "+foundFunc.name+" in "+foundFunc.containingType.name+" is not declared UFUNCTION() and cannot be bound as a delegate.",
-                source: "angelscript"
             });
             continue;
         }
@@ -322,7 +308,7 @@ function TrimDiagnosticPositions(asmodule : scriptfiles.ASModule, diagnostics : 
                 {
                     offset += 1;
                 }
-                else 
+                else
                 {
                     if (char != '\n' && char != '\r')
                         diag.range.start = asmodule.getPosition(offset);
@@ -448,7 +434,7 @@ function AddSymbolDiagnostics(asmodule : scriptfiles.ASModule, diagnostics : Arr
 
         let displayName = symbol.symbol_name;
         if (displayName.startsWith("__"))
-            displayName = displayName.substr(2);
+            displayName = displayName.substring(2);
 
         diagnostics.push(<Diagnostic> {
             severity: DiagnosticSeverity.Information,

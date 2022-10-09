@@ -3,6 +3,7 @@ import * as typedb from "./database";
 import * as scriptfiles from "./as_parser";
 import * as scriptsymbols from "./symbols";
 import * as completion from "./parsed_completion";
+import { getAccPrefix } from "./as_parser";
 
 class CodeActionContext
 {
@@ -84,7 +85,7 @@ export function GetCodeActions(asmodule : scriptfiles.ASModule, range : Range, d
 
     // Actions for switch blocks
     AddSwitchCaseActions(context);
-    
+
     // Actions to generate a method by usage
     AddGenerateMethodActions(context);
 
@@ -629,7 +630,7 @@ function AddCastHelpers(context : CodeActionContext)
     // Maybe we can implicitly convert
     if (rightType.inheritsFrom(leftType.name))
         return;
-    
+
     // Cast needs to make sense
     if (!leftType.inheritsFrom(rightType.name))
         return;
@@ -1295,7 +1296,7 @@ function AddSwitchCaseActions(context : CodeActionContext)
         }
         else if (caseStatement.ast.type != scriptfiles.node_types.CaseStatement)
             continue;
-        
+
         let labelNode = caseStatement.ast.children[0];
         if (!labelNode || labelNode.type != scriptfiles.node_types.NamespaceAccess)
             continue;
@@ -1390,7 +1391,7 @@ function ResolveInsertCases(asmodule : scriptfiles.ASModule, action : CodeAction
     let insertString = "";
     let cases : Array<string> = data.cases;
     for (let label of cases)
-        insertString += `${indent}case ${label}:\n${indent}break;\n`; 
+        insertString += `${indent}case ${label}:\n${indent}break;\n`;
 
     let insertPosition : Position = null;
     if (data.defaultCasePosition != -1)
@@ -1578,12 +1579,12 @@ function AddGenerateMethodActions(context : CodeActionContext)
 
                 args += argTypename;
                 args += " ";
-                
+
                 let argName = FindUsableIdentifierInExpression(argNode);
                 if (argName)
                 {
-                    if (argName.length >= 4 && argName.startsWith("Get") && argName[3].toUpperCase() == argName[3])
-                        argName = argName.substring(3);
+                    if (argName.length >= 4 && argName.startsWith(getAccPrefix) && argName[3].toUpperCase() == argName[3])
+                        argName = argName.substring(getAccPrefix.length);
                     if (argTypename == "bool")
                     {
                         if (argName.length >= 4 && argName.startsWith("Has") && argName[3].toUpperCase() == argName[3])

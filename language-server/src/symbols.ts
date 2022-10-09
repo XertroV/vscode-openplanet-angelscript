@@ -10,6 +10,7 @@ import * as parsedcompletion from './parsed_completion';
 import * as typedb from './database';
 import * as specifiers from './specifiers';
 import { FormatFunctionDocumentation, FormatPropertyDocumentation } from './documentation';
+import { getAccPrefix, setAccPrefix } from './as_parser';
 
 export function GetDefinition(asmodule : scriptfiles.ASModule, position : Position) : Array<Location>
 {
@@ -171,7 +172,7 @@ export function GetSymbolDefinition(asmodule : scriptfiles.ASModule, findSymbol 
             let insideType = typedb.GetTypeByName(findSymbol.container_type);
             if (!insideType)
                 return null;
-            
+
             let dbSymbols = insideType.findSymbols(findSymbol.symbol_name);
             for (let sym of dbSymbols)
             {
@@ -197,7 +198,7 @@ export function GetSymbolDefinition(asmodule : scriptfiles.ASModule, findSymbol 
             let namespace = typedb.LookupNamespace(null, findSymbol.container_type);
             if (!namespace)
                 return null;
-            
+
             let dbSymbols = namespace.findSymbols(findSymbol.symbol_name);
             for (let sym of dbSymbols)
             {
@@ -222,14 +223,14 @@ export function GetSymbolDefinition(asmodule : scriptfiles.ASModule, findSymbol 
             let insideType = typedb.GetTypeByName(findSymbol.container_type);
             if (!insideType)
                 return null;
-            
+
             let accessName = findSymbol.symbol_name;
-            if (accessName.startsWith("Get") || accessName.startsWith("Set"))
-                accessName = accessName.substring(3);
+            if (accessName.startsWith(getAccPrefix) || accessName.startsWith(setAccPrefix))
+                accessName = accessName.substring(getAccPrefix.length);
 
             let dbSymbols = [
-                ...insideType.findSymbols("Get"+accessName),
-                ...insideType.findSymbols("Set"+accessName),
+                ...insideType.findSymbols(getAccPrefix+accessName),
+                ...insideType.findSymbols(setAccPrefix+accessName),
             ];
 
             for (let sym of dbSymbols)
@@ -255,14 +256,14 @@ export function GetSymbolDefinition(asmodule : scriptfiles.ASModule, findSymbol 
             let namespace = typedb.LookupNamespace(null, findSymbol.container_type);
             if (!namespace)
                 return null;
-            
+
             let accessName = findSymbol.symbol_name;
-            if (accessName.startsWith("Get") || accessName.startsWith("Set"))
-                accessName = accessName.substring(3);
+            if (accessName.startsWith(getAccPrefix) || accessName.startsWith(setAccPrefix))
+                accessName = accessName.substring(getAccPrefix.length);
 
             let dbSymbols = [
-                ...namespace.findSymbols("Get"+accessName),
-                ...namespace.findSymbols("Set"+accessName),
+                ...namespace.findSymbols(getAccPrefix+accessName),
+                ...namespace.findSymbols(setAccPrefix+accessName),
             ];
 
             for (let sym of dbSymbols)
@@ -392,7 +393,7 @@ export function GetHover(asmodule : scriptfiles.ASModule, position : Position) :
             let insideType = typedb.GetTypeByName(findSymbol.container_type);
             if (!insideType)
                 return null;
-            
+
             let symbols = insideType.findSymbols(findSymbol.symbol_name);
             let methods = [];
 
@@ -414,7 +415,7 @@ export function GetHover(asmodule : scriptfiles.ASModule, position : Position) :
             let namespace = typedb.LookupNamespace(null, findSymbol.container_type);
             if (!namespace)
                 return null;
-            
+
             let symbols = namespace.findSymbols(findSymbol.symbol_name);
             let methods = [];
 
@@ -436,7 +437,7 @@ export function GetHover(asmodule : scriptfiles.ASModule, position : Position) :
             let insideType = typedb.GetTypeByName(findSymbol.container_type);
             if (!insideType)
                 return null;
-            
+
             let sym = insideType.findFirstSymbol(findSymbol.symbol_name, typedb.DBAllowSymbol.Properties);
             if (sym instanceof typedb.DBProperty)
             {
@@ -449,7 +450,7 @@ export function GetHover(asmodule : scriptfiles.ASModule, position : Position) :
             let namespace = typedb.LookupNamespace(null, findSymbol.container_type);
             if (!namespace)
                 return null;
-            
+
             let sym = namespace.findFirstSymbol(findSymbol.symbol_name, typedb.DBAllowSymbol.Properties);
             if (sym instanceof typedb.DBProperty)
             {
@@ -462,14 +463,14 @@ export function GetHover(asmodule : scriptfiles.ASModule, position : Position) :
             let insideType = typedb.GetTypeByName(findSymbol.container_type);
             if (!insideType)
                 return null;
-            
+
             let accessName = findSymbol.symbol_name;
-            if (accessName.startsWith("Get") || accessName.startsWith("Set"))
-                accessName = accessName.substring(3);
+            if (accessName.startsWith(getAccPrefix) || accessName.startsWith(setAccPrefix))
+                accessName = accessName.substring(getAccPrefix.length);
 
             let dbSymbols = [
-                ...insideType.findSymbols("Get"+accessName),
-                ...insideType.findSymbols("Set"+accessName),
+                ...insideType.findSymbols(getAccPrefix+accessName),
+                ...insideType.findSymbols(setAccPrefix+accessName),
             ];
 
             for (let sym of dbSymbols)
@@ -496,14 +497,14 @@ export function GetHover(asmodule : scriptfiles.ASModule, position : Position) :
             let namespace = typedb.LookupNamespace(null, findSymbol.container_type);
             if (!namespace)
                 return null;
-            
+
             let accessName = findSymbol.symbol_name;
-            if (accessName.startsWith("Get") || accessName.startsWith("Set"))
-                accessName = accessName.substring(3);
+            if (accessName.startsWith(getAccPrefix) || accessName.startsWith(setAccPrefix))
+                accessName = accessName.substring(getAccPrefix.length);
 
             let dbSymbols = [
-                ...namespace.findSymbols("Get"+accessName),
-                ...namespace.findSymbols("Set"+accessName),
+                ...namespace.findSymbols(getAccPrefix+accessName),
+                ...namespace.findSymbols(setAccPrefix+accessName),
             ];
 
             for (let sym of dbSymbols)
@@ -766,10 +767,10 @@ function GetHoverForFunction(type : typedb.DBType | typedb.DBNamespace, func : t
 
     if (isAccessor)
     {
-        if (func.name.startsWith("Get"))
-            hover += "```angelscript_snippet\n"+func.returnType+" "+prefix+func.name.substring(3)+"\n```";
+        if (func.name.startsWith(getAccPrefix))
+            hover += "```angelscript_snippet\n" + func.returnType + " " + prefix + func.name.substring(getAccPrefix.length)+"\n```";
         else if (func.args && func.args.length > 0)
-            hover += "```angelscript_snippet\n"+func.args[0].typename+" "+prefix+func.name.substring(3)+"\n```";
+            hover += "```angelscript_snippet\n" + func.args[0].typename + " " + prefix + func.name.substring(getAccPrefix.length)+"\n```";
     }
     else
     {

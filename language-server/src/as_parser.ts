@@ -3,10 +3,15 @@ import { Range, Position, Location, MarkupContent, } from "vscode-languageserver
 
 import * as fs from 'fs';
 import * as nearley from 'nearley';
+import * as os from 'os';
 
 import * as typedb from './database';
 import { ProcessScriptTypeGeneratedCode } from "./generated_code";
+import path = require("path");
 //import { performance } from "perf_hooks";
+
+export const getAccPrefix = "get_";
+export const setAccPrefix = "set_";
 
 let grammar_statement = nearley.Grammar.fromCompiled(require("../grammar/grammar_statement.js"));
 let grammar_class_statement = nearley.Grammar.fromCompiled(require("../grammar/grammar_class_statement.js"));
@@ -28,12 +33,14 @@ export interface ASSettings
     automaticImports : boolean,
     floatIsFloat64 : boolean,
     useAngelscriptHaze: boolean,
+    openplanetNextLocation: string,
 };
 
 let ScriptSettings : ASSettings = {
-    automaticImports: false,
+    automaticImports: true,
     floatIsFloat64: false,
     useAngelscriptHaze: false,
+    openplanetNextLocation: path.join(os.homedir(), 'OpenplanetNext'),
 };
 
 let PreParsedIdentifiersInModules = new Map<string, Set<ASModule>>();
@@ -53,8 +60,9 @@ export let node_types = require("../grammar/node_types.js");
 
 export let ASKeywords = [
     "for", "if", "enum", "return", "continue", "break", "import", "class", "struct", "default",
-    "void", "const", "delegate", "event", "else", "while", "case", "Cast", "namespace",
-    "UFUNCTION", "UPROPERTY", "UCLASS", "USTRUCT", "nullptr", "true", "false", "this", "auto",
+    "void", "const", "delegate", "event", "else", "while", "case", "cast", "namespace",
+    //"UFUNCTION", "UPROPERTY", "UCLASS", "USTRUCT", "nullptr",
+    "true", "false", "this", "auto",
     "final", "property", "override", "mixin", "switch",
 ];
 
@@ -247,7 +255,7 @@ export class ASModule
 
         return null;
     }
-    
+
     isModuleImported(modulename : string) : boolean
     {
         return this.flatImportList.has(modulename);
@@ -586,7 +594,7 @@ export class ASScope extends ASElement
         {
             return null;
         }
-        
+
     }
 
     getNamespace() : typedb.DBNamespace
@@ -1124,7 +1132,7 @@ export function UpdateModuleFromContentChanges(module : ASModule, contentChanges
         {
             if (change.text.length == 0)
             {
-                // Deletes also dirty the character before them 
+                // Deletes also dirty the character before them
                 module.lastEditStart = textDocument.offsetAt(change.range.start) - 1;
                 module.lastEditEnd = textDocument.offsetAt(change.range.start) + change.text.length;
             }
@@ -1559,7 +1567,7 @@ function _GetScopeSymbol(asmodule : ASModule, scope : ASScope, symbolname : stri
         let func = innerscope.getDatabaseFunction();
         if (!func)
             continue;
-        if (func.name != "Get"+symbolname && func.name != "Set"+symbolname)
+        if (func.name != getAccPrefix+symbolname && func.name != setAccPrefix+symbolname)
             continue;
         return asmodule.getLocation(func.moduleOffset);
     }
@@ -1825,7 +1833,8 @@ function AddVarDeclToScope(scope : ASScope, statement : ASStatement, vardecl : a
         // Add macro specifiers if we had any
         if (vardecl.macro)
         {
-            dbprop.isUProperty = true;
+            // todo: is this just to do with UPROPERTY?
+            // dbprop.isUProperty = true;
             dbprop.macroSpecifiers = new Map<string, string>();
             dbprop.macroMeta = new Map<string, string>();
 
@@ -1988,7 +1997,7 @@ function GenerateTypeInformation(scope : ASScope)
         else if (scope.previous.ast.type == node_types.EnumDefinition)
         {
             scope.declaration = scope.previous;
-            
+
             let enumdef = scope.previous.ast;
             let dbtype = AddDBType(scope, enumdef.name.value);
             dbtype.isEnum = true;
@@ -2025,7 +2034,6 @@ function GenerateTypeInformation(scope : ASScope)
 
             if (funcdef.macro)
             {
-                dbfunc.isUFunction = true;
                 dbfunc.macroSpecifiers = new Map<string, string>();
                 dbfunc.macroMeta = new Map<string, string>();
 
@@ -2271,7 +2279,7 @@ function GenerateTypeInformation(scope : ASScope)
                         dbtype.isEvent = true;
                     else
                         dbtype.isDelegate = true;
-                    
+
                     if (statement.ast.documentation)
                         dbtype.documentation = typedb.FormatDocumentationComment(statement.ast.documentation);
                     dbtype.moduleOffset = statement.start_offset + signature.name.start;
@@ -2368,7 +2376,7 @@ function GenerateTypeInformation(scope : ASScope)
     {
         let namespace = scope.getNamespace();
         let hasDefaultConstructor = false;
-        
+
         let constructors = namespace.findSymbols(scope.dbtype.name);
         for (let constr of constructors)
         {
@@ -3165,7 +3173,7 @@ function ResolvePropertyType(dbtype : typedb.DBType, name : string) : typedb.DBT
         return typedb.LookupType(dbtype.namespace, usedSymbol.typename);
 
     // Find get accessor
-    let getAccessor = dbtype.findFirstSymbol("Get"+name, typedb.DBAllowSymbol.Functions);
+    let getAccessor = dbtype.findFirstSymbol(getAccPrefix+name, typedb.DBAllowSymbol.Functions);
     if (getAccessor && getAccessor instanceof typedb.DBMethod)
     {
         if (getAccessor.isProperty)
@@ -3173,7 +3181,7 @@ function ResolvePropertyType(dbtype : typedb.DBType, name : string) : typedb.DBT
     }
 
     // Find set accessor
-    let setAccessor = dbtype.findFirstSymbol("Set"+name, typedb.DBAllowSymbol.Functions);
+    let setAccessor = dbtype.findFirstSymbol(setAccPrefix+name, typedb.DBAllowSymbol.Functions);
     if (setAccessor && setAccessor instanceof typedb.DBMethod)
     {
         if (setAccessor.isProperty && setAccessor.args.length != 0)
@@ -3234,7 +3242,7 @@ function ResolveNamespacePropertyType(dbnamespace : typedb.DBNamespace, nsPrefix
         return typedb.LookupType(globalSymbols[0].namespace, globalSymbols[0].typename);
 
     // Find get accessor
-    let getterName = "Get"+name;
+    let getterName = getAccPrefix + name;
     if (nsPrefix && nsPrefix.length != 0)
         getterName = nsPrefix + "::" + getterName;
 
@@ -3246,7 +3254,7 @@ function ResolveNamespacePropertyType(dbnamespace : typedb.DBNamespace, nsPrefix
     }
 
     // Find set accessor
-    let setterName = "Set"+name;
+    let setterName = setAccPrefix + name;
     if (nsPrefix && nsPrefix.length != 0)
         setterName = nsPrefix + "::" + getterName;
 
@@ -3306,7 +3314,7 @@ function ResolveTypeFromIdentifier(scope : ASScope, identifier : string) : typed
     }
 
     // Find an unimported global get accessor
-    let getSymbols = typedb.LookupGlobalSymbol(scope.getNamespace(), "Get"+identifier, typedb.DBAllowSymbol.Functions);
+    let getSymbols = typedb.LookupGlobalSymbol(scope.getNamespace(), getAccPrefix+identifier, typedb.DBAllowSymbol.Functions);
     if (getSymbols)
     {
         for (let sym of getSymbols)
@@ -3321,7 +3329,7 @@ function ResolveTypeFromIdentifier(scope : ASScope, identifier : string) : typed
     }
 
     // Find an unimported global set accessor
-    let setSymbols = typedb.LookupGlobalSymbol(scope.getNamespace(), "Set"+identifier, typedb.DBAllowSymbol.Functions);
+    let setSymbols = typedb.LookupGlobalSymbol(scope.getNamespace(), setAccPrefix+identifier, typedb.DBAllowSymbol.Functions);
     if (setSymbols)
     {
         for (let sym of setSymbols)
@@ -4010,7 +4018,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                         break;
                     }
                 }
-                
+
                 // Find the actual namespace we're looking in
                 let qualifiedNamespace = "";
                 for (let i = 0, count = identifierNodes.length - 1; i < count; ++i)
@@ -4592,7 +4600,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
         // access X = private, Y, Z (mod);
         case node_types.AccessDeclaration:
         {
-            // Add symbol for the name 
+            // Add symbol for the name
             if (node.name)
             {
                 let insideType = scope.dbtype ? scope.dbtype.name : null;
@@ -4848,7 +4856,7 @@ function DetectIdentifierSymbols(scope : ASScope, statement : ASStatement, node 
 
         if (typedb.AllowsProperties(symbol_type))
         {
-            let getAccessor = insideType.findFirstSymbol("Get"+node.value, typedb.DBAllowSymbol.Functions);
+            let getAccessor = insideType.findFirstSymbol(getAccPrefix+node.value, typedb.DBAllowSymbol.Functions);
             if (getAccessor && getAccessor instanceof typedb.DBMethod)
             {
                 AddIdentifierSymbol(scope, statement, node, ASSymbolType.MemberAccessor, getAccessor.containingType, getAccessor.name, parseContext.isWriteAccess);
@@ -4856,7 +4864,7 @@ function DetectIdentifierSymbols(scope : ASScope, statement : ASStatement, node 
                 return typedb.LookupType(getAccessor.namespace, getAccessor.returnType);
             }
 
-            let setAccessor = insideType.findFirstSymbol("Set"+node.value, typedb.DBAllowSymbol.Functions);
+            let setAccessor = insideType.findFirstSymbol(setAccPrefix+node.value, typedb.DBAllowSymbol.Functions);
             if (setAccessor && setAccessor instanceof typedb.DBMethod && setAccessor.isProperty && setAccessor.args.length != 0)
             {
                 AddIdentifierSymbol(scope, statement, node, ASSymbolType.MemberAccessor, setAccessor.containingType, setAccessor.name, parseContext.isWriteAccess);
@@ -4915,7 +4923,7 @@ function DetectIdentifierSymbols(scope : ASScope, statement : ASStatement, node 
     // Find an unimpoted global accessor
     if (typedb.AllowsProperties(symbol_type))
     {
-        let globalGetAccessors = typedb.LookupGlobalSymbol(scope.getNamespace(), "Get"+node.value, typedb.DBAllowSymbol.Functions);
+        let globalGetAccessors = typedb.LookupGlobalSymbol(scope.getNamespace(), getAccPrefix+node.value, typedb.DBAllowSymbol.Functions);
         if (globalGetAccessors)
         {
             for (let usedSymbol of globalGetAccessors)
@@ -4934,7 +4942,7 @@ function DetectIdentifierSymbols(scope : ASScope, statement : ASStatement, node 
             }
         }
 
-        let globalSetAccessors = typedb.LookupGlobalSymbol(scope.getNamespace(), "Set"+node.value, typedb.DBAllowSymbol.Functions);
+        let globalSetAccessors = typedb.LookupGlobalSymbol(scope.getNamespace(), setAccPrefix+node.value, typedb.DBAllowSymbol.Functions);
         if (globalSetAccessors)
         {
             for (let usedSymbol of globalSetAccessors)
@@ -4963,7 +4971,7 @@ function DetectIdentifierSymbols(scope : ASScope, statement : ASStatement, node 
                 return null;
         }
     }
-    
+
     // We might be typing a typename at the start of a declaration, which accidentally got parsed as an identifier due to incompleteness
     let isTypingSingleIdentifier = (node == statement.ast && scope.module.isEditingInside(statement.start_offset + node.start, statement.end_offset + node.end + 2));
     if (isTypingSingleIdentifier)
@@ -5048,7 +5056,7 @@ function DetectSymbolFromNamespacedIdentifier(scope : ASScope, statement : ASSta
         end: identifier.start+nsName.length,
         value: nsName
     }, ASSymbolType.Namespace, null, null);
-    
+
     if (refType && (namespace || refType.isEnum))
     {
         nsSymbol.type = ASSymbolType.Typename;
@@ -5092,7 +5100,7 @@ function DetectSymbolFromNamespacedIdentifier(scope : ASScope, statement : ASSta
         // Could be a property accessor
         if (typedb.AllowsProperties(symbol_type))
         {
-            let getAccessor = namespace.findFirstSymbol("Get"+findName, typedb.DBAllowSymbol.Functions);
+            let getAccessor = namespace.findFirstSymbol(getAccPrefix+findName, typedb.DBAllowSymbol.Functions);
             if (getAccessor && getAccessor instanceof typedb.DBMethod)
             {
                 AddIdentifierSymbol(scope, statement, identifierNode, ASSymbolType.GlobalAccessor, namespace.getQualifiedNamespace(), getAccessor.name);
@@ -5100,7 +5108,7 @@ function DetectSymbolFromNamespacedIdentifier(scope : ASScope, statement : ASSta
                 return true;
             }
 
-            let setAccessor = namespace.findFirstSymbol("Set"+findName, typedb.DBAllowSymbol.Functions);
+            let setAccessor = namespace.findFirstSymbol(setAccPrefix+findName, typedb.DBAllowSymbol.Functions);
             if (setAccessor && setAccessor instanceof typedb.DBMethod && setAccessor.isProperty && setAccessor.args.length != 0)
             {
                 AddIdentifierSymbol(scope, statement, identifierNode, ASSymbolType.GlobalAccessor, namespace.getQualifiedNamespace(), setAccessor.name);
@@ -5203,11 +5211,11 @@ function CheckIdentifierIsPrefixForValidSymbol(scope : ASScope, statement : ASSt
 
         if (typedb.AllowsProperties(symbol_type))
         {
-            let getAccessor = insideType.findFirstSymbolWithPrefix("Get"+identifierPrefix, typedb.DBAllowSymbol.Functions);
+            let getAccessor = insideType.findFirstSymbolWithPrefix(getAccPrefix+identifierPrefix, typedb.DBAllowSymbol.Functions);
             if (getAccessor && getAccessor instanceof typedb.DBMethod)
                 return true;
 
-            let setAccessor = insideType.findFirstSymbol("Set"+identifierPrefix, typedb.DBAllowSymbol.Functions);
+            let setAccessor = insideType.findFirstSymbol(setAccPrefix+identifierPrefix, typedb.DBAllowSymbol.Functions);
             if (setAccessor && setAccessor instanceof typedb.DBMethod && setAccessor.isProperty && setAccessor.args.length != 0)
                 return true;
         }
@@ -5260,7 +5268,7 @@ function CheckIdentifierIsPrefixForValidSymbol(scope : ASScope, statement : ASSt
     // We could be typing a global get accessor from a module we haven't imported yet
     if (typedb.AllowsProperties(symbol_type))
     {
-        let getAccessors = typedb.LookupGlobalSymbolsWithPrefix(scope.getNamespace(), "Get"+identifierPrefix, typedb.DBAllowSymbol.Functions);
+        let getAccessors = typedb.LookupGlobalSymbolsWithPrefix(scope.getNamespace(), getAccPrefix+identifierPrefix, typedb.DBAllowSymbol.Functions);
         if (getAccessors)
         {
             for (let func of getAccessors)
@@ -5270,7 +5278,7 @@ function CheckIdentifierIsPrefixForValidSymbol(scope : ASScope, statement : ASSt
             }
         }
 
-        let setAccessors = typedb.LookupGlobalSymbolsWithPrefix(scope.getNamespace(), "Set"+identifierPrefix, typedb.DBAllowSymbol.Functions);
+        let setAccessors = typedb.LookupGlobalSymbolsWithPrefix(scope.getNamespace(), setAccPrefix+identifierPrefix, typedb.DBAllowSymbol.Functions);
         if (setAccessors)
         {
             for (let func of setAccessors)
@@ -5318,7 +5326,7 @@ function DetectSymbolsInType(scope : ASScope, statement : ASStatement, inSymbol 
     // Could be a property accessor
     if (typedb.AllowsProperties(symbol_type))
     {
-        let getAccessor = dbtype.findFirstSymbol("Get"+node.value, typedb.DBAllowSymbol.Functions);
+        let getAccessor = dbtype.findFirstSymbol(getAccPrefix+node.value, typedb.DBAllowSymbol.Functions);
         if (getAccessor && getAccessor instanceof typedb.DBMethod)
         {
             symType = ASSymbolType.MemberAccessor;
@@ -5327,7 +5335,7 @@ function DetectSymbolsInType(scope : ASScope, statement : ASStatement, inSymbol 
             return typedb.LookupType(getAccessor.namespace, getAccessor.returnType);
         }
 
-        let setAccessor = dbtype.findFirstSymbol("Set"+node.value, typedb.DBAllowSymbol.Functions);
+        let setAccessor = dbtype.findFirstSymbol(setAccPrefix+node.value, typedb.DBAllowSymbol.Functions);
         if (setAccessor && setAccessor instanceof typedb.DBMethod && setAccessor.isProperty && setAccessor.args.length != 0)
         {
             symType = ASSymbolType.MemberAccessor;
@@ -5392,11 +5400,11 @@ function CheckIdentifierIsPrefixForValidSymbolInType(scope : ASScope, statement 
     // Could be a property accessor
     if (typedb.AllowsProperties(symbol_type))
     {
-        let getAccessor = dbtype.findFirstSymbolWithPrefix("Get"+identifierPrefix, typedb.DBAllowSymbol.Functions);
+        let getAccessor = dbtype.findFirstSymbolWithPrefix(getAccPrefix+identifierPrefix, typedb.DBAllowSymbol.Functions);
         if (getAccessor && getAccessor instanceof typedb.DBMethod)
             return true;
 
-        let setAccessor = dbtype.findFirstSymbolWithPrefix("Set"+identifierPrefix, typedb.DBAllowSymbol.Functions);
+        let setAccessor = dbtype.findFirstSymbolWithPrefix(setAccPrefix+identifierPrefix, typedb.DBAllowSymbol.Functions);
         if (setAccessor && setAccessor instanceof typedb.DBMethod && setAccessor.isProperty && setAccessor.args.length != 0)
             return true;
     }
@@ -5466,7 +5474,7 @@ function DetectSymbolsInNamespace(scope : ASScope, statement : ASStatement, name
     // Could be a property accessor
     if (typedb.AllowsProperties(symbol_type))
     {
-        let getAccessor = namespace.findFirstSymbol("Get"+node.value, typedb.DBAllowSymbol.Functions);
+        let getAccessor = namespace.findFirstSymbol(getAccPrefix+node.value, typedb.DBAllowSymbol.Functions);
         if (getAccessor && getAccessor instanceof typedb.DBMethod)
         {
             symType = ASSymbolType.GlobalAccessor;
@@ -5478,7 +5486,7 @@ function DetectSymbolsInNamespace(scope : ASScope, statement : ASStatement, name
             return typedb.LookupType(getAccessor.namespace, getAccessor.returnType);
         }
 
-        let setAccessor = namespace.findFirstSymbol("Set"+node.value, typedb.DBAllowSymbol.Functions);
+        let setAccessor = namespace.findFirstSymbol(setAccPrefix+node.value, typedb.DBAllowSymbol.Functions);
         if (setAccessor && setAccessor instanceof typedb.DBMethod && setAccessor.isProperty && setAccessor.args.length != 0)
         {
             symType = ASSymbolType.GlobalAccessor;
@@ -5521,11 +5529,11 @@ function CheckIdentifierIsPrefixForValidSymbolInNamespace(scope : ASScope, state
     // Could be a property accessor
     if (typedb.AllowsProperties(symbol_type))
     {
-        let getAccessor = namespace.findFirstSymbolWithPrefix("Get"+identifierPrefix, typedb.DBAllowSymbol.Functions, true);
+        let getAccessor = namespace.findFirstSymbolWithPrefix(getAccPrefix+identifierPrefix, typedb.DBAllowSymbol.Functions, true);
         if (getAccessor && getAccessor instanceof typedb.DBMethod)
             return true;
 
-        let setAccessor = namespace.findFirstSymbolWithPrefix("Set"+identifierPrefix, typedb.DBAllowSymbol.Functions, true);
+        let setAccessor = namespace.findFirstSymbolWithPrefix(setAccPrefix+identifierPrefix, typedb.DBAllowSymbol.Functions, true);
         if (setAccessor && setAccessor instanceof typedb.DBMethod && setAccessor.isProperty && setAccessor.args.length != 0)
             return true;
     }
@@ -5605,7 +5613,7 @@ function DetectFormatStringSymbols(scope : ASScope, statement : ASStatement, nod
                 expressions[i] = match[1];
             }
         }
-    
+
         let fakeStatement = new ASStatement();
         fakeStatement.content = expressions[i];
         fakeStatement.start_offset = statement.start_offset + node.start + offsets[i];
@@ -5926,10 +5934,10 @@ function DetermineScopeType(scope : ASScope)
             {
                 scope.scopetype = ASScopeType.Function;
             }
-            else if (ast_type == node_types.AssetDefinition)
-            {
-                scope.scopetype = ASScopeType.Function;
-            }
+            // else if (ast_type == node_types.AssetDefinition)
+            // {
+            //     scope.scopetype = ASScopeType.Function;
+            // }
         }
     }
 }
@@ -6370,4 +6378,3 @@ export function ParseStatement(scopetype : ASScopeType, statement : ASStatement,
         }
     }
 }
-

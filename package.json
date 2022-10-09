@@ -1,9 +1,9 @@
 {
-    "name": "unreal-angelscript",
-    "displayName": "Unreal Angelscript",
-    "description": "Language Server and Debug Adapter for use with the UnrealEngine-Angelscript plugin from https://github.com/Hazelight/UnrealEngine-Angelscript",
+    "name": "openplanet-angelscript",
+    "displayName": "Openplanet Angelscript",
+    "description": "Language Server and Debug Adapter for use with the Openplanet Angelscript",
     "version": "1.4.4",
-    "publisher": "Hazelight",
+    "publisher": "XertroV",
     "engines": {
         "vscode": "^1.65.0"
     },
@@ -17,76 +17,75 @@
     ],
     "repository": {
         "type": "git",
-        "url": "https://github.com/Hazelight/vscode-unreal-angelscript"
+        "url": "https://github.com/XertroV/vscode-openplanet-angelscript"
     },
     "main": "./extension/out/extension",
     "contributes": {
         "configuration": {
-            "title": "Unreal Angelscript",
+            "title": "Openplanet Angelscript",
             "properties": {
-                "UnrealAngelscript.insertParenthesisOnFunctionCompletion": {
+                "OpenplanetAngelscript.openplanetNextLocation": {
+                    "type": "string",
+                    "default": "~/OpenplanetNext/",
+                    "description": "Location of OpenplanetNext folder; typically %userprofile%\\OpenplanetNext\\."
+                },
+                "OpenplanetAngelscript.insertParenthesisOnFunctionCompletion": {
                     "type": "boolean",
                     "default": false,
                     "description": "Insert parenthesis pair when auto-completing a function call."
                 },
-                "UnrealAngelscript.diagnosticsForUnrealNamingConvention": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Emit diagnostic warnings and hints when types, functions, or variables violate the Unreal naming convention."
-                },
-                "UnrealAngelscript.markUnreadVariablesAsUnused": {
+                "OpenplanetAngelscript.markUnreadVariablesAsUnused": {
                     "type": "boolean",
                     "default": false,
                     "description": "Variables that are written to but never read are marked as unused as well."
                 },
-                "UnrealAngelscript.mathCompletionShortcuts": {
+                "OpenplanetAngelscript.mathCompletionShortcuts": {
                     "type": "boolean",
                     "default": true,
                     "description": "Add completions for functions in the Math:: namespace so they can be completed without typing Math:: first."
                 },
-                "UnrealAngelscript.correctFloatLiteralsWhenExpectingDoublePrecision": {
+                "OpenplanetAngelscript.correctFloatLiteralsWhenExpectingDoublePrecision": {
                     "type": "boolean",
                     "default": false,
                     "markdownDescription": "When a float literal is typed (eg `1.f`) in a context where double-precision is expected, automatically correct it (eg to `1.0`)"
                 },
-                "UnrealAngelscript.inlayHints.inlayHintsEnabled": {
+                "OpenplanetAngelscript.inlayHints.inlayHintsEnabled": {
                     "type": "boolean",
                     "default": true,
                     "description": "Enable inlay hints rendered by the angelscript extension."
                 },
-                "UnrealAngelscript.inlayHints.parameterHintsForConstants": {
+                "OpenplanetAngelscript.inlayHints.parameterHintsForConstants": {
                     "type": "boolean",
                     "default": true,
                     "description": "Show parameter name hints when passing a constant literal argument."
                 },
-                "UnrealAngelscript.inlayHints.parameterHintsForComplexExpressions": {
+                "OpenplanetAngelscript.inlayHints.parameterHintsForComplexExpressions": {
                     "type": "boolean",
                     "default": true,
                     "description": "Show parameter name hints when passing a complex expression as an argument."
                 },
-                "UnrealAngelscript.inlayHints.parameterReferenceHints": {
+                "OpenplanetAngelscript.inlayHints.parameterReferenceHints": {
                     "type": "boolean",
                     "default": true,
                     "description": "Show an inlay hint when a parameter takes a writeable reference."
                 },
-                "UnrealAngelscript.inlayHints.parameterHintsForSingleParameterFunctions": {
+                "OpenplanetAngelscript.inlayHints.parameterHintsForSingleParameterFunctions": {
                     "type": "boolean",
                     "default": false,
                     "description": "Enable parameter name hints for functions that are only passed a single argument."
                 },
-                "UnrealAngelscript.inlayHints.typeHintsForAutos": {
+                "OpenplanetAngelscript.inlayHints.typeHintsForAutos": {
                     "type": "boolean",
                     "default": true,
                     "description": "Show the name of the type as an inlay hint on auto declarations."
                 },
-                "UnrealAngelscript.inlayHints.parameterHintsIgnoredParameterNames": {
+                "OpenplanetAngelscript.inlayHints.parameterHintsIgnoredParameterNames": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     },
                     "default": [
                         "Object",
-                        "Actor",
                         "FunctionName",
                         "Value",
                         "InValue",
@@ -97,7 +96,7 @@
                     ],
                     "description": "Parameters with a name included in this list will be ignored for inlay hints."
                 },
-                "UnrealAngelscript.inlayHints.parameterHintsIgnoredFunctionNames": {
+                "OpenplanetAngelscript.inlayHints.parameterHintsIgnoredFunctionNames": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -105,22 +104,22 @@
                     "default": [],
                     "description": "Functions with a name included in this list will be ignored for inlay hints"
                 },
-                "UnrealAngelscript.inlineValues.showInlineValueForLocalVariables": {
+                "OpenplanetAngelscript.inlineValues.showInlineValueForLocalVariables": {
                     "type": "boolean",
                     "default": true,
                     "description": "When debugging, show an inline value next to local variable declarations."
                 },
-                "UnrealAngelscript.inlineValues.showInlineValueForParameters": {
+                "OpenplanetAngelscript.inlineValues.showInlineValueForParameters": {
                     "type": "boolean",
                     "default": true,
                     "description": "When debugging, show an inline value for function parameters."
                 },
-                "UnrealAngelscript.inlineValues.showInlineValueForMemberAssignment": {
+                "OpenplanetAngelscript.inlineValues.showInlineValueForMemberAssignment": {
                     "type": "boolean",
                     "default": true,
                     "description": "When debugging, show an inline value next to direct assignments of this member variables."
                 },
-                "UnrealAngelscript.inlineValues.showInlineValueForFunctionThisObject": {
+                "OpenplanetAngelscript.inlineValues.showInlineValueForFunctionThisObject": {
                     "type": "boolean",
                     "default": true,
                     "description": "When debugging, show an inline value above the function declaration to display the this pointer and Owner of the object."
@@ -372,8 +371,9 @@
         "watch": "tsc -b -w",
         "postinstall": "cd extension && npm ci && cd ../language-server && npm ci && cd ..",
         "grammar:compile": "cd language-server/grammar && nearleyc angelscript.ne -o angelscript.js && nearleyc grammar_statement.ne -o grammar_statement.js && nearleyc grammar_class_statement.ne -o grammar_class_statement.js && nearleyc grammar_global_statement.ne -o grammar_global_statement.js && nearleyc grammar_enum_statement.ne -o grammar_enum_statement.js",
-        "grammar:test": "nearley-test language-server/grammar/grammar_enum_statement.js -q <test.as",
-        "grammar:test_verbose": "nearley-test language-server/grammar/grammar_enum_statement.js <test.as"
+        "grammar:test": "nearley-test language-server/grammar/grammar_global_statement.js -q <test.as",
+        "grammar:test_verbose": "nearley-test language-server/grammar/grammar_global_statement.js <test.as",
+        "debug-parse": "node language-server/out/debug_parse.js ."
     },
     "devDependencies": {
         "@types/mocha": "^8.2.2",

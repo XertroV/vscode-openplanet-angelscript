@@ -110,12 +110,12 @@ function BuildSymbols(asmodule : scriptfiles.ASModule, builder : SemanticTokensB
 
             switch (classification)
             {
-                case typedb.DBTypeClassification.Component:
-                    type = SemanticTypes.typename_component;
-                break;
-                case typedb.DBTypeClassification.Actor:
-                    type = SemanticTypes.typename_actor;
-                break;
+                // case typedb.DBTypeClassification.Component:
+                //     type = SemanticTypes.typename_component;
+                // break;
+                // case typedb.DBTypeClassification.Actor:
+                //     type = SemanticTypes.typename_actor;
+                // break;
                 case typedb.DBTypeClassification.Struct:
                     type = SemanticTypes.typename_struct;
                 break;

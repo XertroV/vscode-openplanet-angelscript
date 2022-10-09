@@ -2,6 +2,7 @@ import * as scriptfiles from './as_parser';
 import * as typedb from './database';
 
 import { Range, Position, Location, TextEdit, ResponseError } from "vscode-languageserver";
+import { getAccPrefix, setAccPrefix } from './as_parser';
 
 export function* FindReferences(uri : string, position : Position) : any
 {
@@ -441,16 +442,16 @@ export function* PerformRename(uri : string, position : Position, baseReplaceWit
         case scriptfiles.ASSymbolType.MemberAccessor:
         case scriptfiles.ASSymbolType.GlobalAccessor:
         {
-            if (findSymbol.symbol_name.startsWith("Get"))
-                replaceText = "Get"+replaceText;
-            else if (findSymbol.symbol_name.startsWith("Set"))
-                replaceText = "Set"+replaceText;
+            if (findSymbol.symbol_name.startsWith(getAccPrefix))
+                replaceText = getAccPrefix+replaceText;
+            else if (findSymbol.symbol_name.startsWith(setAccPrefix))
+                replaceText = setAccPrefix+replaceText;
         }
         break;
     }
 
     let accessorReplaceText = replaceText;
-    if (accessorReplaceText.startsWith("Get") || accessorReplaceText.startsWith("Set"))
+    if (accessorReplaceText.startsWith(getAccPrefix) || accessorReplaceText.startsWith(setAccPrefix))
         accessorReplaceText = accessorReplaceText.substr(3);
 
     // Some symbol types are limited to scope

@@ -42,15 +42,11 @@ import * as inlinevalues from './inline_values';
 import * as colorpicker from './color_picker';
 import * as typehierarchy from './type_hierarchy';
 import * as fs from 'fs';
+import path = require('path');
 let glob = require('glob');
-
-import { Message, MessageType, readMessages, buildGoTo, buildDisconnect, buildOpenAssets } from './unreal-buffers';
 
 // Create a connection for the server. The connection uses Node's IPC as a transport
 let connection: Connection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
-
-// Create a connection to unreal
-let unreal : Socket;
 
 let ParseQueue : Array<scriptfiles.ASModule> = [];
 let ParseQueueIndex = 0;
@@ -66,169 +62,195 @@ let ReceivingTypesTimeout : any = null;
 let SetTypeTimeout = false;
 let UnrealTypesTimedOut = false;
 
-function connect_unreal() {
-    if (unreal != null)
-    {
-        unreal.write(buildDisconnect());
-        unreal.destroy();
-    }
-    unreal = new Socket;
-    //connection.console.log('Connecting to unreal editor...');
+function load_openplanet() {
+    const opDir = scriptfiles.GetScriptSettings().openplanetNextLocation;
+    // const opHeader = path.join(opDir, 'Openplanet.h');
+    const opCoreJson = path.join(opDir, 'OpenplanetCore.json');
+    const opNextJson = path.join(opDir, 'OpenplanetNext.json');
 
-    unreal.on("data", function(data : Buffer) {
-        let messages : Array<Message> = readMessages(data);
-        for (let msg of messages)
-        {
-            if (msg.type == MessageType.Diagnostics)
-            {
-                let diagnostics: Diagnostic[] = [];
-
-                // Based on https://en.wikipedia.org/wiki/File_URI_scheme,
-                // file:/// should be on both platforms, but on Linux the path
-                // begins with / while on Windows it is omitted. So we need to
-                // add it here to make sure both platforms are valid.
-                let localpath = msg.readString();
-                let filename = (localpath[0] == '/') ? ("file://" + localpath) : ("file:///" + localpath);
-                //connection.console.log('Diagnostics received: '+filename);
-
-                let msgCount = msg.readInt();
-                for (let i = 0; i < msgCount; ++i)
-                {
-                    let message = msg.readString();
-                    let line = msg.readInt();
-                    let char = msg.readInt();
-                    let isError = msg.readBool();
-                    let isInfo = msg.readBool();
-
-                    if (isInfo)
-                    {
-                        let hasExisting : boolean = false;
-                        for(let diag of diagnostics)
-                        {
-                            if (diag.range.start.line == line-1)
-                                hasExisting = true;
-                        }
-
-                        if(!hasExisting)
-                            continue;
-                    }
-
-                    if (line <= 0)
-                        line = 1;
-
-                    let diagnosic: Diagnostic = {
-                        severity: isInfo ? DiagnosticSeverity.Information : (isError ? DiagnosticSeverity.Error : DiagnosticSeverity.Warning),
-                        range: {
-                            start: { line: line-1, character: 0 },
-                            end: { line: line-1, character: 10000 }
-                        },
-                        message: message,
-                        source: 'as'
-                    };
-                    diagnostics.push(diagnosic);
-                }
-
-                scriptdiagnostics.UpdateCompileDiagnostics(filename, diagnostics);
-            }
-            else if(msg.type == MessageType.DebugDatabase)
-            {
-                let dbStr = msg.readString();
-                let dbObj = JSON.parse(dbStr);
-                typedb.AddTypesFromUnreal(dbObj);
-
-                UnrealTypesTimedOut = false;
-                if (ReceivingTypesTimeout)
-                    clearTimeout(ReceivingTypesTimeout);
-                ReceivingTypesTimeout = setTimeout(DetectUnrealTypeListTimeout, 1000);
-            }
-            else if(msg.type == MessageType.DebugDatabaseFinished)
-            {
-                if (ReceivingTypesTimeout)
-                    clearTimeout(ReceivingTypesTimeout);
-                typedb.FinishTypesFromUnreal();
-
-                let scriptSettings = scriptfiles.GetScriptSettings()
-                typedb.AddPrimitiveTypes(scriptSettings.floatIsFloat64);
-
-                // Make sure no modules are resolved anymore
-                ReResolveAllModules();
-            }
-            else if(msg.type == MessageType.AssetDatabase)
-            {
-                let version = msg.readInt();
-                if (version == 1)
-                {
-                    let assetCount = msg.readInt();
-                    for (let i = 0; i < assetCount; i += 2)
-                    {
-                        let assetPath = msg.readString();
-                        let className = msg.readString();
-
-                        if (className.length == 0)
-                            assets.RemoveAsset(assetPath);
-                        else
-                            assets.AddAsset(assetPath, className);
-                    }
-                }
-            }
-            else if(msg.type == MessageType.AssetDatabaseInit)
-            {
-                // Remove all old asset info from the database, we're receiving new stuff
-                assets.ClearDatabase();
-            }
-            else if(msg.type == MessageType.AssetDatabaseFinished)
-            {
-            }
-            else if(msg.type == MessageType.DebugDatabaseSettings)
-            {
-                let version = msg.readInt();
-
-                let scriptSettings = scriptfiles.GetScriptSettings()
-                scriptSettings.automaticImports = msg.readBool();
-
-                if (version >= 2)
-                    scriptSettings.floatIsFloat64 = msg.readBool();
-                if (version >= 3)
-                    scriptSettings.useAngelscriptHaze = msg.readBool();
-            }
+    fs.readFile(opCoreJson, (err, data) => {
+        if (err)
+            console.error(`Error reading ${opCoreJson} -- does it exist?`);
+        else {
+            typedb.AddTypesFromOpenplanet(JSON.parse(data.toLocaleString()));
         }
-    });
+    })
 
-    unreal.on("error", function() {
-        if (unreal != null)
-        {
-            unreal.destroy();
-            unreal = null;
-            setTimeout(connect_unreal, 5000);
+    fs.readFile(opNextJson, (err, data) => {
+        if (err)
+            console.error(`Error reading ${opNextJson} -- does it exist?`);
+        else {
+            typedb.AddNadeoTypesFromOpenplanet(JSON.parse(data.toLocaleString()));
         }
-    });
+    })
 
-    unreal.on("close", function() {
-        if (unreal != null)
-        {
-            unreal.destroy();
-            unreal = null;
-            setTimeout(connect_unreal, 5000);
-        }
-    });
-
-    unreal.connect(27099, "localhost", function()
-    {
-        //connection.console.log('Connection to unreal editor established.');
-        setTimeout(function()
-        {
-            if (!unreal)
-                return;
-            let reqDb = Buffer.alloc(5);
-            reqDb.writeUInt32LE(1, 0);
-            reqDb.writeUInt8(MessageType.RequestDebugDatabase, 4);
-
-            unreal.write(reqDb);
-        }, 1000);
-    });
+    typedb.AddPrimitiveTypes(false);
 }
 
-connect_unreal();
+// function connect_unreal() {
+//     if (unreal != null)
+//     {
+//         unreal.write(buildDisconnect());
+//         unreal.destroy();
+//     }
+//     unreal = new Socket;
+//     //connection.console.log('Connecting to unreal editor...');
+
+//     unreal.on("data", function(data : Buffer) {
+//         let messages : Array<Message> = readMessages(data);
+//         for (let msg of messages)
+//         {
+//             if (msg.type == MessageType.Diagnostics)
+//             {
+//                 let diagnostics: Diagnostic[] = [];
+
+//                 // Based on https://en.wikipedia.org/wiki/File_URI_scheme,
+//                 // file:/// should be on both platforms, but on Linux the path
+//                 // begins with / while on Windows it is omitted. So we need to
+//                 // add it here to make sure both platforms are valid.
+//                 let localpath = msg.readString();
+//                 let filename = (localpath[0] == '/') ? ("file://" + localpath) : ("file:///" + localpath);
+//                 //connection.console.log('Diagnostics received: '+filename);
+
+//                 let msgCount = msg.readInt();
+//                 for (let i = 0; i < msgCount; ++i)
+//                 {
+//                     let message = msg.readString();
+//                     let line = msg.readInt();
+//                     let char = msg.readInt();
+//                     let isError = msg.readBool();
+//                     let isInfo = msg.readBool();
+
+//                     if (isInfo)
+//                     {
+//                         let hasExisting : boolean = false;
+//                         for(let diag of diagnostics)
+//                         {
+//                             if (diag.range.start.line == line-1)
+//                                 hasExisting = true;
+//                         }
+
+//                         if(!hasExisting)
+//                             continue;
+//                     }
+
+//                     if (line <= 0)
+//                         line = 1;
+
+//                     let diagnosic: Diagnostic = {
+//                         severity: isInfo ? DiagnosticSeverity.Information : (isError ? DiagnosticSeverity.Error : DiagnosticSeverity.Warning),
+//                         range: {
+//                             start: { line: line-1, character: 0 },
+//                             end: { line: line-1, character: 10000 }
+//                         },
+//                         message: message,
+//                         source: 'as'
+//                     };
+//                     diagnostics.push(diagnosic);
+//                 }
+
+//                 scriptdiagnostics.UpdateCompileDiagnostics(filename, diagnostics);
+//             }
+//             else if(msg.type == MessageType.DebugDatabase)
+//             {
+//                 let dbStr = msg.readString();
+//                 let dbObj = JSON.parse(dbStr);
+//                 typedb.AddTypesFromUnreal(dbObj);
+
+//                 UnrealTypesTimedOut = false;
+//                 if (ReceivingTypesTimeout)
+//                     clearTimeout(ReceivingTypesTimeout);
+//                 ReceivingTypesTimeout = setTimeout(DetectUnrealTypeListTimeout, 1000);
+//             }
+//             else if(msg.type == MessageType.DebugDatabaseFinished)
+//             {
+//                 if (ReceivingTypesTimeout)
+//                     clearTimeout(ReceivingTypesTimeout);
+//                 typedb.FinishTypesFromUnreal();
+
+//                 let scriptSettings = scriptfiles.GetScriptSettings()
+//                 typedb.AddPrimitiveTypes(scriptSettings.floatIsFloat64);
+
+//                 // Make sure no modules are resolved anymore
+//                 ReResolveAllModules();
+//             }
+//             else if(msg.type == MessageType.AssetDatabase)
+//             {
+//                 let version = msg.readInt();
+//                 if (version == 1)
+//                 {
+//                     let assetCount = msg.readInt();
+//                     for (let i = 0; i < assetCount; i += 2)
+//                     {
+//                         let assetPath = msg.readString();
+//                         let className = msg.readString();
+
+//                         if (className.length == 0)
+//                             assets.RemoveAsset(assetPath);
+//                         else
+//                             assets.AddAsset(assetPath, className);
+//                     }
+//                 }
+//             }
+//             else if(msg.type == MessageType.AssetDatabaseInit)
+//             {
+//                 // Remove all old asset info from the database, we're receiving new stuff
+//                 assets.ClearDatabase();
+//             }
+//             else if(msg.type == MessageType.AssetDatabaseFinished)
+//             {
+//             }
+//             else if(msg.type == MessageType.DebugDatabaseSettings)
+//             {
+//                 let version = msg.readInt();
+
+//                 let scriptSettings = scriptfiles.GetScriptSettings()
+//                 scriptSettings.automaticImports = msg.readBool();
+
+//                 if (version >= 2)
+//                     scriptSettings.floatIsFloat64 = msg.readBool();
+//                 if (version >= 3)
+//                     scriptSettings.useAngelscriptHaze = msg.readBool();
+//             }
+//         }
+//     });
+
+//     unreal.on("error", function() {
+//         if (unreal != null)
+//         {
+//             unreal.destroy();
+//             unreal = null;
+//             setTimeout(connect_unreal, 5000);
+//         }
+//     });
+
+//     unreal.on("close", function() {
+//         if (unreal != null)
+//         {
+//             unreal.destroy();
+//             unreal = null;
+//             setTimeout(connect_unreal, 5000);
+//         }
+//     });
+
+//     unreal.connect(27099, "localhost", function()
+//     {
+//         //connection.console.log('Connection to unreal editor established.');
+//         setTimeout(function()
+//         {
+//             if (!unreal)
+//                 return;
+//             let reqDb = Buffer.alloc(5);
+//             reqDb.writeUInt32LE(1, 0);
+//             reqDb.writeUInt8(MessageType.RequestDebugDatabase, 4);
+
+//             unreal.write(reqDb);
+//         }, 1000);
+//     });
+// }
+
+// connect_unreal();
+load_openplanet();
 
 // Create a simple text document manager. The text document manager
 // supports full document sync only
@@ -254,10 +276,10 @@ connection.onInitialize((_params): InitializeResult => {
             RootUris.push(decodeURIComponent(Workspace.uri));
         }
     }
-    
-    
+
+
     connection.console.log("Workspace roots: " + Roots);
-    
+
     //connection.console.log("RootPath: "+RootPath);
     //connection.console.log("RootUri: "+RootUri+" from "+_params.rootUri);
 
@@ -286,7 +308,7 @@ connection.onInitialize((_params): InitializeResult => {
         });
     }
 
-    setTimeout(DetectUnrealConnectionTimeout, 20000)
+    // setTimeout(DetectUnrealConnectionTimeout, 20000)
 
     return {
         capabilities: {
@@ -340,16 +362,6 @@ connection.onInitialize((_params): InitializeResult => {
         }
     }
 });
-
-function DetectUnrealConnectionTimeout()
-{
-    UnrealTypesTimedOut = true;
-}
-
-function DetectUnrealTypeListTimeout()
-{
-    typedb.FinishTypesFromUnreal();
-}
 
 function TickQueues()
 {
@@ -458,7 +470,7 @@ function ReResolveAllModules()
 {
     if (IsServicingQueues)
         return;
-    
+
     scriptfiles.ClearAllResolvedModules();
 
     // Update diagnostics on all modules
@@ -487,7 +499,7 @@ function ReResolveAllModules()
 
 function CanResolveModules()
 {
-    return typedb.HasTypesFromUnreal() && LoadQueue.length == 0;
+    return LoadQueue.length == 0;
 }
 
 function IsInitialParseDone()
@@ -591,8 +603,8 @@ connection.onImplementation((_textDocumentPosition: TextDocumentPositionParams):
     if (cppSymbol)
     {
         // the unreal editor with the type and symbol we've resolved that we want.
-        if (unreal)
-            unreal.write(buildGoTo(cppSymbol[0], cppSymbol[1]));
+        // if (unreal)
+        //     unreal.write(buildGoTo(cppSymbol[0], cppSymbol[1]));
     }
 
     return null;
@@ -718,21 +730,21 @@ connection.onCodeLensResolve(function (lens : CodeLens) : CodeLens{
 
 connection.onExecuteCommand(function (params : ExecuteCommandParams)
 {
-    if (params.command == "angelscript.openAssets")
-    {
-        if (params.arguments && params.arguments[0])
-        {
-            let argList = params.arguments as Array<any>;
-            let references = assets.GetAssetsImplementing(argList[0]);
-            if (!references || references.length == 0)
-                return;
+    // if (params.command == "angelscript.openAssets")
+    // {
+    //     if (params.arguments && params.arguments[0])
+    //     {
+    //         let argList = params.arguments as Array<any>;
+    //         let references = assets.GetAssetsImplementing(argList[0]);
+    //         if (!references || references.length == 0)
+    //             return;
 
-            if (unreal)
-                unreal.write(buildOpenAssets(references));
-            else
-                connection.window.showErrorMessage("Cannot open asset: not connected to unreal editor.");
-        }
-    }
+    //         if (unreal)
+    //             unreal.write(buildOpenAssets(references));
+    //         else
+    //             connection.window.showErrorMessage("Cannot open asset: not connected to unreal editor.");
+    //     }
+    // }
 });
 
 connection.onCodeAction(function (params : CodeActionParams) : Array<CodeAction>
@@ -841,7 +853,7 @@ function getModuleName(uri : string) : string
     for (let rootUri of RootUris) {
         if (modulename.startsWith(rootUri)) {
             modulename = modulename.replace(rootUri, "");
-            break;            
+            break;
         }
     }
     modulename = modulename.replace(".as", "");
@@ -908,7 +920,7 @@ connection.onRequest("angelscript/provideInlineValues", (...params: any[]) : any
         return null;
     return inlinevalues.ProvideInlineValues(asmodule, pos.position);
 });
-    
+
  connection.onDidChangeTextDocument((params) => {
     // The content of a text document did change in VSCode.
     // params.uri uniquely identifies the document.
@@ -918,7 +930,7 @@ connection.onRequest("angelscript/provideInlineValues", (...params: any[]) : any
 
     let uri = params.textDocument.uri;
     let modulename = getModuleName(uri);
-    
+
     let asmodule = scriptfiles.GetOrCreateModule(modulename, getPathName(uri), uri);
     if (!asmodule.loaded)
         scriptfiles.UpdateModuleFromDisk(asmodule);
@@ -982,24 +994,30 @@ connection.onRequest("angelscript/provideInlineValues", (...params: any[]) : any
  connection.onDidChangeConfiguration(function (change : DidChangeConfigurationParams)
  {
     let settingsObject = change.settings as any;
-    let settings : any = settingsObject.UnrealAngelscript;
+    let settings : any = settingsObject.OpenplanetAngelscript;
     if (!settings)
         return;
 
     let diagnosticSettings = scriptdiagnostics.GetDiagnosticSettings();
+    let scriptSettings = scriptfiles.GetScriptSettings();
     let dirtyDiagnostics = false;
 
-    if (diagnosticSettings.namingConventionDiagnostics != settings.diagnosticsForUnrealNamingConvention)
-    {
-        diagnosticSettings.namingConventionDiagnostics = settings.diagnosticsForUnrealNamingConvention;
-        dirtyDiagnostics = true;
-    }
+    // if (diagnosticSettings.namingConventionDiagnostics != settings.diagnosticsForUnrealNamingConvention)
+    // {
+    //     diagnosticSettings.namingConventionDiagnostics = settings.diagnosticsForUnrealNamingConvention;
+    //     dirtyDiagnostics = true;
+    // }
 
     if (diagnosticSettings.markUnreadVariablesAsUnused != settings.markUnreadVariablesAsUnused)
     {
         diagnosticSettings.markUnreadVariablesAsUnused = settings.markUnreadVariablesAsUnused;
         dirtyDiagnostics = true;
     }
+
+     if (scriptSettings.openplanetNextLocation != settings.openplanetNextLocation) {
+        scriptSettings.openplanetNextLocation = settings.openplanetNextLocation;
+        dirtyDiagnostics = true;
+     }
 
     if (dirtyDiagnostics)
         DirtyAllDiagnostics();
