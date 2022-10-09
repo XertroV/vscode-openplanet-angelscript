@@ -13,7 +13,7 @@ let CommonTypenames = new Set<string>([
     "FVector", "FRotator", "FTransform", "FQuat"
 ]);
 let CommonTemplateTypes = new Set<string>(
-    ['TArray', 'TMap', 'TSet', 'TSubclassOf', 'TSoftObjectPtr', 'TSoftClassPtr', 'TInstigated', 'TPerPlayer'],
+    ['array', 'MwFastBuffer', 'TSet', 'TSubclassOf', 'TSoftObjectPtr', 'TSoftClassPtr', 'TInstigated', 'TPerPlayer'],
 );
 
 export interface CompletionSettings
@@ -907,7 +907,7 @@ function AddCompletionsFromKeywords(context : CompletionContext, completions : A
         if (context.expectedType && !context.expectedType.isValueType())
         {
             AddCompletionsFromKeywordList(context, [
-                "Cast",
+                "cast",
             ], completions);
         }
     }
@@ -923,7 +923,7 @@ function AddCompletionsFromKeywords(context : CompletionContext, completions : A
         && (!context.isSubExpression && !context.isRightExpression))
     {
         AddCompletionsFromKeywordList(context, [
-            "delegate", "event", "class", "struct",
+            "delegate", "event", "class",
             "property"
         ], completions);
 

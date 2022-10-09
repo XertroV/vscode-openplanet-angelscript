@@ -683,7 +683,7 @@ function ResolveCastHelper(asmodule : scriptfiles.ASModule, action : CodeAction,
     action.edit.changes[asmodule.displayUri] = [
         TextEdit.insert(
             asmodule.getPosition(statement.start_offset + rightNode.start),
-            "Cast<"+data.castTo+">("),
+            "cast<"+data.castTo+">("),
         TextEdit.insert(
             asmodule.getPosition(statement.start_offset + rightNode.end),
             ")"),

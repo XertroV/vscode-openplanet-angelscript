@@ -1,4 +1,4 @@
-import { ConvertNadeoType } from "./convert_nadeo";
+import { ConvertNadeoType, CoreMethod } from "./convert_nadeo";
 
 export enum DBAllowSymbol
 {
@@ -319,14 +319,14 @@ export class DBMethod implements DBSymbol
         if ('ns' in input)
             this.ns = input.ns;
 
-        this.namespace = RootNamespace;
-        if ('ns' in input) {
-            this.ns = input['ns'];
-            this.namespace = LookupNamespace(null, this.ns);
-            if (!this.namespace) {
-                this.namespace = DeclareNamespace(null, this.ns, new DBNamespaceDeclaration());
-            }
-        }
+        // this.namespace = RootNamespace;
+        // if ('ns' in input && input.ns.length > 0) {
+        //     this.ns = input['ns'];
+        //     this.namespace = LookupNamespace(null, this.ns);
+        //     if (!this.namespace) {
+        //         this.namespace = DeclareNamespace(null, this.ns, new DBNamespaceDeclaration());
+        //     }
+        // }
 
         // todo: is this about return type or const methods?
         if ('const' in input)
@@ -555,7 +555,8 @@ export class DBType implements DBSymbol
 
     createTemplateInstance(actualTypes : Array<string>) : DBType
     {
-        if (actualTypes.length != this.templateSubTypes.length)
+        // todo fix
+        if (actualTypes.length != this.templateSubTypes?.length)
             return null;
 
         let inst = new DBType();
@@ -597,7 +598,7 @@ export class DBType implements DBSymbol
         this.name = input['name'];
 
         this.namespace = RootNamespace;
-        if ('ns' in input){
+        if ('ns' in input && input.ns?.length > 0){
             this.ns = input['ns'];
             this.namespace = LookupNamespace(null, this.ns);
             if (!this.namespace) {
@@ -620,25 +621,19 @@ export class DBType implements DBSymbol
             for(let v in input.values) {
                 let val = new DBProperty();
                 val.name = v;
-                val.typename = v;
-                val.namespace = LookupNamespace(this.namespace, this.name) || DeclareNamespace(this.namespace, this.name, new DBNamespaceDeclaration());
-                // this.addSymbol(val);
-                val.namespace.addSymbol(val);
+                val.typename = (this.ns ? (this.ns + "::") : "") + this.name;
+                this.addSymbol(val);
             }
         }
 
-
-
-
-
-        // if ('subtypes' in input)
-        // {
-        //     this.templateSubTypes = new Array<string>();
-        //     for(let subtype of input['subtypes'])
-        //     {
-        //         this.templateSubTypes.push(subtype);
-        //     }
-        // }
+        if ('subtypes' in input)
+        {
+            this.templateSubTypes = new Array<string>();
+            for(let subtype of input['subtypes'])
+            {
+                this.templateSubTypes.push(subtype);
+            }
+        }
 
         if ('supertype' in input)
         {
@@ -2242,13 +2237,58 @@ export function AddNadeoTypesFromOpenplanet(input: any) {
     for (let k in input['ns']) {
         for (let ty in input['ns'][k]) {
             let tyDeets = input['ns'][k][ty];
-            console.log(`${ty} has deets: ${tyDeets}`);
-            ConvertNadeoType(ty, tyDeets);
-            // todo
-            throw('todo')
+            let nadeoClassTy = ConvertNadeoType(ty, tyDeets);
+            AddOpenplanetClass(nadeoClassTy, "classes");
         }
     }
 }
+
+export function AddOpenplanetFunction(jData: any) {
+    let func = new DBMethod();
+    func.fromJSON(jData);
+    let ns = RootNamespace;
+    if (func.ns) {
+        let decl = new DBNamespaceDeclaration();
+        ns = LookupNamespace(null, func.ns);
+        if (!ns) {
+            ns = DeclareNamespace(null, func.ns, decl);
+        }
+    }
+    // todo: AddOpenplanetTypeToDatabase?
+    ns.addSymbol(func);
+}
+
+export function AddOpenplanetClass(jData: any, kind: "classes" | "enums") {
+    let hasSubtype = jData.methods && -1 < jData.methods.findIndex((m: CoreMethod) => m['decl']?.includes("<T>"));
+    if (hasSubtype)
+        jData['subtypes'] = ["T"];
+
+    let type = new DBType(kind);
+    type.fromJSON(jData);
+
+    let ns = RootNamespace;
+    if (type.ns) {
+        let decl = new DBNamespaceDeclaration();
+
+        ns = LookupNamespace(null, type.ns);
+        if (!ns) {
+            ns = DeclareNamespace(null, type.ns, decl);
+        }
+        ns.addSymbol(type);
+    }
+    AddTypeToDatabase(ns, type);
+
+    for (let [name, sym] of type.symbols) {
+        // console.log(name);
+        if (sym instanceof Array) {
+            for (let symElem of sym)
+                ns.addSymbol(symElem);
+        }
+        else
+            ns.addSymbol(sym);
+    }
+}
+
 
 export function AddTypesFromOpenplanet(input : any)
 {
@@ -2256,53 +2296,19 @@ export function AddTypesFromOpenplanet(input : any)
     let addedClasses = 0;
     let addedEnums = 0;
     for (let key in input["functions"]) {
-        let func = new DBMethod();
-        func.fromJSON(input["functions"][key]);
-        let ns = RootNamespace;
-        if (func.ns) {
-            let decl = new DBNamespaceDeclaration();
-            ns = LookupNamespace(null, func.ns);
-            if (!ns) {
-                ns = DeclareNamespace(null, func.ns, decl);
-            }
-        }
-        ns.addSymbol(func);
+        let jData = input["functions"][key];
+        AddOpenplanetFunction(jData);
         addedFuncs++;
     }
-    ["classes", "enums"].forEach(kind => {
+    const kinds: ("classes" | "enums")[] = ["classes", "enums"];
+    kinds.forEach((kind) => {
         console.log(kind);
-        input[kind].forEach((jData:any) => {
-            let type = new DBType(kind);
-            type.fromJSON(jData);
-
+        input[kind].forEach((jData: any) => {
+            AddOpenplanetClass(jData, kind);
             if (kind == "classes")
                 addedClasses++;
             else if (kind == "enums")
                 addedEnums++;
-
-            // if (type.isEnum) {
-            //     AddOpenplanetTypeToDatabase(null, type);
-            // }
-            let ns = RootNamespace;
-            if (type.ns.length > 0) {
-                let decl = new DBNamespaceDeclaration();
-
-                ns = LookupNamespace(null, type.ns);
-                if (!ns) {
-                    ns = DeclareNamespace(null, type.ns, decl);
-                }
-            }
-            ns.addSymbol(type);
-
-            for (let [name, sym] of type.symbols) {
-                // console.log(name);
-                if (sym instanceof Array) {
-                    for (let symElem of sym)
-                        ns.addSymbol(symElem);
-                }
-                else
-                    ns.addSymbol(sym);
-            }
         });
     });
     console.log(`AddOpenplanetTypes: Funcs: ${addedFuncs}, Classes: ${addedClasses}, Enums: ${addedEnums}`);

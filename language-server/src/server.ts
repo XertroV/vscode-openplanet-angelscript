@@ -73,6 +73,8 @@ function load_openplanet() {
             console.error(`Error reading ${opCoreJson} -- does it exist?`);
         else {
             typedb.AddTypesFromOpenplanet(JSON.parse(data.toLocaleString()));
+            DirtyAllDiagnostics();
+            typedb.OnDirtyTypeCaches();
         }
     })
 
@@ -81,6 +83,8 @@ function load_openplanet() {
             console.error(`Error reading ${opNextJson} -- does it exist?`);
         else {
             typedb.AddNadeoTypesFromOpenplanet(JSON.parse(data.toLocaleString()));
+            DirtyAllDiagnostics();
+            typedb.OnDirtyTypeCaches();
         }
     })
 
