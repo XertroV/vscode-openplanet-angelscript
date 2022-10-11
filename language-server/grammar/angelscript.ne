@@ -19,6 +19,7 @@ const lexer = moo.compile({
     ns: "::",
     colon: ":",
     comma: ",",
+    atsign: "@",
     postfix_operator: ["++", "--"],
     compound_assignment: ["+=", "-=", "/=", "*=", "~=", "^=", "|=", "&=", "%="],
     op_binary_logic: ['&&', '||'],
@@ -1096,11 +1097,12 @@ unary_operator -> %op_binary_sum {% id %}
 unary_operator -> %op_unary {% id %}
 unary_operator -> %postfix_operator {% id %}
 
-typename -> const_qualifier:? unqualified_typename ref_qualifiers:? {%
+typename -> const_qualifier:? unqualified_typename %atsign:? ref_qualifiers:? {%
     function (d) { return ExtendedCompound(d, {
         ...d[1],
         const_qualifier: d[0],
-        ref_qualifier: d[2],
+        ref_qualifier: d[3],
+        is_reference: d[2] != null,
     });}
 %}
 
@@ -1221,7 +1223,7 @@ typename_identifier -> (%ns _):? (%identifier _ %ns _ ):* %identifier {%
 const_qualifier -> %const_token _ {%
     function (d) { return Identifier(d[0]); }
 %}
-ref_qualifiers -> "@" | _ "&" (_ ("in" | "out" | "inout")):? {%
+ref_qualifiers -> _ "&" (_ ("in" | "out" | "inout")):? {%
     function (d) { return d[2] ? d[1].value+d[2][1][0].value : d[1].value; }
 %}
 

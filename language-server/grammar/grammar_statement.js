@@ -23,6 +23,7 @@ const lexer = moo.compile({
     ns: "::",
     colon: ":",
     comma: ",",
+    atsign: "@",
     postfix_operator: ["++", "--"],
     compound_assignment: ["+=", "-=", "/=", "*=", "~=", "^=", "|=", "&=", "%="],
     op_binary_logic: ['&&', '||'],
@@ -1091,13 +1092,16 @@ var grammar = {
     {"name": "unary_operator", "symbols": [(lexer.has("postfix_operator") ? {type: "postfix_operator"} : postfix_operator)], "postprocess": id},
     {"name": "typename$ebnf$1", "symbols": ["const_qualifier"], "postprocess": id},
     {"name": "typename$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "typename$ebnf$2", "symbols": ["ref_qualifiers"], "postprocess": id},
+    {"name": "typename$ebnf$2", "symbols": [(lexer.has("atsign") ? {type: "atsign"} : atsign)], "postprocess": id},
     {"name": "typename$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "typename", "symbols": ["typename$ebnf$1", "unqualified_typename", "typename$ebnf$2"], "postprocess": 
+    {"name": "typename$ebnf$3", "symbols": ["ref_qualifiers"], "postprocess": id},
+    {"name": "typename$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "typename", "symbols": ["typename$ebnf$1", "unqualified_typename", "typename$ebnf$2", "typename$ebnf$3"], "postprocess": 
         function (d) { return ExtendedCompound(d, {
             ...d[1],
             const_qualifier: d[0],
-            ref_qualifier: d[2],
+            ref_qualifier: d[3],
+            is_reference: d[2] != null,
         });}
         },
     {"name": "unqualified_typename", "symbols": ["typename_identifier"], "postprocess": 
@@ -1221,7 +1225,6 @@ var grammar = {
     {"name": "const_qualifier", "symbols": [(lexer.has("const_token") ? {type: "const_token"} : const_token), "_"], "postprocess": 
         function (d) { return Identifier(d[0]); }
         },
-    {"name": "ref_qualifiers", "symbols": [{"literal":"@"}]},
     {"name": "ref_qualifiers$ebnf$1$subexpression$1$subexpression$1", "symbols": [{"literal":"in"}]},
     {"name": "ref_qualifiers$ebnf$1$subexpression$1$subexpression$1", "symbols": [{"literal":"out"}]},
     {"name": "ref_qualifiers$ebnf$1$subexpression$1$subexpression$1", "symbols": [{"literal":"inout"}]},
