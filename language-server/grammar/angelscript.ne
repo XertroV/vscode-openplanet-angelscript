@@ -385,11 +385,14 @@ global_statement -> %import_token _ function_signature _ "from" _ (%dqstring | %
         return Compound(d, n.ImportFunctionStatement, [d[2], IdentifierFromString(d[6][0])]);
     }
 %}
+# global_statement -> settings_decl {% function (d) { console.dir({'settings_decl': d}); return null; } %}
 
 global_declaration -> function_decl {% id %}
 global_declaration -> delegate_decl {% id %}
-global_declaration -> event_decl {% id %}
-global_declaration -> var_decl {% id %}
+# global_declaration -> settings_decl {% id %}
+global_declaration -> (settings_decl _):? var_decl {%
+    function (d) { console.log(d); return d[1]; }
+%}
 global_declaration -> typename {%
     function (d) { return {
         ...Compound(d, n.VariableDecl, null),
@@ -1218,7 +1221,7 @@ typename_identifier -> (%ns _):? (%identifier _ %ns _ ):* %identifier {%
 const_qualifier -> %const_token _ {%
     function (d) { return Identifier(d[0]); }
 %}
-ref_qualifiers -> _ "&" (_ ("in" | "out" | "inout")):? {%
+ref_qualifiers -> "@" | _ "&" (_ ("in" | "out" | "inout")):? {%
     function (d) { return d[2] ? d[1].value+d[2][1][0].value : d[1].value; }
 %}
 
@@ -1389,3 +1392,32 @@ scuffed_template_statement -> %template_basetype _ "<" _ typename {%
         return node;
     }
 %}
+
+settings_decl -> setting_var_decl {% id %}
+settings_decl -> setting_tab_decl {% id %}
+# settings_decl -> setting_tab_decl {% id %}
+
+setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs %rsqbracket {% function(d) { return d[3]; } %}
+setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ setting_type_kwargs %rsqbracket {% function(d) { return [...d[3], ...d[5]]; } %}
+setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ setting_type_kwargs _ setting_std_optional_kwargs %rsqbracket {% function(d) { return [...d[3], ...d[5], ...d[7]]; } %}
+
+setting_std_optional_kwargs -> (setting_std_optional_kwarg _):* setting_std_optional_kwarg # {% id %}
+setting_std_optional_kwarg -> ("hidden") | (("name=" | "category=" | "description=") (%dqstring | %sqstring)) # {% id %}
+
+# int, uint, float
+setting_type_kwargs -> setting_type_int_uint_float # {% id %}
+setting_type_int_uint_float -> ("drag" | ("min=" | "max=") (%dqstring | %sqstring)) (setting_type_int_uint_float) # {% id %}
+# vec2,vec3,vec4
+setting_type_kwargs -> setting_type_vec234 # {% id %}
+setting_type_vec234 -> ("drag" _) # {% id %}
+# vec34
+setting_type_kwargs -> (setting_type_vec34 _):* setting_type_vec34 # {% id %}
+setting_type_vec34 -> ("drag" | "color") # {% id %}
+# string
+setting_type_kwargs -> (setting_type_string _):* setting_type_string # {% id %}
+setting_type_string -> ("multiline" | "password" | "max=" (%dqstring | %sqstring)) # {% id %}
+
+setting_tab_decl -> %lsqbracket _ "SettingsTab" _ settings_tab_kwargs _ %rsqbracket # {% id %}
+
+settings_tab_kwargs -> (settings_tab_kwarg _):* settings_tab_kwarg # {% id %}
+settings_tab_kwarg -> ("icon=" | "name=") (%dqstring | %sqstring) # {% id %}

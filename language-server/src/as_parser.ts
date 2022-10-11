@@ -406,6 +406,7 @@ export enum ASSymbolType
     Typename,
     Namespace,
     TemplateBaseType,
+    Setting,
 
     Parameter,
     LocalVariable,
@@ -652,6 +653,23 @@ export class ASStatement extends ASElement
 
     generatedTypes : boolean = false;
 };
+
+// export class ASSetting extends ASElement
+// {
+//     content : string;
+//     // rawIndex : number = -1;
+
+//     // start_offset : number = -1;
+//     // end_offset : number = -1;
+
+//     // ast : any = null;
+//     parsed : boolean = false;
+//     endsWithSemicolon : boolean = false;
+//     parseError : boolean = false;
+//     parsedType : ASScopeType = ASScopeType.Code;
+
+//     generatedTypes : boolean = false;
+// };
 
 export class ASDelegateBind
 {
@@ -1313,6 +1331,7 @@ export function GetModulesPotentiallyImportingSymbol(asmodule : ASModule, findSy
             // These can only be used within the same module
             return [asmodule];
         break;
+        case ASSymbolType.Setting: // cannot be imported
         case ASSymbolType.UnknownError:
         case ASSymbolType.NoSymbol:
             // Don't know anything about these
