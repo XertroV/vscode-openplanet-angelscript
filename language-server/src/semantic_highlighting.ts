@@ -2,6 +2,7 @@ import * as typedb from './database';
 import * as scriptfiles from './as_parser';
 
 import { Range, Position, Location, SemanticTokens, SemanticTokensBuilder, SemanticTokensDelta } from "vscode-languageserver";
+import { ASSymbolTypeToString } from './as_parser';
 
 export let SemanticTypes : any = {};
 export let SemanticTypeList : Array<string> = [
@@ -77,12 +78,12 @@ function BuildSymbols(asmodule : scriptfiles.ASModule, builder : SemanticTokensB
         let length = symbol.end - symbol.start;
 
         let type = -1;
+        let isTypeOrNamespace = symbol.type == scriptfiles.ASSymbolType.Typename || symbol.type == scriptfiles.ASSymbolType.Namespace;
         if (symbol.isUnimported)
         {
             type = SemanticTypes.unimported_symbol;
         }
-        else if (symbol.type == scriptfiles.ASSymbolType.Typename
-            || symbol.type == scriptfiles.ASSymbolType.Namespace)
+        else if (isTypeOrNamespace)
         {
             let symName = symbol.symbol_name;
             let classification = typedb.DBTypeClassification.Other;
@@ -143,7 +144,7 @@ function BuildSymbols(asmodule : scriptfiles.ASModule, builder : SemanticTokensB
                 type = SemanticTypes.unknown_error;
             break;
             case scriptfiles.ASSymbolType.TemplateBaseType:
-                type = SemanticTypes.templae_base_type;
+                type = SemanticTypes.template_base_type;
             break;
             case scriptfiles.ASSymbolType.Parameter:
                 type = SemanticTypes.parameter;
@@ -173,6 +174,9 @@ function BuildSymbols(asmodule : scriptfiles.ASModule, builder : SemanticTokensB
                 type = SemanticTypes.access_specifier;
             break;
         }
+
+        // if (symbol.isUnimported || !isTypeOrNamespace)
+        //     console.log(`symbol.type: ${ASSymbolTypeToString(symbol?.type)}`);
 
         if (type == -1)
             continue;

@@ -1,3 +1,4 @@
+import { getAccPrefix } from "./as_parser";
 import { ConvertNadeoType, CoreMethod } from "./convert_nadeo";
 
 export enum DBAllowSymbol
@@ -13,6 +14,13 @@ export enum DBAllowSymbol
     PropertiesAndFunctions = Properties | Functions,
     FunctionsAndMixins = Functions | Mixins,
 };
+
+function ReplaceArrayShorthand(_type: string): string {
+    if (!_type?.includes('[]')) return _type;
+    console.log(`Replacing array shorthand in: ${_type}`);
+    return _type.replace(/([A-Za-z_\.:@]+)\[\]/, function(a, b) { return `array<${b}>`; });
+    // return _type;
+}
 
 export function AllowsFunctions(allowSymbol : DBAllowSymbol)
 {
@@ -73,6 +81,7 @@ export interface DBSymbol
     keywords : Array<string>;
     declaredModule : string | null;
     auxiliarySymbols : Array<DBAuxiliarySymbol> | null;
+    class_name : string;
 };
 
 export interface DBAuxiliarySymbol
@@ -83,6 +92,7 @@ export interface DBAuxiliarySymbol
 
 export class DBProperty implements DBSymbol
 {
+    class_name = "DBProperty";
     name : string;
     typename : string;
     documentation : string;
@@ -184,7 +194,7 @@ export class DBArg
     fromJSON(input : any)
     {
         this.name = 'name' in input ? input['name'] : null;
-        this.typename = input['typedecl'];
+        this.typename = ReplaceArrayShorthand(input['typedecl']);
         this.defaultvalue = 'default' in input ? input['default'] : null;
     }
 
@@ -217,6 +227,7 @@ export enum DBMethodAnnotation
 
 export class DBMethod implements DBSymbol
 {
+    class_name = "DBMethod";
     name : string;
     returnType : string;
     args : Array<DBArg>;
@@ -290,7 +301,7 @@ export class DBMethod implements DBSymbol
         this.name = input.name;
 
         if ('returntypedecl' in input)
-            this.returnType = input['returntypedecl'];
+            this.returnType = ReplaceArrayShorthand(input['returntypedecl']);
         else
             this.returnType = 'void';
 
@@ -334,7 +345,7 @@ export class DBMethod implements DBSymbol
         else
             this.isConst = false;
 
-        this.isProperty = this.name.startsWith("get_");
+        this.isProperty = this.name.startsWith(getAccPrefix);
 
         if ('protected' in input)
             this.isProtected = input['protected'];
@@ -509,6 +520,7 @@ export class DBMethod implements DBSymbol
 
 export class DBType implements DBSymbol
 {
+    class_name = "DBType";
     typeid : number = -1;
     name : string;
     supertype : string;
@@ -2258,10 +2270,17 @@ export function AddOpenplanetFunction(jData: any) {
     ns.addSymbol(func);
 }
 
+const OpenplanetTemplateTypes =
+        ["array", "MwSArray", "MwFastArray", "MwFastBuffer", "MwNodPool", "MwRefBuffer"];
+let OpenplanetTemplateTypeMap: Map<string, string> = new Map();
+OpenplanetTemplateTypes.forEach(t => OpenplanetTemplateTypeMap.set(t, t + "<T>"));
+
 export function AddOpenplanetClass(jData: any, kind: "classes" | "enums") {
-    let hasSubtype = jData.methods && -1 < jData.methods.findIndex((m: CoreMethod) => m['decl']?.includes("<T>"));
-    if (hasSubtype)
+    let hasSubtype = OpenplanetTemplateTypeMap.has(jData['name']);
+    if (hasSubtype) {
+        // jData['name'] = OpenplanetTemplateTypeMap.get(jData['name']);
         jData['subtypes'] = ["T"];
+    }
 
     let type = new DBType(kind);
     type.fromJSON(jData);
@@ -2270,16 +2289,18 @@ export function AddOpenplanetClass(jData: any, kind: "classes" | "enums") {
     if (type.ns) {
         let decl = new DBNamespaceDeclaration();
 
-        ns = LookupNamespace(null, type.ns);
+        ns = LookupNamespace(ns, type.ns);
         if (!ns) {
-            ns = DeclareNamespace(null, type.ns, decl);
+            ns = DeclareNamespace(ns, type.ns, decl);
         }
         ns.addSymbol(type);
     }
-    AddTypeToDatabase(ns, type);
+    if (type.isEnum || !type.ns)
+        AddTypeToDatabase(ns, type);
 
     for (let [name, sym] of type.symbols) {
-        // console.log(name);
+        // console.log(name, sym);
+        // todo: seems like we're adding class properties to global namespace :/
         if (sym instanceof Array) {
             for (let symElem of sym)
                 ns.addSymbol(symElem);
@@ -2302,7 +2323,6 @@ export function AddTypesFromOpenplanet(input : any)
     }
     const kinds: ("classes" | "enums")[] = ["classes", "enums"];
     kinds.forEach((kind) => {
-        console.log(kind);
         input[kind].forEach((jData: any) => {
             AddOpenplanetClass(jData, kind);
             if (kind == "classes")

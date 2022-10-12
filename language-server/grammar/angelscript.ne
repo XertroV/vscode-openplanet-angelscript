@@ -67,7 +67,7 @@ const lexer = moo.compile({
             cast_token: "cast",
             namespace_token: "namespace",
             bool_token: ['true', 'false'],
-            // nullptr_token: 'nullptr',
+            nullptr_token: 'null',
             this_token: 'this',
             // access_token: 'access',
 
@@ -75,7 +75,7 @@ const lexer = moo.compile({
             // A statement of `TArray<int> Var` might be parsed as
             // ((TArray < int) > Var) as well, so we hardcode the template types
             // we know to avoid this in most situations.
-            template_basetype: ['array', 'MwFastBuffer'],
+            template_basetype: ["array", "MwSArray", "MwFastArray", "MwFastBuffer", "MwNodPool", "MwRefBuffer"],
         })
     },
     number: /[0-9]+/,
@@ -392,7 +392,7 @@ global_declaration -> function_decl {% id %}
 global_declaration -> delegate_decl {% id %}
 # global_declaration -> settings_decl {% id %}
 global_declaration -> (settings_decl _):? var_decl {%
-    function (d) { console.log(d); return d[1]; }
+    function (d) { /* console.log(d); */ return d[1]; }
 %}
 global_declaration -> typename {%
     function (d) { return {
@@ -895,6 +895,10 @@ expr_leaf -> unary_operator {%
     };}
 %}
 
+lvalue -> %atsign lvalue {%
+    function(d) { return d[1]; }
+%}
+
 lvalue -> %identifier {%
     function(d, l) { return Identifier(d[0]); }
 %}
@@ -1128,6 +1132,18 @@ template_typename -> typename_identifier _ "<" _ ">" {%
     }
 %}
 
+template_typename -> template_subtype_single %lsqbracket %rsqbracket {%
+    function (d) {
+        let typename = "array<" + d[0][0].value + ">";
+        return {
+            ...Compound(d, n.Typename, null),
+            value: typename,
+            basetype: 'array',
+            subtypes: d[0]
+        }
+    }
+%}
+
 template_typename -> typename_identifier _ "<" _ template_subtypes _ ">" {%
     function (d) {
         let typename = d[0].value+"<";
@@ -1184,6 +1200,12 @@ typename_unterminated -> const_qualifier:? typename_identifier _ "<" _ template_
         };
         node.end += 1;
         return node;
+    }
+%}
+
+template_subtype_single -> typename {%
+    function (d) {
+        return [d[0]];
     }
 %}
 

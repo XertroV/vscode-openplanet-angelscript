@@ -366,7 +366,7 @@
         "vscode-languageserver-textdocument": "^1.0.1"
     },
     "scripts": {
-        "vscode:prepublish": "npm run grammar:compile && npm run compile",
+        "vscode:prepublish": "npm run grammar:compile && npm run compile && echo 'Done vscode:prepublish'",
         "compile": "tsc -b",
         "watch": "tsc -b -w",
         "postinstall": "cd extension && npm ci && cd ../language-server && npm ci && cd ..",

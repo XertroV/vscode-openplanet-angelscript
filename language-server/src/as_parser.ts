@@ -76,6 +76,17 @@ export enum ASScopeType
     Namespace
 }
 
+export function ASScopeTypeToString(t: ASScopeType): string {
+    if (t == null) return "_null_";
+    if (t == ASScopeType.Global) return "ASScopeType.Global";
+    if (t == ASScopeType.Class) return "ASScopeType.Class";
+    if (t == ASScopeType.Function) return "ASScopeType.Function";
+    if (t == ASScopeType.Enum) return "ASScopeType.Enum";
+    if (t == ASScopeType.Code) return "ASScopeType.Code";
+    if (t == ASScopeType.Namespace) return "ASScopeType.Namespace";
+    return "<unknown>";
+}
+
 export class ASModule
 {
     created : boolean = false;
@@ -423,6 +434,26 @@ export enum ASSymbolType
     UnknownError,
     NoSymbol,
 };
+
+export function ASSymbolTypeToString(t: ASSymbolType): string {
+    if (t == null) return "<null>";
+    if (t == ASSymbolType.Typename) return "Typename";
+    if (t == ASSymbolType.Namespace) return "Namespace";
+    if (t == ASSymbolType.TemplateBaseType) return "TemplateBaseType";
+    if (t == ASSymbolType.Setting) return "Setting";
+    if (t == ASSymbolType.Parameter) return "Parameter";
+    if (t == ASSymbolType.LocalVariable) return "LocalVariable";
+    if (t == ASSymbolType.MemberVariable) return "MemberVariable";
+    if (t == ASSymbolType.MemberAccessor) return "MemberAccessor";
+    if (t == ASSymbolType.GlobalVariable) return "GlobalVariable";
+    if (t == ASSymbolType.GlobalAccessor) return "GlobalAccessor";
+    if (t == ASSymbolType.MemberFunction) return "MemberFunction";
+    if (t == ASSymbolType.GlobalFunction) return "GlobalFunction";
+    if (t == ASSymbolType.AccessSpecifier) return "AccessSpecifier";
+    if (t == ASSymbolType.UnknownError) return "UnknownError";
+    if (t == ASSymbolType.NoSymbol) return "NoSymbol";
+    throw('Unknown symbol type: ' + t);
+}
 
 export class ASSemanticSymbol
 {
@@ -2101,6 +2132,7 @@ function GenerateTypeInformation(scope : ASScope)
                         dbfunc.isOverride = true;
                 }
             }
+            dbfunc.isProperty = dbfunc.isProperty || dbfunc.name.startsWith(getAccPrefix);
 
             if (funcdef.scoping)
             {
@@ -2926,7 +2958,7 @@ export function ResolveTypeFromExpression(scope : ASScope, node : any) : typedb.
         // nullptr
         case node_types.ConstNullptr:
         {
-            return typedb.GetTypeByName("UObject");
+            return undefined;
         }
         // X.Y
         case node_types.MemberAccess:
@@ -3857,7 +3889,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
         case node_types.ConstFloat: return typedb.GetTypeByName("float"); break;
         case node_types.ConstName: return typedb.GetTypeByName("FName"); break;
         case node_types.ConstString: return typedb.GetTypeByName("FString"); break;
-        case node_types.ConstNullptr: return typedb.GetTypeByName("UObject"); break;
+        case node_types.ConstNullptr: return null; break;
         // Format string f"Blah {CODE}"
         case node_types.ConstFormatString:
             DetectFormatStringSymbols(scope, statement, node, parseContext);
@@ -3869,7 +3901,8 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
             parseContext.isWriteAccess = outerWriteAccess;
             parseContext.argumentFunction = outerArgumentFunction;
             parseContext.isRootIdentifier = outerRootIdentifier;
-            return DetectIdentifierSymbols(scope, statement, node, parseContext, symbol_type);
+            let identified = DetectIdentifierSymbols(scope, statement, node, parseContext, symbol_type);
+            return identified;
         }
         break;
         // X.Y
@@ -4841,6 +4874,7 @@ function DetectIdentifierSymbols(scope : ASScope, statement : ASStatement, node 
             let usedVariable = checkscope.variablesByName.get(node.value);
             if (usedVariable)
             {
+                console.log(`DetectIdentifierSymbols allowproperties > isinfunctionbody > usedVariable: ${usedVariable.name}`)
                 if (!parseContext.isRootIdentifier && (!parseContext.isWriteAccess || usedVariable.isReference()))
                     usedVariable.isUnused = false;
                 usedVariable.hasAnyUsages = true;
@@ -4893,6 +4927,50 @@ function DetectIdentifierSymbols(scope : ASScope, statement : ASStatement, node 
         }
     }
 
+    // note: should have precedence over global symbol/property
+    // Find an unimported global accessor
+    if (typedb.AllowsProperties(symbol_type))
+    {
+        let globalGetAccessors = typedb.LookupGlobalSymbol(scope.getNamespace(), getAccPrefix+node.value, typedb.DBAllowSymbol.Functions);
+        if (globalGetAccessors)
+        {
+            for (let usedSymbol of globalGetAccessors)
+            {
+                // console.log("Found global accessor: " + usedSymbol.name + " whilst looking for " + node.value, JSON.stringify(usedSymbol));
+                if (usedSymbol instanceof typedb.DBMethod && usedSymbol.isProperty && !usedSymbol.isMixin)
+                {
+                    if (usedSymbol.isLocal && !usedSymbol.IsAccessibleFromModule(scope.module.modulename))
+                        continue;
+                    let addedSym = AddIdentifierSymbol(scope, statement, node, ASSymbolType.GlobalAccessor,
+                        usedSymbol.namespace.getQualifiedNamespace(), usedSymbol.name, parseContext.isWriteAccess);
+                    if (!ScriptSettings.automaticImports)
+                        addedSym.isUnimported = true;
+                    scope.module.markDependencyFunction(usedSymbol);
+                    return typedb.LookupType(usedSymbol.namespace, usedSymbol.returnType);
+                }
+            }
+        }
+
+        let globalSetAccessors = typedb.LookupGlobalSymbol(scope.getNamespace(), setAccPrefix+node.value, typedb.DBAllowSymbol.Functions);
+        if (globalSetAccessors)
+        {
+            for (let usedSymbol of globalSetAccessors)
+            {
+                if (usedSymbol instanceof typedb.DBMethod && usedSymbol.isProperty && usedSymbol.args.length != 0 && !usedSymbol.isMixin)
+                {
+                    if (usedSymbol.isLocal && !usedSymbol.IsAccessibleFromModule(scope.module.modulename))
+                        continue;
+                    let addedSym = AddIdentifierSymbol(scope, statement, node, ASSymbolType.GlobalAccessor,
+                        usedSymbol.namespace.getQualifiedNamespace(), usedSymbol.name, parseContext.isWriteAccess);
+                    if (!ScriptSettings.automaticImports && usedSymbol.declaredModule && !scope.module.isModuleImported(usedSymbol.declaredModule))
+                        addedSym.isUnimported = true;
+                    scope.module.markDependencyFunction(usedSymbol);
+                    return typedb.LookupType(usedSymbol.namespace, usedSymbol.args[0].typename);
+                }
+            }
+        }
+    }
+
     // Find an unimported global symbol
     let globalSymbols = typedb.LookupGlobalSymbol(scope.getNamespace(), node.value);
     if (globalSymbols)
@@ -4935,48 +5013,6 @@ function DetectIdentifierSymbols(scope : ASScope, statement : ASStatement, node 
                     addedSym.isUnimported = true;
                 scope.module.markDependencyProperty(usedSymbol);
                 return usedSymbol;
-            }
-        }
-    }
-
-    // Find an unimpoted global accessor
-    if (typedb.AllowsProperties(symbol_type))
-    {
-        let globalGetAccessors = typedb.LookupGlobalSymbol(scope.getNamespace(), getAccPrefix+node.value, typedb.DBAllowSymbol.Functions);
-        if (globalGetAccessors)
-        {
-            for (let usedSymbol of globalGetAccessors)
-            {
-                if (usedSymbol instanceof typedb.DBMethod && usedSymbol.isProperty && !usedSymbol.isMixin)
-                {
-                    if (usedSymbol.isLocal && !usedSymbol.IsAccessibleFromModule(scope.module.modulename))
-                        continue;
-                    let addedSym = AddIdentifierSymbol(scope, statement, node, ASSymbolType.GlobalAccessor,
-                        usedSymbol.namespace.getQualifiedNamespace(), usedSymbol.name, parseContext.isWriteAccess);
-                    if (!ScriptSettings.automaticImports)
-                        addedSym.isUnimported = true;
-                    scope.module.markDependencyFunction(usedSymbol);
-                    return typedb.LookupType(usedSymbol.namespace, usedSymbol.returnType);
-                }
-            }
-        }
-
-        let globalSetAccessors = typedb.LookupGlobalSymbol(scope.getNamespace(), setAccPrefix+node.value, typedb.DBAllowSymbol.Functions);
-        if (globalSetAccessors)
-        {
-            for (let usedSymbol of globalSetAccessors)
-            {
-                if (usedSymbol instanceof typedb.DBMethod && usedSymbol.isProperty && usedSymbol.args.length != 0 && !usedSymbol.isMixin)
-                {
-                    if (usedSymbol.isLocal && !usedSymbol.IsAccessibleFromModule(scope.module.modulename))
-                        continue;
-                    let addedSym = AddIdentifierSymbol(scope, statement, node, ASSymbolType.GlobalAccessor,
-                        usedSymbol.namespace.getQualifiedNamespace(), usedSymbol.name, parseContext.isWriteAccess);
-                    if (!ScriptSettings.automaticImports && usedSymbol.declaredModule && !scope.module.isModuleImported(usedSymbol.declaredModule))
-                        addedSym.isUnimported = true;
-                    scope.module.markDependencyFunction(usedSymbol);
-                    return typedb.LookupType(usedSymbol.namespace, usedSymbol.args[0].typename);
-                }
             }
         }
     }
@@ -5320,8 +5356,13 @@ function DetectSymbolsInType(scope : ASScope, statement : ASStatement, inSymbol 
     let dbtype : typedb.DBType = null;
     if (inSymbol instanceof typedb.DBType)
         dbtype = inSymbol;
-    else if (inSymbol instanceof typedb.DBProperty)
+    else if (inSymbol instanceof typedb.DBProperty) {
         dbtype = typedb.LookupType(inSymbol.namespace, inSymbol.typename);
+        if (dbtype) {
+            console.info(`DetectSymbolsInType inSymbol : DBProperty. ${JSON.stringify(inSymbol)}`)
+            console.trace(`dbtype: ${dbtype.name}, ${dbtype.getDisplayName()}`)
+        }
+    }
 
     if (!dbtype)
         return null;

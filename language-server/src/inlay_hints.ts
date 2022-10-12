@@ -51,13 +51,13 @@ let InlayHintSettings : InlayHintSettings = {
 
 let HintIgnoredMathFunctions = new Set<string>(
 [
-    "Math::Clamp",
-    "Math::Wrap",
-    "Math::IsWithin",
-    "Math::Lerp",
-    "Math::VLerp",
-    "Math::LogX",
-    "Math::Pow",
+    // "Math::Clamp",
+    // "Math::Wrap",
+    // "Math::IsWithin",
+    // "Math::Lerp",
+    // "Math::VLerp",
+    // "Math::LogX",
+    // "Math::Pow",
 ]);
 
 export function GetInlayHintSettings() : InlayHintSettings
@@ -407,7 +407,7 @@ export function GetInlayHintsForNode(scope : scriptfiles.ASScope, statement : sc
 
                         if (paramIndex >= func.args.length)
                             continue;
-                        
+
                         let isFallback = func.args.length < argCount;
                         if (dbParam && dbParam.name != func.args[paramIndex].name && (!isFallback || paramIsFallback))
                             paramNameAmbiguous = true;

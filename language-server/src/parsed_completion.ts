@@ -13,7 +13,7 @@ let CommonTypenames = new Set<string>([
     "FVector", "FRotator", "FTransform", "FQuat"
 ]);
 let CommonTemplateTypes = new Set<string>(
-    ['array', 'MwFastBuffer', 'TSet', 'TSubclassOf', 'TSoftObjectPtr', 'TSoftClassPtr', 'TInstigated', 'TPerPlayer'],
+    ["array", "MwSArray", "MwFastArray", "MwFastBuffer", "MwNodPool", "MwRefBuffer"],
 );
 
 export interface CompletionSettings

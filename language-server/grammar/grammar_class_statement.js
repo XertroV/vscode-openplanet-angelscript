@@ -71,7 +71,7 @@ const lexer = moo.compile({
             cast_token: "cast",
             namespace_token: "namespace",
             bool_token: ['true', 'false'],
-            // nullptr_token: 'nullptr',
+            nullptr_token: 'null',
             this_token: 'this',
             // access_token: 'access',
 
@@ -79,7 +79,7 @@ const lexer = moo.compile({
             // A statement of `TArray<int> Var` might be parsed as
             // ((TArray < int) > Var) as well, so we hardcode the template types
             // we know to avoid this in most situations.
-            template_basetype: ['array', 'MwFastBuffer'],
+            template_basetype: ["array", "MwSArray", "MwFastArray", "MwFastBuffer", "MwNodPool", "MwRefBuffer"],
         })
     },
     number: /[0-9]+/,
@@ -394,7 +394,7 @@ var grammar = {
     {"name": "global_declaration$ebnf$1", "symbols": ["global_declaration$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "global_declaration$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "global_declaration", "symbols": ["global_declaration$ebnf$1", "var_decl"], "postprocess": 
-        function (d) { console.log(d); return d[1]; }
+        function (d) { /* console.log(d); */ return d[1]; }
         },
     {"name": "global_declaration", "symbols": ["typename"], "postprocess": 
         function (d) { return {
@@ -909,6 +909,9 @@ var grammar = {
             operator: Operator(d[0]),
         };}
         },
+    {"name": "lvalue", "symbols": [(lexer.has("atsign") ? {type: "atsign"} : atsign), "lvalue"], "postprocess": 
+        function(d) { return d[1]; }
+        },
     {"name": "lvalue", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": 
         function(d, l) { return Identifier(d[0]); }
         },
@@ -1123,6 +1126,17 @@ var grammar = {
             };
         }
         },
+    {"name": "template_typename", "symbols": ["template_subtype_single", (lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), (lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": 
+        function (d) {
+            let typename = "array<" + d[0][0].value + ">";
+            return {
+                ...Compound(d, n.Typename, null),
+                value: typename,
+                basetype: 'array',
+                subtypes: d[0]
+            }
+        }
+        },
     {"name": "template_typename", "symbols": ["typename_identifier", "_", {"literal":"<"}, "_", "template_subtypes", "_", {"literal":">"}], "postprocess": 
         function (d) {
             let typename = d[0].value+"<";
@@ -1179,6 +1193,11 @@ var grammar = {
             };
             node.end += 1;
             return node;
+        }
+        },
+    {"name": "template_subtype_single", "symbols": ["typename"], "postprocess": 
+        function (d) {
+            return [d[0]];
         }
         },
     {"name": "template_subtypes$ebnf$1", "symbols": []},

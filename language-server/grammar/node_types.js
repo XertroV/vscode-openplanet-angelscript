@@ -1,7 +1,8 @@
 (function () {
 
 let i = 0;
-let indexed = true;
+// let indexed = true;
+let indexed = false;
 
 module.exports = {
     Identifier: indexed ? i++ : "Identifier",

@@ -71,6 +71,7 @@ let WhitelistedInlineStructs = new Set<string>([
     "FVector", "FVector2D", "FVector4", "FIntVector",
     "FRotator", "FName", "FString", "FColor", "FLinearColor",
     "FText",
+    // "vec4", // todo mb?
 ]);
 
 function CanTypeHaveInlineValue(scope : scriptfiles.ASScope, typename : string) : boolean
@@ -123,7 +124,7 @@ function AddThisObjectInlineValue(context : InlineValueContext, scope : scriptfi
                 startPos.line = statementStart.line+1;
 
             startPos.character = 4;
-            
+
             range = Range.create(startPos, startPos);
         }
         else

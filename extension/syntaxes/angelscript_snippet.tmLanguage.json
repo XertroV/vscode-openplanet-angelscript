@@ -8,7 +8,7 @@
 		},
 		{
 			"name": "support.type.struct.angelscript",
-			"match": "\\b(array|MwFastBuffer|TSet|FRotator|FQuat|FString|FName)\\b"
+			"match": "\\b(array|MwFastBuffer|MwSArray|MwFastArray|MwNodPool|MwRefBuffer)\\b"
 		},
 		{
 			"name": "support.type.struct.angelscript",
