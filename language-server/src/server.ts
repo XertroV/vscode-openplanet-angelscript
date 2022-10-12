@@ -88,6 +88,8 @@ function load_openplanet() {
         }
     })
 
+    typedb.AddOpenplanetIcons();
+
     typedb.AddPrimitiveTypes(false);
 }
 

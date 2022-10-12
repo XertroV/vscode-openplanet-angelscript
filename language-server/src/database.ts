@@ -1,5 +1,6 @@
 import { getAccPrefix } from "./as_parser";
 import { ConvertNadeoType, CoreMethod } from "./convert_nadeo";
+import { IconNames } from "./icons";
 
 export enum DBAllowSymbol
 {
@@ -2332,6 +2333,21 @@ export function AddTypesFromOpenplanet(input : any)
         });
     });
     console.log(`AddOpenplanetTypes: Funcs: ${addedFuncs}, Classes: ${addedClasses}, Enums: ${addedEnums}`);
+}
+
+export function AddOpenplanetIcons() {
+    let iconsNs = DeclareNamespace(null, "Icons", new DBNamespaceDeclaration());
+    let iconsKenneyNs = DeclareNamespace(iconsNs, "Kenney", new DBNamespaceDeclaration());
+    IconNames.map(n => {
+        let prop = new DBProperty();
+        let _nParts = n.split("::");
+        n = _nParts[_nParts.length - 1];
+        let isKenney = _nParts.length > 1; // only alt to Icons namespace itself
+        prop.fromJSON({name: n, typedecl: "string"});
+        prop.isNoEdit = true;
+        let ns = isKenney ? iconsKenneyNs : iconsNs;
+        ns.addSymbol(prop);
+    });
 }
 
 export function FinishTypesFromUnreal()
