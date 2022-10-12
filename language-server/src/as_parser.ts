@@ -2358,6 +2358,7 @@ function GenerateTypeInformation(scope : ASScope)
             {
                 // Just create a function in this scope that shadows the imported function
                 let funcdef = statement.ast.children[0];
+                console.warn(`Loading imported function: ${funcdef.name.value}`)
                 let dbfunc = AddDBMethod(scope, funcdef.name.value);
                 if (funcdef.documentation)
                     dbfunc.documentation = typedb.FormatDocumentationComment(funcdef.documentation);
@@ -4033,7 +4034,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                         if (parentSymbol)
                         {
                             let scopeFunc = scope.getParentFunction();
-                            if (scopeFunc && parentSymbol instanceof typedb.DBMethod && parentSymbol.name == scopeFunc.name)
+                            if (scopeFunc && parentSymbol instanceof typedb.DBMethod && "super" == scopeFunc.name)
                                 scopeFunc.hasSuperCall = true;
                             return parentSymbol;
                         }

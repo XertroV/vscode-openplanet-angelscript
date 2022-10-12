@@ -5,9 +5,9 @@ import * as typedb from './database';
 
 export function ProcessScriptTypeGeneratedCode(dbtype : typedb.DBType, asmodule : scriptfiles.ASModule)
 {
-    // Code that all delegate structs have
-    if (dbtype.isEvent || dbtype.isDelegate)
-        AddGeneratedCodeForDelegate(dbtype, asmodule);
+    // // Code that all delegate structs have
+    // if (dbtype.isEvent || dbtype.isDelegate)
+    //     AddGeneratedCodeForDelegate(dbtype, asmodule);
 
     if (!dbtype.isStruct && !dbtype.isEnum)
     {
@@ -31,9 +31,9 @@ export function ProcessScriptTypeGeneratedCode(dbtype : typedb.DBType, asmodule 
         // if (dbtype.inheritsFrom("AActor"))
         //     AddGeneratedCodeForAActor(asmodule, dbtype, nsType);
 
-        // Code that only subsystems have
-        if (dbtype.inheritsFrom("USubsystem"))
-            AddGeneratedCodeForSubsystem(asmodule, dbtype, nsType);
+        // // Code that only subsystems have
+        // if (dbtype.inheritsFrom("USubsystem"))
+        //     AddGeneratedCodeForSubsystem(asmodule, dbtype, nsType);
 
         // // Hazelight-specific generated code only if it's configured on
         // if (scriptfiles.GetScriptSettings().useAngelscriptHaze)

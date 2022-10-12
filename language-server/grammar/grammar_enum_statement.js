@@ -61,6 +61,8 @@ const lexer = moo.compile({
             delegate_token: "delegate",
             property_token: "property",
             mixin_token: "mixin",
+            shared_token: "shared",
+            funcdef_token: "funcdef",
             local_token: "local",
             event_token: "event",
             else_token: "else",
@@ -73,7 +75,7 @@ const lexer = moo.compile({
             bool_token: ['true', 'false'],
             nullptr_token: 'null',
             this_token: 'this',
-            // access_token: 'access',
+            access_token: 'access',
 
             // This is a hack to help disambiguate syntax.
             // A statement of `TArray<int> Var` might be parsed as
@@ -352,9 +354,6 @@ var grammar = {
         },
     {"name": "for_comma_expression", "symbols": ["expression"], "postprocess": id},
     {"name": "for_comma_expression", "symbols": ["assignment"], "postprocess": id},
-    {"name": "statement", "symbols": [(lexer.has("for_token") ? {type: "for_token"} : for_token), "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "_", "typename", "_", (lexer.has("identifier") ? {type: "identifier"} : identifier), "_", (lexer.has("colon") ? {type: "colon"} : colon), "optional_expression", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen), "optional_statement"], "postprocess": 
-        function (d) { return Compound(d, n.ForEachLoop, [d[4], Identifier(d[6]), d[9], d[12]]); }
-        },
     {"name": "statement", "symbols": [(lexer.has("while_token") ? {type: "while_token"} : while_token), "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "optional_expression", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen), "optional_statement"], "postprocess": 
         function (d) { return Compound(d, n.WhileLoop, [d[3], d[6]]); }
         },
@@ -383,13 +382,12 @@ var grammar = {
         },
     {"name": "global_statement$subexpression$1", "symbols": [(lexer.has("dqstring") ? {type: "dqstring"} : dqstring)]},
     {"name": "global_statement$subexpression$1", "symbols": [(lexer.has("sqstring") ? {type: "sqstring"} : sqstring)]},
-    {"name": "global_statement", "symbols": [(lexer.has("import_token") ? {type: "import_token"} : import_token), "_", "function_signature", "_", {"literal":"from"}, "_", "global_statement$subexpression$1"], "postprocess": 
+    {"name": "global_statement", "symbols": [(lexer.has("import_token") ? {type: "import_token"} : import_token), "_", "function_decl", "_", {"literal":"from"}, "_", "global_statement$subexpression$1"], "postprocess": 
         function (d) {
             return Compound(d, n.ImportFunctionStatement, [d[2], IdentifierFromString(d[6][0])]);
         }
         },
     {"name": "global_declaration", "symbols": ["function_decl"], "postprocess": id},
-    {"name": "global_declaration", "symbols": ["delegate_decl"], "postprocess": id},
     {"name": "global_declaration$ebnf$1$subexpression$1", "symbols": ["settings_decl", "_"]},
     {"name": "global_declaration$ebnf$1", "symbols": ["global_declaration$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "global_declaration$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
@@ -403,25 +401,31 @@ var grammar = {
             typename: d[0],
         }; }
         },
-    {"name": "global_declaration$ebnf$2$subexpression$1", "symbols": ["_", (lexer.has("colon") ? {type: "colon"} : colon)]},
+    {"name": "global_declaration$ebnf$2$subexpression$1", "symbols": [(lexer.has("shared_token") ? {type: "shared_token"} : shared_token), "_"]},
     {"name": "global_declaration$ebnf$2", "symbols": ["global_declaration$ebnf$2$subexpression$1"], "postprocess": id},
     {"name": "global_declaration$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "global_declaration$ebnf$3$subexpression$1", "symbols": ["_", (lexer.has("identifier") ? {type: "identifier"} : identifier)]},
+    {"name": "global_declaration$ebnf$3$subexpression$1", "symbols": ["_", (lexer.has("colon") ? {type: "colon"} : colon)]},
     {"name": "global_declaration$ebnf$3", "symbols": ["global_declaration$ebnf$3$subexpression$1"], "postprocess": id},
     {"name": "global_declaration$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "global_declaration", "symbols": [(lexer.has("class_token") ? {type: "class_token"} : class_token), "_", (lexer.has("identifier") ? {type: "identifier"} : identifier), "global_declaration$ebnf$2", "global_declaration$ebnf$3"], "postprocess": 
+    {"name": "global_declaration$ebnf$4$subexpression$1", "symbols": ["_", (lexer.has("identifier") ? {type: "identifier"} : identifier)]},
+    {"name": "global_declaration$ebnf$4", "symbols": ["global_declaration$ebnf$4$subexpression$1"], "postprocess": id},
+    {"name": "global_declaration$ebnf$4", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "global_declaration", "symbols": ["global_declaration$ebnf$2", (lexer.has("class_token") ? {type: "class_token"} : class_token), "_", (lexer.has("identifier") ? {type: "identifier"} : identifier), "global_declaration$ebnf$3", "global_declaration$ebnf$4"], "postprocess": 
         function (d) { return {
             ...Compound(d, n.ClassDefinition, null),
             name: Identifier(d[3]),
-            macro: d[0],
             superclass: d[5] ? Identifier(d[5][1]) : null,
+            is_shared: !!d[0],
         }}
         },
-    {"name": "global_declaration", "symbols": [(lexer.has("enum_token") ? {type: "enum_token"} : enum_token), "_", (lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": 
+    {"name": "global_declaration$ebnf$5$subexpression$1", "symbols": [(lexer.has("shared_token") ? {type: "shared_token"} : shared_token), "_"]},
+    {"name": "global_declaration$ebnf$5", "symbols": ["global_declaration$ebnf$5$subexpression$1"], "postprocess": id},
+    {"name": "global_declaration$ebnf$5", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "global_declaration", "symbols": ["global_declaration$ebnf$5", (lexer.has("enum_token") ? {type: "enum_token"} : enum_token), "_", (lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": 
         function (d) { return {
             ...Compound(d, n.EnumDefinition, null),
             name: Identifier(d[3]),
-            macro: d[0],
+            is_shared: !!d[0],
         }}
         },
     {"name": "global_declaration", "symbols": [{"literal":"settings"}, "_", (lexer.has("identifier") ? {type: "identifier"} : identifier), "_", {"literal":"for"}, "_", "typename"], "postprocess": 
@@ -449,9 +453,8 @@ var grammar = {
     {"name": "class_declaration", "symbols": ["class_declaration$ebnf$1", "var_decl"], "postprocess": 
         function (d) {
             return ExtendedCompound(d, {
-                ...d[2],
-                access: d[1] ? d[1][0] : null,
-                macro: d[0],
+                ...d[1],
+                access: d[0] ? d[0][0] : null,
             });
         }
         },
@@ -463,9 +466,8 @@ var grammar = {
             return ExtendedCompound(d, {
                 ...Compound(d, n.VariableDecl, null),
                 name: null,
-                typename: d[2],
-                access: d[1] ? d[1][0] : null,
-                macro: d[0],
+                typename: d[1],
+                access: d[0] ? d[0][0] : null,
             });
         }
         },
@@ -475,18 +477,16 @@ var grammar = {
     {"name": "class_declaration", "symbols": ["class_declaration$ebnf$3", "function_signature"], "postprocess": 
         function (d) {
             return ExtendedCompound(d, {
-                ...d[2],
-                access: d[1] ? d[1][0] : null,
-                macro: d[0],
+                ...d[1],
+                access: d[0] ? d[0][0] : null,
             });
         }
         },
     {"name": "class_declaration", "symbols": ["access_specifier", "_", "function_signature"], "postprocess": 
         function (d) {
             return ExtendedCompound(d, {
-                ...d[3],
+                ...d[2],
                 access: d[0],
-                macro: d[2],
             });
         }
         },
@@ -645,13 +645,10 @@ var grammar = {
                 };
         }
         },
-    {"name": "function_decl", "symbols": ["function_signature"], "postprocess": id},
-    {"name": "delegate_decl", "symbols": [{"literal":"delegate"}, "_", "function_signature"], "postprocess": 
-        function (d) { return Compound(d, n.DelegateDecl, [d[2]]); }
-        },
-    {"name": "event_decl", "symbols": [{"literal":"event"}, "_", "function_signature"], "postprocess": 
-        function (d) { return Compound(d, n.EventDecl, [d[2]]); }
-        },
+    {"name": "function_decl$ebnf$1$subexpression$1", "symbols": [(lexer.has("shared_token") ? {type: "shared_token"} : shared_token), "_"]},
+    {"name": "function_decl$ebnf$1", "symbols": ["function_decl$ebnf$1$subexpression$1"], "postprocess": id},
+    {"name": "function_decl$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "function_decl", "symbols": ["function_decl$ebnf$1", "function_signature"], "postprocess": function(d) { return d[1]; }},
     {"name": "constructor_decl", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "_", "parameter_list", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
         function (d) { return {
             ...Compound(d, n.ConstructorDecl, null),
@@ -1369,7 +1366,6 @@ var grammar = {
              ...Compound(d, n.EnumValue, null),
              name: Identifier(d[1]),
              documentation: d[0],
-             meta: d[6],
         }; }
         },
     {"name": "enum_decl$ebnf$2", "symbols": ["comment_documentation"], "postprocess": id},
@@ -1380,7 +1376,6 @@ var grammar = {
              name: Identifier(d[1]),
              value: d[5],
              documentation: d[0],
-             meta: d[6],
         }; }
         },
     {"name": "comment_documentation$ebnf$1", "symbols": []},

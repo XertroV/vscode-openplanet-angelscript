@@ -57,6 +57,8 @@ const lexer = moo.compile({
             delegate_token: "delegate",
             property_token: "property",
             mixin_token: "mixin",
+            shared_token: "shared",
+            funcdef_token: "funcdef",
             local_token: "local",
             event_token: "event",
             else_token: "else",
@@ -69,7 +71,7 @@ const lexer = moo.compile({
             bool_token: ['true', 'false'],
             nullptr_token: 'null',
             this_token: 'this',
-            // access_token: 'access',
+            access_token: 'access',
 
             // This is a hack to help disambiguate syntax.
             // A statement of `TArray<int> Var` might be parsed as
@@ -354,9 +356,10 @@ for_comma_expression_list -> _ for_comma_expression (_ "," _ for_comma_expressio
 for_comma_expression -> expression {% id %}
 for_comma_expression -> assignment {% id %}
 
-statement -> %for_token _ %lparen _ typename _ %identifier _ %colon optional_expression _ %rparen optional_statement {%
-    function (d) { return Compound(d, n.ForEachLoop, [d[4], Identifier(d[6]), d[9], d[12]]); }
-%}
+# seems to be `for(int a : ListOfA)` or something
+# statement -> %for_token _ %lparen _ typename _ %identifier _ %colon optional_expression _ %rparen optional_statement {%
+#     function (d) { return Compound(d, n.ForEachLoop, [d[4], Identifier(d[6]), d[9], d[12]]); }
+# %}
 
 statement -> %while_token _ %lparen optional_expression _ %rparen optional_statement {%
     function (d) { return Compound(d, n.WhileLoop, [d[3], d[6]]); }
@@ -381,7 +384,7 @@ global_statement -> %import_token _ %identifier (%dot %identifier):* %dot:? {%
         return Compound(d, n.ImportStatement, [CompoundIdentifier(tokens, null)]);
     }
 %}
-global_statement -> %import_token _ function_signature _ "from" _ (%dqstring | %sqstring) {%
+global_statement -> %import_token _ function_decl _ "from" _ (%dqstring | %sqstring) {%
     function (d) {
         return Compound(d, n.ImportFunctionStatement, [d[2], IdentifierFromString(d[6][0])]);
     }
@@ -389,8 +392,6 @@ global_statement -> %import_token _ function_signature _ "from" _ (%dqstring | %
 # global_statement -> settings_decl {% function (d) { console.dir({'settings_decl': d}); return null; } %}
 
 global_declaration -> function_decl {% id %}
-global_declaration -> delegate_decl {% id %}
-# global_declaration -> settings_decl {% id %}
 global_declaration -> (settings_decl _):? var_decl {%
     function (d) { /* console.log(d); */ return d[1]; }
 %}
@@ -401,26 +402,19 @@ global_declaration -> typename {%
         typename: d[0],
     }; }
 %}
-# global_declaration -> %struct_token _ %identifier {%
-#     function (d) { return {
-#         ...Compound(d, n.StructDefinition, null),
-#         name: Identifier(d[3]),
-#         macro: d[0],
-#     }}
-# %}
-global_declaration -> %class_token _ %identifier ( _ %colon):? (_ %identifier):? {%
+global_declaration -> (%shared_token _):? %class_token _ %identifier ( _ %colon):? (_ %identifier):? {%
     function (d) { return {
         ...Compound(d, n.ClassDefinition, null),
         name: Identifier(d[3]),
-        macro: d[0],
         superclass: d[5] ? Identifier(d[5][1]) : null,
+        is_shared: !!d[0],
     }}
 %}
-global_declaration -> %enum_token _ %identifier {%
+global_declaration -> (%shared_token _):? %enum_token _ %identifier {%
     function (d) { return {
         ...Compound(d, n.EnumDefinition, null),
         name: Identifier(d[3]),
-        macro: d[0],
+        is_shared: !!d[0],
     }}
 %}
 
@@ -455,9 +449,8 @@ global_declaration -> %namespace_token _ namespace_definition_name {%
 class_declaration -> (access_specifier _):? var_decl {%
     function (d) {
         return ExtendedCompound(d, {
-            ...d[2],
-            access: d[1] ? d[1][0] : null,
-            macro: d[0],
+            ...d[1],
+            access: d[0] ? d[0][0] : null,
         });
     }
 %}
@@ -466,9 +459,8 @@ class_declaration -> (access_specifier _):? typename {%
         return ExtendedCompound(d, {
             ...Compound(d, n.VariableDecl, null),
             name: null,
-            typename: d[2],
-            access: d[1] ? d[1][0] : null,
-            macro: d[0],
+            typename: d[1],
+            access: d[0] ? d[0][0] : null,
         });
     }
 %}
@@ -476,9 +468,8 @@ class_declaration -> (access_specifier _):? typename {%
 class_declaration -> (access_specifier _):? function_signature {%
     function (d) {
         return ExtendedCompound(d, {
-            ...d[2],
-            access: d[1] ? d[1][0] : null,
-            macro: d[0],
+            ...d[1],
+            access: d[0] ? d[0][0] : null,
         });
     }
 %}
@@ -486,9 +477,8 @@ class_declaration -> (access_specifier _):? function_signature {%
 class_declaration -> access_specifier _ function_signature {%
     function (d) {
         return ExtendedCompound(d, {
-            ...d[3],
+            ...d[2],
             access: d[0],
-            macro: d[2],
         });
     }
 %}
@@ -626,13 +616,8 @@ var_decl_multi_part -> %identifier (_ "=" _ expression):? {%
     }
 %}
 
-function_decl -> function_signature {% id %}
-delegate_decl -> "delegate" _ function_signature {%
-    function (d) { return Compound(d, n.DelegateDecl, [d[2]]); }
-%}
-event_decl -> "event" _ function_signature {%
-    function (d) { return Compound(d, n.EventDecl, [d[2]]); }
-%}
+function_decl -> (%shared_token _):? function_signature {% function(d) { return d[1]; } %}
+
 constructor_decl -> %identifier _ %lparen _ parameter_list _ %rparen {%
     function (d) { return {
         ...Compound(d, n.ConstructorDecl, null),
@@ -672,25 +657,6 @@ function_return -> typename {% id %}
 function_return -> %void_token {%
     function (d) { return null; }
 %}
-
-# ufunction_macro -> %ufunction _ %lparen _ macro_list _ %rparen _ {%
-#     function (d) { return Compound(d, n.Macro, d[4]); }
-# %}
-# uproperty_macro -> %uproperty _ %lparen _ macro_list _ %rparen _ {%
-#     function (d) { return Compound(d, n.Macro, d[4]); }
-# %}
-# uclass_macro -> %uclass _ %lparen _ macro_list _ %rparen _ {%
-#     function (d) { return Compound(d, n.Macro, d[4]); }
-# %}
-# ustruct_macro -> %ustruct _ %lparen _ macro_list _ %rparen _ {%
-#     function (d) { return Compound(d, n.Macro, d[4]); }
-# %}
-# uenum_macro -> %uenum _ %lparen _ macro_list _ %rparen _ {%
-#     function (d) { return Compound(d, n.Macro, d[4]); }
-# %}
-# umeta_macro -> _ %umeta _ %lparen _ macro_list _ %rparen {%
-#     function (d) { return Compound(d, n.Macro, d[4]); }
-# %}
 
 parameter_list -> null {%
     function(d) { return []; }
@@ -1342,7 +1308,6 @@ enum_decl -> comment_documentation:? %identifier {%
         ...Compound(d, n.EnumValue, null),
         name: Identifier(d[1]),
         documentation: d[0],
-        meta: d[6],
    }; }
 %}
 
@@ -1352,7 +1317,6 @@ enum_decl -> comment_documentation:? %identifier _ "=" _ expression {%
         name: Identifier(d[1]),
         value: d[5],
         documentation: d[0],
-        meta: d[6],
    }; }
 %}
 

@@ -12,11 +12,11 @@
         },
         {
             "name": "keyword.type.angelscript",
-            "match": "\\b(void|auto|const|property|final|override|mixin|local)\\b"
+            "match": "\\b(void|auto|const|property|final|override|mixin|local|shared|funcdef)\\b"
         },
         {
             "name": "keyword.code.angelscript",
-            "match": "\\b(nullptr|true|false|this|cast|super|NAME_None)\\b"
+            "match": "\\b(null|true|false|this|cast|super|NAME_None)\\b"
         },
         {
             "name": "keyword.access.angelscript",

@@ -528,6 +528,7 @@ function AddNamingConventionDiagnostics(asmodule : scriptfiles.ASModule, diagnos
 // check if the unreal type starts with 'A'
 function IsMaybeActorType(dbtype : typedb.DBType) : boolean
 {
+    return false; // unreal -> openplanet
     let checkType = dbtype;
     let depth = 0;
     while (checkType && depth < 100)
@@ -569,6 +570,8 @@ function IsMaybeActorType(dbtype : typedb.DBType) : boolean
 
 function AddScopeNamingConventionDiagnostics(scope : scriptfiles.ASScope, diagnostics : Array<Diagnostic>)
 {
+    return; // unreal -> openplanet
+
     // Check the naming convention for types
     let scopeType = scope.getDatabaseType();
     if (scopeType)

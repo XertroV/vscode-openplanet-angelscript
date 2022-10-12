@@ -20,6 +20,9 @@ import {
     TypeHierarchyItem, TypeHierarchyPrepareParams,
     TypeHierarchySupertypesParams, TypeHierarchySubtypesParams,
     WorkspaceSymbol,
+    ProtocolNotificationType0,
+    ShowMessageNotification,
+    MessageType,
 } from 'vscode-languageserver/node';
 import { TextDocument, TextDocumentContentChangeEvent } from 'vscode-languageserver-textdocument';
 
@@ -42,8 +45,13 @@ import * as inlinevalues from './inline_values';
 import * as colorpicker from './color_picker';
 import * as typehierarchy from './type_hierarchy';
 import * as fs from 'fs';
+import * as os from 'os';
+import * as toml from 'toml';
 import path = require('path');
-let glob = require('glob');
+import { NotificationType } from 'vscode-languageclient';
+// let glob = require('glob');
+import * as glob from 'glob';
+import * as AdmZip from 'adm-zip';
 
 // Create a connection for the server. The connection uses Node's IPC as a transport
 let connection: Connection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
@@ -63,6 +71,12 @@ let SetTypeTimeout = false;
 let UnrealTypesTimedOut = false;
 
 function load_openplanet() {
+    LoadOpenplanetJson();
+    typedb.AddOpenplanetIcons();
+    typedb.AddPrimitiveTypes(false);
+}
+
+function LoadOpenplanetJson() {
     const opDir = scriptfiles.GetScriptSettings().openplanetNextLocation;
     // const opHeader = path.join(opDir, 'Openplanet.h');
     const opCoreJson = path.join(opDir, 'OpenplanetCore.json');
@@ -87,10 +101,6 @@ function load_openplanet() {
             typedb.OnDirtyTypeCaches();
         }
     })
-
-    typedb.AddOpenplanetIcons();
-
-    typedb.AddPrimitiveTypes(false);
 }
 
 // function connect_unreal() {
@@ -283,8 +293,8 @@ connection.onInitialize((_params): InitializeResult => {
         }
     }
 
-
     connection.console.log("Workspace roots: " + Roots);
+    console.log("Workspace roots: " + Roots);
 
     //connection.console.log("RootPath: "+RootPath);
     //connection.console.log("RootUri: "+RootUri+" from "+_params.rootUri);
@@ -298,6 +308,7 @@ connection.onInitialize((_params): InitializeResult => {
             for (let file of files)
             {
                 let uri = getFileUri(file);
+                console.warn(`Loading files: ${getModuleName(uri)}, ${file}, ${uri}`);
                 let asmodule = scriptfiles.GetOrCreateModule(getModuleName(uri), file, uri);
                 LoadQueue.push(asmodule);
             }
@@ -312,6 +323,19 @@ connection.onInitialize((_params): InitializeResult => {
         {
             scriptlenses.LoadFileTemplates(files);
         });
+
+        // Read info.toml
+        glob(RootPath+"**/info.toml", null, function(err: any, files: string[]) {
+            console.dir(files);
+            if (err || files.length == 0)
+                connection.sendNotification(
+                    ShowMessageNotification.type,
+                    { message: "Could not find `info.toml`! Please reload extensions after you add it if you need imports.",
+                      type: MessageType.Warning
+                    });
+            else
+                LoadOpenplanetInfoToml(files[0]);
+        })
     }
 
     // setTimeout(DetectUnrealConnectionTimeout, 20000)
@@ -346,7 +370,8 @@ connection.onInitialize((_params): InitializeResult => {
                 resolveProvider: false
             },
             executeCommandProvider: {
-                commands: ["angelscript.openAssets"],
+                // commands: ["angelscript.openAssets"],
+                commands: [],
             },
             codeActionProvider: {
                 resolveProvider: true,
@@ -368,6 +393,61 @@ connection.onInitialize((_params): InitializeResult => {
         }
     }
 });
+
+function LoadOpenplanetInfoToml(file: string) {
+    fs.readFile(file, 'utf-8', (err, data) => {
+        let info = toml.parse(data);
+        if (!info.script) return;
+        LoadOpenplanetDependencies([...(info.script.dependencies || []), ...(info.script.optional_dependencies || [])]);
+    })
+}
+
+function LoadOpenplanetDependencies(deps: string[]) {
+    let opRoot = scriptfiles.GetScriptSettings().openplanetNextLocation;
+    let pluginsDir = path.join(opRoot, "Plugins");
+    glob(pluginsDir+"/*.op", (err, files) => {
+        files.forEach(pluginFile => {
+            // extract to a tmp dir
+            let pluginFileName = path.basename(pluginFile, ".op");
+            let tmpDir = path.join(os.tmpdir(), "vscode-op-as", pluginFileName);
+            console.info(`Clearing tmp directory: ${tmpDir}`);
+            fs.rmSync(tmpDir, {recursive: true, force: true});
+            fs.mkdirSync(tmpDir, {recursive: true});
+            console.info(`Extracting ${pluginFile} to ${tmpDir}`);
+            let archive = new AdmZip(pluginFile)
+            archive.extractAllTo(tmpDir, true)
+            LoadPluginAsDependency(tmpDir)
+        })
+    })
+    glob(pluginsDir+"/*/", (err, files) => {
+        console.log(`loading plugins in directories: ${JSON.stringify(files)}`);
+        files.forEach(LoadPluginAsDependency);
+    })
+}
+
+function LoadPluginAsDependency(pluginDir: string) {
+    fs.readFile(path.join(pluginDir, "info.toml"), 'utf-8', (err, data) => {
+        if (err) {
+            console.warn(`error loading plugin (${pluginDir}) as dependency: ${err}`);
+            return;
+        }
+        let info = toml.parse(data);
+        if (!info.script) return;
+        let filesToLoad: string[] = [...(info.script.exports || []), ...(info.script.shared_exports || [])];
+        filesToLoad.forEach(toLoad => {
+            let loadPath = path.join(pluginDir, toLoad);
+            let file = loadPath;
+            let uri = getFileUri(file);
+            // let file = `file://${loadPath.startsWith("/") ? "" : "/"}${loadPath}`;
+            console.warn(`Loading files: ${getModuleName(file)}, ${file}, ${uri}`);
+            let asmodule = scriptfiles.GetOrCreateModule(getModuleName(uri), file, uri);
+            // scriptfiles.UpdateModuleFromDisk(asmodule);
+            GetAndParseModule(uri);
+            DirtyAllDiagnostics();
+            typedb.OnDirtyTypeCaches();
+        })
+    })
+}
 
 function TickQueues()
 {

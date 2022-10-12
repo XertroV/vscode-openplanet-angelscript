@@ -924,7 +924,7 @@ function AddCompletionsFromKeywords(context : CompletionContext, completions : A
     {
         AddCompletionsFromKeywordList(context, [
             "delegate", "event", "class",
-            "property"
+            "property", "shared"
         ], completions);
 
         if (CanCompleteTo(context, "UCLASS"))
