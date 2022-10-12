@@ -3150,6 +3150,8 @@ function getBinaryOperatorOverloadMethod(operator : any) : string
         case ">>>": return "opUShr";
         case "==": return "BOOLEAN";
         case "!=": return "BOOLEAN";
+        case "is": return "BOOLEAN";
+        case "!is": return "BOOLEAN";
         case "<": return "BOOLEAN";
         case ">": return "BOOLEAN";
         case ">=": return "BOOLEAN";
@@ -4874,7 +4876,6 @@ function DetectIdentifierSymbols(scope : ASScope, statement : ASStatement, node 
             let usedVariable = checkscope.variablesByName.get(node.value);
             if (usedVariable)
             {
-                console.log(`DetectIdentifierSymbols allowproperties > isinfunctionbody > usedVariable: ${usedVariable.name}`)
                 if (!parseContext.isRootIdentifier && (!parseContext.isWriteAccess || usedVariable.isReference()))
                     usedVariable.isUnused = false;
                 usedVariable.hasAnyUsages = true;
@@ -5358,10 +5359,6 @@ function DetectSymbolsInType(scope : ASScope, statement : ASStatement, inSymbol 
         dbtype = inSymbol;
     else if (inSymbol instanceof typedb.DBProperty) {
         dbtype = typedb.LookupType(inSymbol.namespace, inSymbol.typename);
-        if (dbtype) {
-            console.info(`DetectSymbolsInType inSymbol : DBProperty. ${JSON.stringify(inSymbol)}`)
-            console.trace(`dbtype: ${dbtype.name}, ${dbtype.getDisplayName()}`)
-        }
     }
 
     if (!dbtype)

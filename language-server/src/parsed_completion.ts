@@ -2148,7 +2148,7 @@ function GenerateCompletionContext(asmodule : scriptfiles.ASModule, offset : num
 
         if (context.leftType && !context.expectedType)
         {
-            if (context.rightOperator == "==" || context.rightOperator == "=" || context.rightOperator == "!=")
+            if (context.rightOperator == "==" || context.rightOperator == "=" || context.rightOperator == "!=") // || context.rightOperator == "is" || context.rightOperator == "!is")
             {
                 // Comparison operators that expect the same type
                 context.expectedType = context.leftType;

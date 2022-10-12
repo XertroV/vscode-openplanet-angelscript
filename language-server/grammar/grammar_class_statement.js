@@ -29,7 +29,7 @@ const lexer = moo.compile({
     op_binary_logic: ['&&', '||'],
     op_binary_sum: ['+', '-'],
     op_binary_product: ['*', '/', '%'],
-    op_binary_compare: ["==", "!=", "<=", ">=", ">>", "<", "<<" ,">", ">>"],
+    op_binary_compare: ["==", "!=", "<=", ">=", ">>", "<", "<<" ,">", ">>", "is", "!is"],
     op_binary_bitwise: ["|", "&", "^"],
     op_assignment: "=",
     op_unary: ["!", "~"],
