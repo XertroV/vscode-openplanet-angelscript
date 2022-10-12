@@ -2,7 +2,7 @@
     "name": "openplanet-angelscript",
     "displayName": "Openplanet Angelscript",
     "description": "Language Server and Debug Adapter for use with the Openplanet Angelscript",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "publisher": "XertroV",
     "engines": {
         "vscode": "^1.65.0"

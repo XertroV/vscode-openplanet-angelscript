@@ -402,11 +402,11 @@ global_declaration -> typename {%
         typename: d[0],
     }; }
 %}
-global_declaration -> (%shared_token _):? %class_token _ %identifier ( _ %colon):? (_ %identifier):? {%
+global_declaration -> (%shared_token _):? %class_token _ (%atsign):? %identifier ( _ %colon):? (_ %identifier):? {%
     function (d) { return {
         ...Compound(d, n.ClassDefinition, null),
-        name: Identifier(d[3]),
-        superclass: d[5] ? Identifier(d[5][1]) : null,
+        name: Identifier(d[4]),
+        superclass: d[6] ? Identifier(d[6][1]) : null,
         is_shared: !!d[0],
     }}
 %}
