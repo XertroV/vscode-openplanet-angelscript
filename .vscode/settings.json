@@ -19,6 +19,7 @@
 	"editor.tabSize": 4,
     "editor.detectIndentation": false,
     "cSpell.words": [
+        "Angelscript",
         "funcdef",
         "Openplanet",
         "wstring"
