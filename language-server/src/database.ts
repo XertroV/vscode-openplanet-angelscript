@@ -634,7 +634,7 @@ export class DBType implements DBSymbol
             for(let v in input.values) {
                 let val = new DBProperty();
                 val.name = v;
-                val.typename = (this.ns ? (this.ns + "::") : "") + this.name;
+                val.typename = this.name; // (this.ns ? (this.ns + "::") : "") + // todo: look for render name function
                 this.addSymbol(val);
             }
         }
@@ -747,6 +747,8 @@ export class DBType implements DBSymbol
     {
         if (!this.supertype)
             return null;
+        // console.warn(`getSuperType(): ${this.supertype} -- found: ${LookupType(this.namespace, this.supertype)?.name}`);
+        // console.trace('supertype call')
         return LookupType(this.namespace, this.supertype);
     }
 

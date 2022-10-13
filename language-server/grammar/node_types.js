@@ -49,8 +49,10 @@ module.exports = {
     StructDefinition: indexed ? i++ : "StructDefinition",
     ClassDefinition: indexed ? i++ : "ClassDefinition",
     EnumDefinition: indexed ? i++ : "EnumDefinition",
+    ArrayInline: indexed ? i++ : "ArrayInline",
     AssetDefinition: indexed ? i++ : "AssetDefinition",
     NamespaceDefinition: indexed ? i++ : "NamespaceDefinition",
+    FuncdefDefinition: indexed ? i++ : "FuncdefDefinition",
 
     VariableDecl: indexed ? i++ : "VariableDecl",
     VariableDeclMulti: indexed ? i++ : "VariableDeclMulti",
@@ -73,6 +75,7 @@ module.exports = {
     Macro: indexed ? i++ : "Macro",
     MacroArgument: indexed ? i++ : "MacroArgument",
 
+    ArrayValueList: indexed ? i++ : "ArrayValueList",
     EnumValueList: indexed ? i++ : "EnumValueList",
     EnumValue: indexed ? i++ : "EnumValue",
 

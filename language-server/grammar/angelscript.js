@@ -16,8 +16,8 @@ const lexer = moo.compile({
     rparen:  ')',
     lsqbracket:  '[',
     rsqbracket:  ']',
-    //lbrace:  '{',
-    //rbrace:  '}',
+    lbrace:  '{',
+    rbrace:  '}',
     dot: ".",
     semicolon: ";",
     ns: "::",
@@ -29,7 +29,7 @@ const lexer = moo.compile({
     op_binary_logic: ['&&', '||'],
     op_binary_sum: ['+', '-'],
     op_binary_product: ['*', '/', '%'],
-    op_binary_compare: ["==", "!=", "<=", ">=", ">>", "<", "<<" ,">", ">>", "is", "!is"],
+    op_binary_compare: ["==", "!=", "<=", ">=", ">>", "<", "<<" ,">", ">>", "is ", "!is "], // add spaces around `is` to avoid detecting `a isb` as `a is b`
     op_binary_bitwise: ["|", "&", "^"],
     op_assignment: "=",
     op_unary: ["!", "~"],
@@ -64,7 +64,7 @@ const lexer = moo.compile({
             shared_token: "shared",
             funcdef_token: "funcdef",
             local_token: "local",
-            event_token: "event",
+            // event_token: "event",
             else_token: "else",
             while_token: "while",
             for_token: "for",
@@ -410,14 +410,15 @@ var grammar = {
     {"name": "global_declaration$ebnf$4$subexpression$1", "symbols": ["_", (lexer.has("colon") ? {type: "colon"} : colon)]},
     {"name": "global_declaration$ebnf$4", "symbols": ["global_declaration$ebnf$4$subexpression$1"], "postprocess": id},
     {"name": "global_declaration$ebnf$4", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "global_declaration$ebnf$5$subexpression$1", "symbols": ["_", (lexer.has("identifier") ? {type: "identifier"} : identifier)]},
+    {"name": "global_declaration$ebnf$5$subexpression$1", "symbols": ["_", "typename_identifier"]},
     {"name": "global_declaration$ebnf$5", "symbols": ["global_declaration$ebnf$5$subexpression$1"], "postprocess": id},
     {"name": "global_declaration$ebnf$5", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "global_declaration", "symbols": ["global_declaration$ebnf$2", (lexer.has("class_token") ? {type: "class_token"} : class_token), "_", "global_declaration$ebnf$3", (lexer.has("identifier") ? {type: "identifier"} : identifier), "global_declaration$ebnf$4", "global_declaration$ebnf$5"], "postprocess": 
         function (d) { return {
             ...Compound(d, n.ClassDefinition, null),
             name: Identifier(d[4]),
-            superclass: d[6] ? Identifier(d[6][1]) : null,
+            // superclass: d[6] ? Identifier(d[6][1]) : null,
+            superclass: d[6] ? d[6][1] : null,
             is_shared: !!d[0],
         }}
         },
@@ -428,6 +429,16 @@ var grammar = {
         function (d) { return {
             ...Compound(d, n.EnumDefinition, null),
             name: Identifier(d[3]),
+            is_shared: !!d[0],
+        }}
+        },
+    {"name": "global_declaration$ebnf$7$subexpression$1", "symbols": [(lexer.has("shared_token") ? {type: "shared_token"} : shared_token), "_"]},
+    {"name": "global_declaration$ebnf$7", "symbols": ["global_declaration$ebnf$7$subexpression$1"], "postprocess": id},
+    {"name": "global_declaration$ebnf$7", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "global_declaration", "symbols": ["global_declaration$ebnf$7", (lexer.has("funcdef_token") ? {type: "funcdef_token"} : funcdef_token), "_", "function_signature"], "postprocess": 
+        function (d) { return {
+            ...Compound(d, n.FuncdefDefinition, [d[3]]),
+            name: d[3].name,
             is_shared: !!d[0],
         }}
         },
@@ -829,6 +840,10 @@ var grammar = {
         }
         },
     {"name": "expression", "symbols": ["expr_ternary"], "postprocess": id},
+    {"name": "expression", "symbols": ["expr_array"], "postprocess": id},
+    {"name": "expr_array", "symbols": [(lexer.has("lbrace") ? {type: "lbrace"} : lbrace), "argumentlist", "_", (lexer.has("rbrace") ? {type: "rbrace"} : rbrace)], "postprocess": 
+        function(d) { return Compound(d, n.ArrayInline, d[1] ? [d[1]] : []); }
+        },
     {"name": "expr_ternary", "symbols": ["expr_binary_logic", "_", (lexer.has("ternary") ? {type: "ternary"} : ternary), "_", "expr_ternary", "_", (lexer.has("colon") ? {type: "colon"} : colon), "_", "expr_ternary"], "postprocess": 
         function (d) { return Compound(d, n.TernaryOperation, [d[0], d[4], d[8]]); }
         },
@@ -1107,6 +1122,18 @@ var grammar = {
             is_reference: d[2] != null,
         });}
         },
+    {"name": "non_const_typename$ebnf$1", "symbols": [(lexer.has("atsign") ? {type: "atsign"} : atsign)], "postprocess": id},
+    {"name": "non_const_typename$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "non_const_typename$ebnf$2", "symbols": ["ref_qualifiers"], "postprocess": id},
+    {"name": "non_const_typename$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "non_const_typename", "symbols": ["unqualified_typename", "non_const_typename$ebnf$1", "non_const_typename$ebnf$2"], "postprocess": 
+        function (d) { return ExtendedCompound(d, {
+            ...d[0],
+            const_qualifier: null,
+            ref_qualifier: d[2],
+            is_reference: d[1] != null,
+        });}
+        },
     {"name": "unqualified_typename", "symbols": ["typename_identifier"], "postprocess": 
         function (d) { return {
             ...Compound(d, n.Typename, null),
@@ -1126,7 +1153,7 @@ var grammar = {
             };
         }
         },
-    {"name": "template_typename", "symbols": ["template_subtype_single", (lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), (lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": 
+    {"name": "template_typename", "symbols": ["template_subtype_single", "_", (lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), "_", (lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": 
         function (d) {
             let typename = "array<" + d[0][0].value + ">";
             return {
@@ -1195,7 +1222,7 @@ var grammar = {
             return node;
         }
         },
-    {"name": "template_subtype_single", "symbols": ["typename"], "postprocess": 
+    {"name": "template_subtype_single", "symbols": ["non_const_typename"], "postprocess": 
         function (d) {
             return [d[0]];
         }
@@ -1344,6 +1371,20 @@ var grammar = {
         }
         },
     {"name": "case_label", "symbols": ["namespace_access"], "postprocess": id},
+    {"name": "array_statement$ebnf$1", "symbols": []},
+    {"name": "array_statement$ebnf$1$subexpression$1", "symbols": ["_", (lexer.has("comma") ? {type: "comma"} : comma), "_", "expression"]},
+    {"name": "array_statement$ebnf$1", "symbols": ["array_statement$ebnf$1", "array_statement$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "array_statement", "symbols": ["expression", "array_statement$ebnf$1"], "postprocess": 
+        function (d) {
+            let result = [d[0]];
+            if (d[1]) {
+                for (let sub of d[1]) {
+                    result.push(sub[3]);
+                }
+            }
+            return Compound(d, n.ArrayValueList, result);
+        }
+        },
     {"name": "enum_statement$ebnf$1", "symbols": []},
     {"name": "enum_statement$ebnf$1$subexpression$1", "symbols": ["_", (lexer.has("comma") ? {type: "comma"} : comma), "enum_decl"]},
     {"name": "enum_statement$ebnf$1", "symbols": ["enum_statement$ebnf$1", "enum_statement$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},

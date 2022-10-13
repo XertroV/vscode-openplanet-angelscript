@@ -8,7 +8,7 @@ import * as os from 'os';
 import * as typedb from './database';
 import { ProcessScriptTypeGeneratedCode } from "./generated_code";
 import path = require("path");
-//import { performance } from "perf_hooks";
+import { performance } from "perf_hooks";
 
 export const getAccPrefix = "get_";
 export const setAccPrefix = "set_";
@@ -17,16 +17,19 @@ let grammar_statement = nearley.Grammar.fromCompiled(require("../grammar/grammar
 let grammar_class_statement = nearley.Grammar.fromCompiled(require("../grammar/grammar_class_statement.js"));
 let grammar_global_statement = nearley.Grammar.fromCompiled(require("../grammar/grammar_global_statement.js"));
 let grammar_enum_statement = nearley.Grammar.fromCompiled(require("../grammar/grammar_enum_statement.js"));
+let grammar_array_statement = nearley.Grammar.fromCompiled(require("../grammar/grammar_array_statement.js"));
 
 let parser_statement = new nearley.Parser(grammar_statement);
 let parser_class_statement = new nearley.Parser(grammar_class_statement);
 let parser_global_statement = new nearley.Parser(grammar_global_statement);
 let parser_enum_statement = new nearley.Parser(grammar_enum_statement);
+let parser_array_statement = new nearley.Parser(grammar_array_statement);
 
 let parser_statement_initial = parser_statement.save();
 let parser_class_statement_initial = parser_class_statement.save();
 let parser_global_statement_initial = parser_global_statement.save();
 let parser_enum_statement_initial = parser_enum_statement.save();
+let parser_array_statement_initial = parser_array_statement.save();
 
 export interface ASSettings
 {
@@ -73,7 +76,8 @@ export enum ASScopeType
     Function,
     Enum,
     Code,
-    Namespace
+    Namespace,
+    ArrayValues
 }
 
 export function ASScopeTypeToString(t: ASScopeType): string {
@@ -84,6 +88,7 @@ export function ASScopeTypeToString(t: ASScopeType): string {
     if (t == ASScopeType.Enum) return "ASScopeType.Enum";
     if (t == ASScopeType.Code) return "ASScopeType.Code";
     if (t == ASScopeType.Namespace) return "ASScopeType.Namespace";
+    if (t == ASScopeType.ArrayValues) return "ASScopeType.ArrayValues";
     return "<unknown>";
 }
 
@@ -795,7 +800,7 @@ export function ParseModule(module : ASModule, debug : boolean = false)
     if (module.parsed)
         return;
 
-    //let startTime = performance.now()
+    let startTime = performance.now()
 
     typedb.OnDirtyTypeCaches();
     module.parsed = true;
@@ -814,9 +819,9 @@ export function ParseModule(module : ASModule, debug : boolean = false)
     // Traverse syntax trees to lift out functions, variables and imports during this first parse step
     GenerateTypeInformation(module.rootscope);
 
-    //let parseTime = performance.now() - startTime;
-    //if (parseTime > 50)
-        //console.log("Parse "+module.modulename+" " + (parseTime) + " ms - "+module.loadedFromCacheCount+" cached, "+module.parsedStatementCount+" parsed")
+    let parseTime = performance.now() - startTime;
+    if (parseTime > 50)
+        console.log("Parse "+module.modulename+" " + (parseTime) + " ms - "+module.loadedFromCacheCount+" cached, "+module.parsedStatementCount+" parsed")
 }
 
 // Parse the specified module and all its unparsed dependencies
@@ -967,12 +972,14 @@ function EnsureTypeHierarchyFullyParsed(dbtype : typedb.DBType) : boolean
     let newTypesLoaded = false;
 
     let superTypeName = dbtype.supertype;
+    console.log(`super type name: ${superTypeName}`);
     let superNamespace = dbtype.namespace;
     while (superTypeName)
     {
         let superType = typedb.LookupType(superNamespace, superTypeName);
         if (superType)
         {
+            console.log(`Found superType: ${superType.name} via type: ${dbtype.name}`);
             if (superType.declaredModule)
             {
                 let superModule = GetModule(superType.declaredModule);
@@ -1933,7 +1940,10 @@ function GenerateTypeInformation(scope : ASScope)
 
             let classdef = scope.previous.ast;
             let dbtype = AddDBType(scope, classdef.name.value);
-            dbtype.supertype = classdef.superclass ? classdef.superclass.value : "UObject";
+            if (classdef.superclass) {
+                console.log(`class ${dbtype.name} has supertype: ${JSON.stringify(classdef.superclass)}`);
+            }
+            dbtype.supertype = classdef.superclass ? classdef.superclass.value : null;
             if (classdef.documentation)
                 dbtype.documentation = typedb.FormatDocumentationComment(classdef.documentation);
 
@@ -3083,6 +3093,16 @@ export function ResolveTypeFromExpression(scope : ASScope, node : any) : typedb.
                 return right_type;
             return null;
         }
+        // { X, Y, Z } -- array
+        case node_types.ArrayInline: {
+            let argList = node.children[0];
+            let elements = argList.children;
+            let type: typedb.DBType;
+            for (let i = 0; !type && i < elements.length; i++) {
+                type = ResolveTypeFromExpression(scope, node.children[i]);
+            }
+            return type;
+        }
         break;
     }
     return null;
@@ -3966,6 +3986,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
 
                 if (insideType && node.children[0])
                 {
+                    // todo: no Super namespace in openplanet
                     if (node.children[0].value == "Super")
                     {
                         parentType = scope.getParentType().getSuperType();
@@ -5707,7 +5728,9 @@ function ParseScopeIntoStatements(scope : ASScope)
 
     let depth_brace = 0;
     let depth_paren = 0;
+    let tmp_depth_paren;
     let scope_start = -1;
+    let prior_scope_start = -1;
 
     let statement_start = scope.start_offset;
     let log_start = statement_start;
@@ -5719,6 +5742,7 @@ function ParseScopeIntoStatements(scope : ASScope)
     let in_dq_string = false;
     let in_sq_string = false;
     let in_escape_sequence = false;
+    let in_array = false;
 
     let cur_element : ASElement = null;
     function finishElement(element : ASElement)
@@ -5731,7 +5755,7 @@ function ParseScopeIntoStatements(scope : ASScope)
         cur_element = element;
     }
 
-    function finishStatement(endsWithSemicolon : boolean)
+    function genHypotheticalStatement(endsWithSemicolon : boolean)
     {
         if (statement_start != cur_offset)
         {
@@ -5743,12 +5767,19 @@ function ParseScopeIntoStatements(scope : ASScope)
                 statement.start_offset = statement_start;
                 statement.end_offset = cur_offset;
                 statement.endsWithSemicolon = endsWithSemicolon;
-
-                scope.statements.push(statement);
-                statement.rawIndex = scope.module.rawStatements.length;
-                scope.module.rawStatements.push(statement);
-                finishElement(statement);
+                return statement;
             }
+        }
+    }
+
+    function finishStatement(endsWithSemicolon : boolean)
+    {
+        let statement = genHypotheticalStatement(endsWithSemicolon);
+        if (statement) {
+            scope.statements.push(statement);
+            statement.rawIndex = scope.module.rawStatements.length;
+            scope.module.rawStatements.push(statement);
+            finishElement(statement);
         }
 
         statement_start = cur_offset+1;
@@ -5854,13 +5885,19 @@ function ParseScopeIntoStatements(scope : ASScope)
         // We could be starting a scope
         if (curchar == '{')
         {
-            if (depth_brace == 0)
-            {
+            if (depth_brace == 0 && !CheckIfInlineArray(scope, genHypotheticalStatement(false), cur_offset)) {
+            // can only start a scope outside parens
+            // todo: helps with some arrays `void f(string[] blah = {})` to check depth_paren, but not all `string[] a = {};`
+                // prior_scope_start = scope_start;
+                // tmp_depth_paren = depth_paren;
+
                 finishStatement(false);
                 scope_start = cur_offset;
 
                 // Reset paren depth, must be an error if we still have parens open
                 depth_paren = 0;
+            } else {
+                in_array = true;
             }
 
             depth_brace += 1;
@@ -5874,7 +5911,7 @@ function ParseScopeIntoStatements(scope : ASScope)
             }
 
             depth_brace -= 1;
-            if (depth_brace == 0)
+            if (depth_brace == 0 && !in_array)
             {
                 // Create a subscope for this content
                 let subscope = new ASScope;
@@ -5888,8 +5925,51 @@ function ParseScopeIntoStatements(scope : ASScope)
                 scope_start = null;
 
                 restartStatement();
+                // try {
+                //     subscope.previous = cur_element;
+                //     if (cur_element instanceof ASStatement)
+                //         ParseStatement(scope.scopetype, cur_element);
+                //     ParseScopeIntoStatements(subscope);
+                //     ParseAllStatements(subscope);
+                //     // if we're an array, then we'll have only 1 statement and a parse error
+                //     if (subscope.statements.length == 1 && subscope.statements[0].parseError) {
+                //         // console.log(`>> Checking for array... ${subscope.statements[0].content}`)
+                //         // console.log(`  >> prev content: ${(subscope.previous as ASStatement)?.content}`)
+                //         ParseStatement(ASScopeType.ArrayValues, subscope.statements[0]);
+                //         if (!subscope.statements[0].parseError)
+                //             throw "GotArray";
+                //     }
+                //     // recreate subscope
+                //     subscope = new ASScope;
+                //     subscope.parentscope = scope;
+                //     subscope.module = scope.module;
+                //     subscope.start_offset = scope_start+1;
+                //     subscope.end_offset = cur_offset;
+                //     finishElement(subscope);
+                //     scope.scopes.push(subscope);
+                //     scope_start = null;
+
+                //     restartStatement();
+
+                // } catch (err) {
+                //     if (err == "GotArray") {
+                //         // reset start of scope
+                //         console.log(`>> Found array?! ${subscope.statements[0].content}`);
+                //         console.log(`  >> prev ast type: ${(subscope.previous as ASStatement)?.ast?.type}`)
+                //         scope_start = prior_scope_start;
+                //         depth_paren = tmp_depth_paren;
+                //     } else {
+                //         throw err;
+                //     }
+                // }
+            } else if (depth_brace == 0 && in_array) {
+                in_array = false;
             }
         }
+
+        // we definitely aren't in an array if we hit a semicolon
+        if (curchar == ';')
+            in_array = false;
 
         // Skip character if we're in a subscope
         if (depth_brace != 0)
@@ -5938,17 +6018,184 @@ function ParseScopeIntoStatements(scope : ASScope)
         ParseScopeIntoStatements(subscope);
 }
 
+function CheckIfInlineArray(scope: ASScope, cur_element: ASElement, cur_offset: number): boolean {
+    // first char always "{"
+    if (scope.module.content[cur_offset] != "{") throw "FirstCharShouldBeLeftBrace";
+    if (scope.scopetype == ASScopeType.Enum) return false;  // probs doesn't do anything, but wont hurt
+    if (cur_element instanceof ASStatement) {
+        // if in a function call `tostring({'asdf'})` we'll get a parse error => no .ast on the prior element (cur_element)
+        // otherwise it's part of a variable decl `string[] test = {};`
+        if (cur_element.ast && cur_element.ast.type != node_types.VariableDecl) {
+            console.warn(`CheckIfInlineArray bailing b/c of cur_element.ast.type: ${cur_element.ast.type}`);
+            return false;
+        }
+        // console.log(`cur_element.content: ${cur_element.content}`);
+        if (cur_element.content.trimStart().startsWith("enum ") || cur_element.content.includes(" enum ")) return false;
+    }
+
+
+    let depth_brace = 0;
+    let in_dq_string = false;
+    let in_sq_string = false;
+    let in_escape_sequence = false;
+    let in_preprocessor_directive = false;
+    let in_line_comment = false;
+    let in_block_comment = false;
+
+    for (let p = cur_offset; p < scope.end_offset; p++) {
+        let curchar = scope.module.content[p];
+
+        // Start the next line
+        if (curchar == '\n')
+        {
+            if (in_preprocessor_directive)
+                in_preprocessor_directive = false;
+
+            if (in_line_comment)
+                in_line_comment = false;
+
+            continue;
+        }
+
+        if (in_line_comment)
+            continue;
+
+        if (in_block_comment)
+        {
+            if (curchar == '/' && scope.module.content[p-1] == '*')
+            {
+                in_block_comment = false;
+            }
+            continue;
+        }
+
+        if (in_sq_string)
+        {
+            if (!in_escape_sequence && curchar == '\'')
+            {
+                in_sq_string = false;
+            }
+
+            if (curchar == '\\')
+                in_escape_sequence = !in_escape_sequence;
+            else
+                in_escape_sequence = false;
+            continue;
+        }
+
+        if (in_dq_string)
+        {
+            if (!in_escape_sequence && curchar == '"')
+            {
+                in_dq_string = false;
+            }
+
+            if (curchar == '\\')
+                in_escape_sequence = !in_escape_sequence;
+            else
+                in_escape_sequence = false;
+            continue;
+        }
+
+        if (in_preprocessor_directive)
+            continue;
+
+        // String Literals
+        if (curchar == '"')
+        {
+            in_dq_string = true;
+            continue;
+        }
+
+        if (curchar == '\'')
+        {
+            in_sq_string = true;
+            continue;
+        }
+
+        // Comments
+        if (curchar == '/' && cur_offset+1 < scope.end_offset && scope.module.content[cur_offset+1] == '/')
+        {
+            in_line_comment = true;
+            continue;
+        }
+
+        if (curchar == '/' && cur_offset+1 < scope.end_offset && scope.module.content[cur_offset+1] == '*')
+        {
+            in_block_comment = true;
+            continue;
+        }
+
+        // Preprocessor directives
+        if (curchar == '#' && depth_brace == 0)
+        {
+            in_preprocessor_directive = true;
+            continue;
+        }
+
+        // braces
+        if (curchar == "{") {
+            depth_brace++;
+        }
+        else if (curchar == "}") {
+            depth_brace--;
+            if (depth_brace == 0) {
+                return true;
+            }
+        }
+
+        if (curchar == ";")
+            return false;  // can't have a naked ';' inside an inline array
+    }
+    return false;
+}
+
+function ScopeStatementsToString(scope: ASScope) {
+    return scope.statements.map(s => s.content).join(" | ")
+}
+
 function DetermineScopeType(scope : ASScope)
 {
+    // if (scope.statements.length == 1 && !scope.statements[0].endsWithSemicolon && scope.statements[0].content.startsWith('name')) {
+    //     console.warn(`array values scope candidate: ${ScopeStatementsToString(scope)}
+    // scope.statements.length: ${scope.statements.length}
+    // scope.parentscope.scopetype: ${ASScopeTypeToString(scope.parentscope?.scopetype)}
+    // scope.previous.scopetype: ${ASScopeTypeToString((scope.previous as any)?.scopetype)}
+    // scope.previous && scope.previous instanceof ASStatement: ${scope.previous && scope.previous instanceof ASStatement}
+    // scope.previous.content: ${(scope.previous as ASStatement)?.content}
+    // scope.previous.parsedType: ${ASScopeTypeToString((scope.previous as ASStatement)?.parsedType)}
+    // scope.previous.endsWithSemicolon: ${(scope.previous as ASStatement)?.endsWithSemicolon}
+    // scope.previous.ast: ${(scope.previous as ASStatement)?.ast}
+    // scope.previous.parseError: ${(scope.previous as ASStatement)?.parseError}
+    // scope.previous.end_offset: ${(scope.previous as ASStatement)?.end_offset}
+    // scope.previous.parsed: ${(scope.previous as ASStatement)?.parsed}
+    // scope.previous.rawIndex: ${(scope.previous as ASStatement)?.rawIndex}
+    //     `);
+    // }
+
     // Determine what the type of this scope is based on the previous statement
     if (scope.parentscope)
     {
+        // console.warn(`parentscope.scopetype: ${ASScopeTypeToString(scope.parentscope.scopetype)} (code is type ${ASScopeType.Code})\nContent: ${scope.declaration?.content}`);
+
         // Scopes underneath a function are never anything but code scopes
         if (scope.parentscope.scopetype == ASScopeType.Function)
         {
             scope.scopetype = ASScopeType.Code;
             return;
         }
+        // might be a list
+        // if (scope.parentscope.scopetype == ASScopeType.Code) {
+        //     scope.scopetype = ASScopeType.ArrayValues;
+        //     console.warn(`Setting scope type to ArrayValues: ${scope.start_offset}, ${scope.end_offset} ${ScopeStatementsToString(scope)}`);
+        //     return;
+        // }
+
+        // if (scope.statements.every(s => !s.endsWithSemicolon)) {
+        //     scope.scopetype = ASScopeType.ArrayValues;
+        //     console.warn(`statements don't end with semicolons: Setting scope type to ArrayValues: ${scope.start_offset}, ${scope.end_offset} ${ScopeStatementsToString(scope)}`);
+        //     return;
+        // }
 
         // Default to the paren't scope type
         scope.scopetype = scope.parentscope.scopetype;
@@ -5992,9 +6239,31 @@ function DetermineScopeType(scope : ASScope)
             {
                 scope.scopetype = ASScopeType.Function;
             }
+            // else if (ast_type == node_types.VariableDecl) {
+            //     scope.scopetype = ASScopeType.ArrayValues;
+            // }
             // else if (ast_type == node_types.AssetDefinition)
             // {
             //     scope.scopetype = ASScopeType.Function;
+            // }
+        } else {
+            // here: scope.prev is an ASStatement and prev.ast is null
+            // when we are in a list, previous always exists as ASStatement, but prev.ast does not (is null)
+            // ---
+            // also: prev statement doesn't end in semicolon, scopetype can be Global, Class, or Function
+            // prev.parsedType == scope.parentscope.type
+            // prev.parseError == true
+
+            // let isArray = !scope.previous.endsWithSemicolon
+            //             && scope.previous.parseError
+            //             && [ASScopeType.ArrayValues, ASScopeType.Class, ASScopeType.Function, ASScopeType.Global, ASScopeType.Namespace].includes(scope.previous.parsedType)
+            //             ;
+            // if (isArray)
+            //     scope.scopetype = ASScopeType.ArrayValues;
+
+            // if (ast_type == node_types.ArrayInline) {
+            //     scope.scopetype = ASScopeType.ArrayValues;
+            //     console.warn('Set scope to arrayavlues b/c type was ArrayInline');
             // }
         }
     }
@@ -6066,6 +6335,14 @@ function ParseAllStatements(scope : ASScope, debug : boolean = false)
         if (!fromCache)
         {
             ParseStatement(scope.scopetype, statement, debug);
+    //         try {
+    //         } catch (err) {
+    //             console.warn(`error while parsing:
+    // scopeType: ${ASScopeTypeToString(scope.scopetype)}
+    // statement: ${statement.content}
+    //             `)
+    //             throw err;
+    //         }
             scope.module.parsedStatementCount += 1;
         }
         else
@@ -6166,8 +6443,9 @@ function ParseAllStatements(scope : ASScope, debug : boolean = false)
     }
 
     // Also parse any subscopes we detected
-    for (let subscope of scope.scopes)
+    for (let subscope of scope.scopes) {
         ParseAllStatements(subscope, debug)
+    }
 }
 
 function SplitStatementBasedOnEdit(content : string, editOffset : number, allowNoSplit : boolean) : Array<string>
@@ -6373,6 +6651,10 @@ export function ParseStatement(scopetype : ASScopeType, statement : ASStatement,
             parser = parser_enum_statement;
             parser.restore(parser_enum_statement_initial);
         break;
+        case ASScopeType.ArrayValues:
+            parser = parser_array_statement;
+            parser.restore(parser_array_statement_initial);
+        break;
         case ASScopeType.Function:
         case ASScopeType.Code:
             parser = parser_statement;
@@ -6387,17 +6669,35 @@ export function ParseStatement(scopetype : ASScopeType, statement : ASStatement,
     }
     catch (error)
     {
-        // Debugging for unparseable statements
-        if (debug)
-        {
-            console.log("Error Parsing Statement: ");
-            console.log(statement.content);
-            console.log(error);
-            throw "ParseError";
+        let useOrigError = true;
+        if (scopetype != ASScopeType.Enum) {
+            let prev_parser = parser;
+            try {
+                parser = parser_array_statement;
+                parser.restore(parser_array_statement_initial);
+                parser.feed(statement.content);
+                useOrigError = false;  // we succeeded parsing it as an array statement
+                console.log(`Successfully parsed as array when unable to otherwise: ${statement.content}`);
+            } catch (err) {
+                // do nothing, throw original
+                parser = prev_parser;
+            }
         }
 
-        parseError = true;
-        statement.parseError = true;
+        if (useOrigError) {
+            // Debugging for unparseable statements
+            if (debug)
+            {
+                console.log("Error Parsing Statement: ");
+                console.log(statement.content);
+                console.log(ASScopeTypeToString(statement.parsedType));
+                console.log(error);
+                throw "ParseError";
+            }
+
+            parseError = true;
+            statement.parseError = true;
+        }
     }
 
     if (!parseError)

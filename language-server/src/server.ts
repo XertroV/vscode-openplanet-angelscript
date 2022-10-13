@@ -338,8 +338,6 @@ connection.onInitialize((_params): InitializeResult => {
         })
     }
 
-    // setTimeout(DetectUnrealConnectionTimeout, 20000)
-
     return {
         capabilities: {
             // Tell the client that the server works in FULL text document sync mode
@@ -405,49 +403,97 @@ function LoadOpenplanetInfoToml(file: string) {
 function LoadOpenplanetDependencies(deps: string[]) {
     let opRoot = scriptfiles.GetScriptSettings().openplanetNextLocation;
     let pluginsDir = path.join(opRoot, "Plugins");
-    glob(pluginsDir+"/*.op", (err, files) => {
-        files.forEach(pluginFile => {
-            // extract to a tmp dir
-            let pluginFileName = path.basename(pluginFile, ".op");
-            let tmpDir = path.join(os.tmpdir(), "vscode-op-as", pluginFileName);
-            console.info(`Clearing tmp directory: ${tmpDir}`);
-            fs.rmSync(tmpDir, {recursive: true, force: true});
-            fs.mkdirSync(tmpDir, {recursive: true});
-            console.info(`Extracting ${pluginFile} to ${tmpDir}`);
-            let archive = new AdmZip(pluginFile)
-            archive.extractAllTo(tmpDir, true)
-            LoadPluginAsDependency(tmpDir)
+
+    // plugins as .op files
+    let files = glob.sync(pluginsDir+"/*.op");
+    let depDirsToCheck: string[] = [];
+    files.forEach(pluginFile => {
+        // extract to a tmp dir
+        let pluginFileName = path.basename(pluginFile, ".op");
+        let tmpDir = path.join(os.tmpdir(), "vscode-op-as", pluginFileName);
+        let tmpDir_ = path.join(tmpDir, " ").trimEnd();
+        console.info(`Clearing tmp directory: ${tmpDir}`);
+        fs.mkdirSync(tmpDir, {recursive: true});
+        console.info(`Extracting ${pluginFile} to ${tmpDir}`);
+        let archive = new AdmZip(pluginFile)
+        archive.extractAllTo(tmpDir, true)
+        let filesInArchive: string[] = [];
+        archive.forEach(entry => {
+            if (!entry.isDirectory) filesInArchive.push(entry.entryName);
         })
+        let as_files = glob.sync(tmpDir+"/**/*.as")
+        as_files.forEach(file => {
+            let relativePath = file.replace(tmpDir_, "");
+            if (!filesInArchive.includes(relativePath)) {
+                fs.rmSync(file);
+                console.log(`removed old file: ${file}; (rp: ${relativePath}, zip path example: ${filesInArchive[0]})`);
+            }
+        })
+        depDirsToCheck.push(tmpDir_)
     })
-    glob(pluginsDir+"/*/", (err, files) => {
-        console.log(`loading plugins in directories: ${JSON.stringify(files)}`);
-        files.forEach(LoadPluginAsDependency);
-    })
+
+    // plugins as directories
+    files = glob.sync(pluginsDir+"/*/")
+    files.forEach(f => depDirsToCheck.push(f));
+
+    // load dependency stuff
+    // console.log(`loading plugins in directories: ${JSON.stringify(depDirsToCheck)}`);
+    let asFilesToLoad = depDirsToCheck.flatMap(FilesToLoadForDependency).filter(v => v != null);
+    console.log(`individual dependency files to load: ${JSON.stringify(asFilesToLoad)}`);
+    let modules = asFilesToLoad.map(LoadDependencyModule);
+    modules.forEach(scriptfiles.UpdateModuleFromDisk);
+    let doParse = () => {
+        modules.forEach(m => scriptfiles.ParseModule(m, true));
+        setTimeout(doPostProcess, 1);
+    };
+    let doPostProcess = () => {
+        modules.forEach(scriptfiles.PostProcessModuleTypes);
+        setTimeout(doResolveModules, 1);
+    };
+    let doResolveModules = () => {
+        modules.forEach(scriptfiles.ResolveModule);
+        setTimeout(doUpdateScriptDiagnostics, 1);
+    };
+    let doUpdateScriptDiagnostics = () => {
+        modules.forEach(m => scriptdiagnostics.UpdateScriptModuleDiagnostics(m, true));
+        setTimeout(() => {
+            typedb.OnDirtyTypeCaches();
+            DirtyAllDiagnostics();
+        }, 1);
+    };
+    doParse();
 }
 
-function LoadPluginAsDependency(pluginDir: string) {
-    fs.readFile(path.join(pluginDir, "info.toml"), 'utf-8', (err, data) => {
-        if (err) {
-            console.warn(`error loading plugin (${pluginDir}) as dependency: ${err}`);
-            return;
-        }
-        let info = toml.parse(data);
-        if (!info.script) return;
-        let filesToLoad: string[] = [...(info.script.exports || []), ...(info.script.shared_exports || [])];
-        filesToLoad.forEach(toLoad => {
-            let loadPath = path.join(pluginDir, toLoad);
-            let file = loadPath;
-            let uri = getFileUri(file);
-            // let file = `file://${loadPath.startsWith("/") ? "" : "/"}${loadPath}`;
-            console.warn(`Loading files: ${getModuleName(file)}, ${file}, ${uri}`);
-            let asmodule = scriptfiles.GetOrCreateModule(getModuleName(uri), file, uri);
-            // scriptfiles.UpdateModuleFromDisk(asmodule);
-            GetAndParseModule(uri);
-            DirtyAllDiagnostics();
-            typedb.OnDirtyTypeCaches();
-        })
-    })
+function FilesToLoadForDependency(pluginDir: string): string[] {
+    let content = fs.readFileSync(path.join(pluginDir, "info.toml"), 'utf-8');
+    let info = toml.parse(content);
+    if (!info.script) return;
+    let filesToLoad: string[] = [...(info.script.exports || []), ...(info.script.shared_exports || [])];
+    return filesToLoad.map(f => path.join(pluginDir, f));
 }
+
+function LoadDependencyModule(file: string): scriptfiles.ASModule {
+    let uri = getFileUri(file);
+    console.warn(`Loading Dependency Files: ${getModuleName(file)}, ${file}, ${uri}`);
+    return scriptfiles.GetOrCreateModule(getModuleName(uri), file, uri);
+}
+
+
+// function LoadPluginAsDependency(pluginDir: string) {
+//     filesToLoad.forEach(toLoad => {
+//         let loadPath = path.join(pluginDir, toLoad);
+//         let file = loadPath;
+//         let uri = getFileUri(file);
+//         // let file = `file://${loadPath.startsWith("/") ? "" : "/"}${loadPath}`;
+//         console.warn(`Loading files: ${getModuleName(file)}, ${file}, ${uri}`);
+//         let asmodule = scriptfiles.GetOrCreateModule(getModuleName(uri), file, uri);
+//         asmodule.markDependencyModule
+//         scriptfiles.ParseModuleAndDependencies(asmodule)
+//         scriptfiles.PostProcessModuleTypes(asmodule)
+//         scriptfiles.ResolveModule(asmodule)
+//         scriptdiagnostics.UpdateScriptModuleDiagnostics(asmodule)
+//     })
+// }
 
 function TickQueues()
 {

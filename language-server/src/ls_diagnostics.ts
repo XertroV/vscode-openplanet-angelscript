@@ -454,6 +454,8 @@ function AddFunctionDiagnostics(scope : scriptfiles.ASScope, dbfunc : typedb.DBM
     if (dbfunc.containingType)
     {
         let parentType = dbfunc.containingType.getSuperType();
+        // if (!parentType)
+        //     console.info(`AddFunctionDiagnostics: no parent type found for, dbfunc.name: ${dbfunc.name}`);
         if (parentType)
         {
             let parentMethod = parentType.findFirstSymbol(dbfunc.name, typedb.DBAllowSymbol.Functions);
@@ -471,7 +473,7 @@ function AddFunctionDiagnostics(scope : scriptfiles.ASScope, dbfunc : typedb.DBM
                         range: scope.module.getRange(
                             scope.declaration.start_offset + scope.declaration.ast.start,
                             scope.declaration.start_offset + scope.declaration.ast.end),
-                        message: "Overriding "+parentMethod.name+" from parent without calling Super::"+parentMethod.name+"(...)\n(Add 'NoSuperCall' meta to suppress warning)",
+                        message: "Overriding "+parentMethod.name+" from parent without calling super(...)\n(Add 'NoSuperCall' meta to suppress warning)",
                         source: "angelscript",
                         data: {
                             type: "superCall",

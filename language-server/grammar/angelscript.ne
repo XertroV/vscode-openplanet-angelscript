@@ -12,8 +12,8 @@ const lexer = moo.compile({
     rparen:  ')',
     lsqbracket:  '[',
     rsqbracket:  ']',
-    //lbrace:  '{',
-    //rbrace:  '}',
+    lbrace:  '{',
+    rbrace:  '}',
     dot: ".",
     semicolon: ";",
     ns: "::",
@@ -25,7 +25,7 @@ const lexer = moo.compile({
     op_binary_logic: ['&&', '||'],
     op_binary_sum: ['+', '-'],
     op_binary_product: ['*', '/', '%'],
-    op_binary_compare: ["==", "!=", "<=", ">=", ">>", "<", "<<" ,">", ">>", "is", "!is"],
+    op_binary_compare: ["==", "!=", "<=", ">=", ">>", "<", "<<" ,">", ">>", "is ", "!is "], // add spaces around `is` to avoid detecting `a isb` as `a is b`
     op_binary_bitwise: ["|", "&", "^"],
     op_assignment: "=",
     op_unary: ["!", "~"],
@@ -60,7 +60,7 @@ const lexer = moo.compile({
             shared_token: "shared",
             funcdef_token: "funcdef",
             local_token: "local",
-            event_token: "event",
+            // event_token: "event",
             else_token: "else",
             while_token: "while",
             for_token: "for",
@@ -402,11 +402,13 @@ global_declaration -> typename {%
         typename: d[0],
     }; }
 %}
-global_declaration -> (%shared_token _):? %class_token _ (%atsign):? %identifier ( _ %colon):? (_ %identifier):? {%
+# todo: superclasses like MLHook::HookMLEventsByType aren't detected
+global_declaration -> (%shared_token _):? %class_token _ (%atsign):? %identifier ( _ %colon):? (_ typename_identifier):? {%
     function (d) { return {
         ...Compound(d, n.ClassDefinition, null),
         name: Identifier(d[4]),
-        superclass: d[6] ? Identifier(d[6][1]) : null,
+        // superclass: d[6] ? Identifier(d[6][1]) : null,
+        superclass: d[6] ? d[6][1] : null,
         is_shared: !!d[0],
     }}
 %}
@@ -414,6 +416,13 @@ global_declaration -> (%shared_token _):? %enum_token _ %identifier {%
     function (d) { return {
         ...Compound(d, n.EnumDefinition, null),
         name: Identifier(d[3]),
+        is_shared: !!d[0],
+    }}
+%}
+global_declaration -> (%shared_token _):? %funcdef_token _ function_signature {%
+    function (d) { return {
+        ...Compound(d, n.FuncdefDefinition, [d[3]]),
+        name: d[3].name,
         is_shared: !!d[0],
     }}
 %}
@@ -784,6 +793,14 @@ macro_value -> ("-" _):? const_number {%
 %}
 
 expression -> expr_ternary {% id %}
+expression -> expr_array {% id %}
+
+expr_array -> %lbrace argumentlist _ %rbrace {%
+    function(d) { return Compound(d, n.ArrayInline, d[1] ? [d[1]] : []); }
+%}
+# expr_array -> %lbrace _ %rbrace {%
+#     function(d) { return Compound(d, n.ArrayInline, []); }
+# %}
 
 expr_ternary -> expr_binary_logic _ %ternary _ expr_ternary _ %colon _ expr_ternary {%
     function (d) { return Compound(d, n.TernaryOperation, [d[0], d[4], d[8]]); }
@@ -1075,6 +1092,14 @@ typename -> const_qualifier:? unqualified_typename %atsign:? ref_qualifiers:? {%
         is_reference: d[2] != null,
     });}
 %}
+non_const_typename -> unqualified_typename %atsign:? ref_qualifiers:? {%
+    function (d) { return ExtendedCompound(d, {
+        ...d[0],
+        const_qualifier: null,
+        ref_qualifier: d[2],
+        is_reference: d[1] != null,
+    });}
+%}
 
 unqualified_typename -> typename_identifier {%
     function (d) { return {
@@ -1098,7 +1123,7 @@ template_typename -> typename_identifier _ "<" _ ">" {%
     }
 %}
 
-template_typename -> template_subtype_single %lsqbracket %rsqbracket {%
+template_typename -> template_subtype_single _ %lsqbracket _ %rsqbracket {%
     function (d) {
         let typename = "array<" + d[0][0].value + ">";
         return {
@@ -1169,7 +1194,7 @@ typename_unterminated -> const_qualifier:? typename_identifier _ "<" _ template_
     }
 %}
 
-template_subtype_single -> typename {%
+template_subtype_single -> non_const_typename {%
     function (d) {
         return [d[0]];
     }
@@ -1289,6 +1314,18 @@ case_label -> ("-" _):? %number {%
     }
 %}
 case_label -> namespace_access {% id %}
+
+array_statement -> expression (_ %comma _ expression):* {%
+    function (d) {
+        let result = [d[0]];
+        if (d[1]) {
+            for (let sub of d[1]) {
+                result.push(sub[3]);
+            }
+        }
+        return Compound(d, n.ArrayValueList, result);
+    }
+%}
 
 enum_statement -> enum_decl (_ %comma enum_decl):* (_ %comma):? {%
     function (d)

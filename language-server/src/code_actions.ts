@@ -515,9 +515,6 @@ function ResolveMethodOverrideSnippet(asmodule : scriptfiles.ASModule, action : 
     let snippet = "";
     snippet += prefix;
 
-    if (method.isBlueprintEvent)
-        snippet += indent+"UFUNCTION(BlueprintOverride)\n";
-
     snippet += GenerateMethodHeaderString("", indent, data.name, method.returnType, method.args);
     if (method.isConst)
         snippet += " const"
@@ -543,7 +540,7 @@ function ResolveMethodOverrideSnippet(asmodule : scriptfiles.ASModule, action : 
                     snippet += indent+indent;
                     if (hasReturnValue)
                         snippet += "return ";
-                    snippet += "Super::"+method.name+"(";
+                    snippet += "super(";
                     for (let i = 0; i < method.args.length; ++i)
                     {
                         if (i != 0)
@@ -699,7 +696,7 @@ function AddSuperCallHelper(context : CodeActionContext)
         {
             context.actions.push(<CodeAction> {
                 kind: CodeActionKind.QuickFix,
-                title: "Add call to Super::"+data.name+"(...)",
+                title: "Add call to super(...)",
                 source: "angelscript",
                 diagnostics: [diag],
                 isPreferred: true,
@@ -741,7 +738,7 @@ function ResolveSuperCallHelper(asmodule : scriptfiles.ASModule, action : CodeAc
     if (scopeFunc.returnType && scopeFunc.returnType != "void")
         callString += "return ";
 
-    callString += "Super::"+superMethod.name+"(";
+    callString += "super(";
     if (scopeFunc.args)
     {
         for (let i = 0; i < scopeFunc.args.length; ++i)

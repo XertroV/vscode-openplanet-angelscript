@@ -226,7 +226,7 @@ export function Complete(asmodule: scriptfiles.ASModule, position: Position): Ar
             checkscope = checkscope.parentscope;
         }
 
-        // Add 'this' and 'Super' if in a class
+        // Add 'this' and 'super' if in a class
         if (insideType)
             AddCompletionsFromClassKeywords(context, completions);
 
@@ -1102,14 +1102,14 @@ export function AddCompletionsFromClassKeywords(context : CompletionContext, com
         });
     }
 
-    if (context.scope.isInFunctionBody() && CanCompleteTo(context, "Super"))
+    if (context.scope.isInFunctionBody() && CanCompleteTo(context, "super"))
     {
         let supertype = insideType.getSuperType();
         // Don't complete to Super if it is a C++ class, that doesn't work
         if (supertype && supertype.declaredModule)
         {
             completions.push({
-                    label: "Super",
+                    label: "super",
                     labelDetails: <CompletionItemLabelDetails>
                     {
                         description: insideType.supertype,
