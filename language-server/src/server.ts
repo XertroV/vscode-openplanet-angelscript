@@ -401,6 +401,7 @@ function LoadOpenplanetInfoToml(file: string) {
 }
 
 function LoadOpenplanetDependencies(deps: string[]) {
+    // todo: filter on dependencies to avoid importing everything
     let opRoot = scriptfiles.GetScriptSettings().openplanetNextLocation;
     let pluginsDir = path.join(opRoot, "Plugins");
 
@@ -459,6 +460,7 @@ function LoadOpenplanetDependencies(deps: string[]) {
         setTimeout(() => {
             typedb.OnDirtyTypeCaches();
             DirtyAllDiagnostics();
+            console.log(`Imported types from ${asFilesToLoad.length} dependency files.`);
         }, 1);
     };
     doParse();

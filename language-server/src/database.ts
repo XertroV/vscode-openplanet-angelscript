@@ -1,4 +1,4 @@
-import { getAccPrefix } from "./as_parser";
+import { getAccPrefix, setAccPrefix } from "./as_parser";
 import { ConvertNadeoType, CoreMethod } from "./convert_nadeo";
 import { IconNames } from "./icons";
 
@@ -346,7 +346,7 @@ export class DBMethod implements DBSymbol
         else
             this.isConst = false;
 
-        this.isProperty = this.name.startsWith(getAccPrefix);
+        this.isProperty = this.name.startsWith(getAccPrefix) || this.name.startsWith(setAccPrefix);
 
         if ('protected' in input)
             this.isProtected = input['protected'];
@@ -671,10 +671,8 @@ export class DBType implements DBSymbol
         else
             this.isStruct = false;
 
-        // if ('isEnum' in input)
-        //     this.isEnum = input['isEnum'];
-        // else
-        //     this.isEnum = false;
+        if ('isEnum' in input)
+            this.isEnum = input['isEnum'];
 
         let delegateSignatureMethod : DBSymbol = null;
         if ('isEvent' in input)
@@ -1321,6 +1319,15 @@ export class DBNamespace
             {
                 func(syms);
             }
+        }
+    }
+
+    GetTypeByName(name: string): DBType | null {
+        let syms = this.findSymbols(name, DBAllowSymbol.Types);
+        if (!syms || syms.length == 0) return;
+        for (let sym of syms) {
+            if (sym instanceof DBType)
+                return sym
         }
     }
 

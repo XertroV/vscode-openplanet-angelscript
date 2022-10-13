@@ -63,10 +63,11 @@ export let node_types = require("../grammar/node_types.js");
 
 export let ASKeywords = [
     "for", "if", "enum", "return", "continue", "break", "import", "class", "struct", "default",
-    "void", "const", "delegate", "event", "else", "while", "case", "cast", "namespace",
-    //"UFUNCTION", "UPROPERTY", "UCLASS", "USTRUCT", "nullptr",
-    "true", "false", "this", "auto",
+    "void", "const", "else", "while", "case", "cast", "namespace",
+    "true", "false", "this", "auto", "null", "shared", "funcdef",
     "final", "property", "override", "mixin", "switch",
+    // "UFUNCTION", "UPROPERTY", "UCLASS", "USTRUCT", "nullptr",
+    // "delegate", "event",
 ];
 
 export enum ASScopeType
@@ -468,6 +469,8 @@ export class ASSemanticSymbol
 
     container_type : string = null;
     symbol_name : string = null;
+    name_parts: string[] = null;
+    ns_name: string = null;
 
     isWriteAccess : boolean = false;
     isUnimported : boolean = false;
@@ -477,6 +480,23 @@ export class ASSemanticSymbol
     overlapsRange(range_start : number, range_end : number) : boolean
     {
         return range_start < this.end && range_end > this.start;
+    }
+
+    cacheNameParts() {
+        if (!this.name_parts) {
+            this.name_parts = this.symbol_name.split("::");
+            this.ns_name = this.name_parts.slice(0, this.name_parts.length - 1).join("::");
+        }
+    }
+
+    getSymbolNameWithoutNamespace(): string {
+        this.cacheNameParts();
+        return this.name_parts[this.name_parts.length - 1];
+    }
+
+    getNamespaceIfAny(): string {
+        this.cacheNameParts();
+        return this.ns_name;
     }
 };
 
@@ -1676,7 +1696,7 @@ function AddDBMethod(scope : ASScope, funcname : string) : typedb.DBMethod
     dbfunc.isProtected = false;
     dbfunc.isConstructor = false;
     dbfunc.isConst = false;
-    dbfunc.isProperty = false;
+    dbfunc.isProperty = funcname.startsWith(getAccPrefix) || funcname.startsWith(setAccPrefix);
     dbfunc.isBlueprintEvent = false;
     return dbfunc;
 }
@@ -2128,8 +2148,10 @@ function GenerateTypeInformation(scope : ASScope)
                     dbfunc.accessSpecifier = scope.parentscope.dbtype.getAccessSpecifier(funcdef.access.value);
             }
 
+            dbfunc.isProperty = dbfunc.name.startsWith(getAccPrefix) || dbfunc.name.startsWith(setAccPrefix);
             if (funcdef.qualifiers)
             {
+                console.log(`function ${dbfunc.name} qualifiers: ${funcdef.qualifiers}`);
                 for (let qual of funcdef.qualifiers)
                 {
                     if (qual == "property")
@@ -2142,8 +2164,6 @@ function GenerateTypeInformation(scope : ASScope)
                         dbfunc.isOverride = true;
                 }
             }
-            dbfunc.isProperty = dbfunc.isProperty || dbfunc.name.startsWith(getAccPrefix);
-
             if (funcdef.scoping)
             {
                 if (funcdef.scoping == "mixin")
@@ -2738,6 +2758,7 @@ function AddTypenameSymbol(scope : ASScope, statement : ASStatement, node : any,
     else
     {
         let exists = DoesTypenameExist(scope, node.name.value);
+        // console.log(`DoesTypenameExist: ${node.name.value}`);
         if (errorOnUnknown && !exists)
         {
             let hasPotentialCompletions = false;
@@ -6036,9 +6057,9 @@ function CheckIfInlineArray(scope: ASScope, cur_element: ASElement, cur_offset: 
         // console.log(`cur_element.content: ${cur_element.content}`);
         let contentTrimmed = cur_element.content.trim();
         if (contentTrimmed.startsWith("enum ") || cur_element.content.includes(" enum ")) return false;
-        if (contentTrimmed.endsWith(")")) return false;
+        if (contentTrimmed.startsWith("class ") || cur_element.content.includes(" class ")) return false;
+        if (contentTrimmed.endsWith(")")) return false; // function definition
     }
-
 
     let depth_brace = 0;
     let in_dq_string = false;

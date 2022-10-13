@@ -87,20 +87,18 @@ export function GetSymbolDefinition(asmodule : scriptfiles.ASModule, findSymbol 
     {
         case scriptfiles.ASSymbolType.Typename:
         {
-            let symbName = findSymbol.symbol_name;
-            let ns = "";
-            if (symbName.includes("::")) {
-                let parts = symbName.split("::");
-                symbName = parts[parts.length - 1];
-                if (parts.length > 1)
-                    ns = parts.slice(0, parts.length - 1).join("::");
+            let dbtype;
+            if (findSymbol.getNamespaceIfAny()) {
+                dbtype = typedb
+                        .LookupNamespace(null, findSymbol.getNamespaceIfAny())
+                        .GetTypeByName(findSymbol.getSymbolNameWithoutNamespace());
             }
-            let dbtype = typedb.GetTypeByName(symbName);
+            if (!dbtype)
+                dbtype = typedb.GetTypeByName(findSymbol.getSymbolNameWithoutNamespace());
             if (dbtype && dbtype.declaredModule)
             {
                 let symbolModule = scriptfiles.GetModule(dbtype.declaredModule);
-                let nsConstraint = (!ns || dbtype.getQualifiedTypenameInNamespace(typedb.GetRootNamespace()).includes(findSymbol.symbol_name));
-                if (symbolModule && nsConstraint)
+                if (symbolModule)
                 {
                     return [{
                         module: symbolModule,
@@ -355,7 +353,7 @@ export function GetHover(asmodule : scriptfiles.ASModule, position : Position) :
     let findSymbol = asmodule.getSymbolAt(offset);
     if (!findSymbol)
     {
-        // If there's no symbol below the cursor, try to provider a hover for the world under cursor
+        // If there's no symbol below the cursor, try to provider a hover for the word under cursor
         let word = GetWordAt(asmodule, offset);
         if (!word)
             return null;
@@ -366,7 +364,14 @@ export function GetHover(asmodule : scriptfiles.ASModule, position : Position) :
     {
         case scriptfiles.ASSymbolType.Typename:
         {
-            let dbtype = typedb.GetTypeByName(findSymbol.symbol_name);
+            let ns = typedb.GetRootNamespace()
+            let dbtype;
+            if (findSymbol.getNamespaceIfAny()) {
+                ns = typedb.LookupNamespace(ns, findSymbol.ns_name);
+                dbtype = ns.findFirstSymbol(findSymbol.getSymbolNameWithoutNamespace(), typedb.DBAllowSymbol.Types) as typedb.DBType;
+            }
+            if (!dbtype)
+                dbtype = typedb.GetTypeByName(findSymbol.getSymbolNameWithoutNamespace());
             if (dbtype)
                 return GetHoverForType(dbtype);
         }

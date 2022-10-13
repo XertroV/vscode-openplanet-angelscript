@@ -172,9 +172,9 @@ export function Complete(asmodule: scriptfiles.ASModule, position: Position): Ar
     if (AddCompletionsFromImportStatement(context, completions))
         return completions;
 
-    // Add completions from unreal macro specifiers
-    if (AddCompletionsFromUnrealMacro(context, completions))
-        return completions;
+    // // Add completions from unreal macro specifiers
+    // if (AddCompletionsFromUnrealMacro(context, completions))
+    //     return completions;
 
     // Add completions from access specifiers
     if (AddCompletionsFromAccessSpecifiers(context, completions))
@@ -239,13 +239,14 @@ export function Complete(asmodule: scriptfiles.ASModule, position: Position): Ar
     {
         let showEvents = !context.scope || context.scope.scopetype != scriptfiles.ASScopeType.Class || !insideType;
         AddCompletionsFromType(context, dbtype, completions, showEvents);
+        // note: this is where functions from other namespaces and stuff get populated
     }
 
-    // Add completions for mixin calls to global functions
-    if (context.priorType || (!context.isInsideType && context.scope.getParentType()))
-    {
-        AddMixinCompletions(context, completions);
-    }
+    // // Add completions for mixin calls to global functions
+    // if (context.priorType || (!context.isInsideType && context.scope.getParentType()))
+    // {
+    //     AddMixinCompletions(context, completions);
+    // }
 
     // Complete keywords if appropriate
     if (!context.isInsideType)
@@ -1244,6 +1245,7 @@ export function AddCompletionsFromType(context : CompletionContext, curtype : ty
                 if (func.name.startsWith(getAccPrefix))
                 {
                     let propname = func.name.substring(getAccPrefix.length);
+                    console.log(`propname: ${propname}`);
                     if(!props.has(propname) && func.args.length == 0)
                     {
                         let compl = <CompletionItem>{
@@ -3937,6 +3939,7 @@ export function Resolve(item : CompletionItem) : CompletionItem
     return item;
 }
 
+// todo
 function AddSuperCallSnippet(context : CompletionContext, completions : Array<CompletionItem>)
 {
     // Make sure we're in the right context for this snippet
