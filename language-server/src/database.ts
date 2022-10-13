@@ -1211,8 +1211,9 @@ export class DBType implements DBSymbol
             return this.name;
         // todo: bug `MLHook::array<PlayerCpInfo>`
         let typename = this.namespace.getQualifiedNamespace() + "::" + this.name;
-        if (this.isTemplateInstantiation)
-            typename = this.createTemplateInstance([this.namespace.getQualifiedNamespace() + "::" + this.templateSubTypes[0]]).name;
+        if (this.isTemplateType())
+            typename = this.createTemplateInstance([this.templateSubTypes[0]]).name;
+        //     typename = this.createTemplateInstance([this.namespace.getQualifiedNamespace() + "::" + this.templateSubTypes[0]]).name;
         if (accessNamespace && !accessNamespace.isRootNamespace())
         {
             let accessPrefix = accessNamespace.getQualifiedNamespace() + "::";
@@ -1788,6 +1789,11 @@ export function CleanTypeName(typename : string) : string
     return typename;
 }
 
+export function StripNamespaceFromTypeName(typename: string): string {
+    let parts = typename.split("::");
+    return parts[parts.length - 1];
+}
+
 export function TypenameEquals(left : string, right : string) : boolean
 {
     return CleanTypeName(left) == CleanTypeName(right);
@@ -2044,25 +2050,28 @@ export function LookupType(namespace : DBNamespace, typename : string) : DBType 
         if (match != null)
         {
             let basetype = match[1];
-            let subtypes = match[2].split(",").map(
-                function(s : string) : string
-                {
-                    return s.trim();
-                });
+            let _subtypes = match[2].split(",").map(s => s.trim());
+            let subtypeVariants = [_subtypes];
+            // let hasNsInType = _subtypes.filter(s => s.includes("::")).length > 0;
+            // if (hasNsInType) subtypeVariants.push(_subtypes.map(StripNamespaceFromTypeName));
+            // if (namespace) subtypeVariants.push(_subtypes.map(StripNamespaceFromTypeName).map(s => namespace.getQualifiedNamespace() + "::" + s))
 
-            let dbbasetype = LookupType(namespace, basetype);
-            if (!dbbasetype)
+            let mainInst;
+            for (let subtypes of subtypeVariants) {
+
+                let dbbasetype = LookupType(namespace, basetype);
+                if (!dbbasetype)
                 return null;
 
-            let inst = dbbasetype.createTemplateInstance(subtypes);
-            if (!inst)
-                return null;
-            inst.name = identifier;
-            if (!inst)
-                return null;
+                let inst = dbbasetype.createTemplateInstance(subtypes);
+                if (!inst) return null;
+                inst.name = identifier;
+                if (!inst) return null;
+                if (!mainInst) mainInst = inst;
 
-            AddTypeToDatabase(namespace, inst);
-            return inst;
+                AddTypeToDatabase(namespace, inst);
+            }
+            return mainInst;
         }
     }
 

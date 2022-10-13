@@ -2151,7 +2151,7 @@ function GenerateTypeInformation(scope : ASScope)
             dbfunc.isProperty = dbfunc.name.startsWith(getAccPrefix) || dbfunc.name.startsWith(setAccPrefix);
             if (funcdef.qualifiers)
             {
-                console.log(`function ${dbfunc.name} qualifiers: ${funcdef.qualifiers}`);
+                // console.log(`function ${dbfunc.name} qualifiers: ${funcdef.qualifiers}`);
                 for (let qual of funcdef.qualifiers)
                 {
                     if (qual == "property")
@@ -2962,7 +2962,7 @@ export function ResolveTypeFromExpression(scope : ASScope, node : any) : typedb.
         // "X"
         case node_types.ConstString:
         {
-            return typedb.GetTypeByName("FString");
+            return typedb.GetTypeByName("string");
         }
         break;
         // n"X"
@@ -2987,7 +2987,7 @@ export function ResolveTypeFromExpression(scope : ASScope, node : any) : typedb.
         {
             return scope.getParentType();
         }
-        // nullptr
+        // nullptr / null
         case node_types.ConstNullptr:
         {
             return undefined;
@@ -3128,6 +3128,8 @@ export function ResolveTypeFromExpression(scope : ASScope, node : any) : typedb.
             }
             if (type)
                 console.log(`found array's type: ${type.name}`);
+            if (!type)
+                console.warn(`could not resolve type for elements: ${JSON.stringify(elements)}`)
             if (type)
                 return arrTy.createTemplateInstance([type.name]);
             return arrTy;
