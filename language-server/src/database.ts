@@ -648,10 +648,10 @@ export class DBType implements DBSymbol
             }
         }
 
-        if ('supertype' in input)
-        {
-            this.unrealsuper = input['supertype'];
-        }
+        // if ('supertype' in input)
+        // {
+        //     this.unrealsuper = input['supertype'];
+        // }
 
         if ('inherits' in input)
         {
@@ -1211,7 +1211,10 @@ export class DBType implements DBSymbol
     {
         if (!this.namespace || this.namespace.isRootNamespace())
             return this.name;
+        // todo: bug `MLHook::array<PlayerCpInfo>`
         let typename = this.namespace.getQualifiedNamespace() + "::" + this.name;
+        // if (this.isTemplateInstantiation)
+        //     typename = this.createTemplateInstance([this.templateSubTypes[0]]).name;
         if (accessNamespace && !accessNamespace.isRootNamespace())
         {
             let accessPrefix = accessNamespace.getQualifiedNamespace() + "::";
@@ -2301,16 +2304,16 @@ export function AddOpenplanetClass(jData: any, kind: "classes" | "enums") {
     if (type.isEnum || !type.ns)
         AddTypeToDatabase(ns, type);
 
-    for (let [name, sym] of type.symbols) {
-        // console.log(name, sym);
-        // todo: seems like we're adding class properties to global namespace :/
-        if (sym instanceof Array) {
-            for (let symElem of sym)
-                ns.addSymbol(symElem);
-        }
-        else
-            ns.addSymbol(sym);
-    }
+    // for (let [name, sym] of type.symbols) {
+    //     // console.log(name, sym);
+    //     // todo: seems like we're adding class properties to global namespace :/
+    //     if (sym instanceof Array) {
+    //         for (let symElem of sym)
+    //             ns.addSymbol(symElem);
+    //     }
+    //     else
+    //         ns.addSymbol(sym);
+    // }
 }
 
 

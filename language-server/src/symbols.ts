@@ -10,7 +10,7 @@ import * as parsedcompletion from './parsed_completion';
 import * as typedb from './database';
 import * as specifiers from './specifiers';
 import { FormatFunctionDocumentation, FormatPropertyDocumentation } from './documentation';
-import { getAccPrefix, setAccPrefix } from './as_parser';
+import { ASSymbolTypeToString, getAccPrefix, setAccPrefix } from './as_parser';
 
 export function GetDefinition(asmodule : scriptfiles.ASModule, position : Position) : Array<Location>
 {
@@ -21,6 +21,7 @@ export function GetDefinition(asmodule : scriptfiles.ASModule, position : Positi
     let findSymbol = asmodule.getSymbolAtOrBefore(offset);
     if (findSymbol)
     {
+        console.log(`finding definition for: ${findSymbol.symbol_name} ${ASSymbolTypeToString(findSymbol.type)}`)
         let defs = GetSymbolDefinition(asmodule, findSymbol);
         if (defs)
         {
@@ -86,11 +87,20 @@ export function GetSymbolDefinition(asmodule : scriptfiles.ASModule, findSymbol 
     {
         case scriptfiles.ASSymbolType.Typename:
         {
-            let dbtype = typedb.GetTypeByName(findSymbol.symbol_name);
+            let symbName = findSymbol.symbol_name;
+            let ns = "";
+            if (symbName.includes("::")) {
+                let parts = symbName.split("::");
+                symbName = parts[parts.length - 1];
+                if (parts.length > 1)
+                    ns = parts.slice(0, parts.length - 1).join("::");
+            }
+            let dbtype = typedb.GetTypeByName(symbName);
             if (dbtype && dbtype.declaredModule)
             {
                 let symbolModule = scriptfiles.GetModule(dbtype.declaredModule);
-                if (symbolModule)
+                let nsConstraint = (!ns || dbtype.getQualifiedTypenameInNamespace(typedb.GetRootNamespace()).includes(findSymbol.symbol_name));
+                if (symbolModule && nsConstraint)
                 {
                     return [{
                         module: symbolModule,

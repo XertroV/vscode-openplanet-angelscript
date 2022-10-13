@@ -6034,7 +6034,9 @@ function CheckIfInlineArray(scope: ASScope, cur_element: ASElement, cur_offset: 
             return false;
         }
         // console.log(`cur_element.content: ${cur_element.content}`);
-        if (cur_element.content.trimStart().startsWith("enum ") || cur_element.content.includes(" enum ")) return false;
+        let contentTrimmed = cur_element.content.trim();
+        if (contentTrimmed.startsWith("enum ") || cur_element.content.includes(" enum ")) return false;
+        if (contentTrimmed.endsWith(")")) return false;
     }
 
 
