@@ -568,12 +568,12 @@ export class DBType implements DBSymbol
 
     createTemplateInstance(actualTypes : Array<string>) : DBType
     {
-        // todo fix
         if (actualTypes.length != this.templateSubTypes?.length)
             return null;
 
+        let oldSubtypes = this.templateSubTypes;
         let inst = new DBType();
-        inst.name = this.name;
+        inst.name = this.name.replace(`<${oldSubtypes.join(', ')}>`, `<${actualTypes.join(", ")}>`);
         inst.supertype = this.supertype;
         inst.isEnum = this.isEnum;
         inst.declaredModule = this.declaredModule;
@@ -1211,8 +1211,8 @@ export class DBType implements DBSymbol
             return this.name;
         // todo: bug `MLHook::array<PlayerCpInfo>`
         let typename = this.namespace.getQualifiedNamespace() + "::" + this.name;
-        // if (this.isTemplateInstantiation)
-        //     typename = this.createTemplateInstance([this.templateSubTypes[0]]).name;
+        if (this.isTemplateInstantiation)
+            typename = this.createTemplateInstance([this.namespace.getQualifiedNamespace() + "::" + this.templateSubTypes[0]]).name;
         if (accessNamespace && !accessNamespace.isRootNamespace())
         {
             let accessPrefix = accessNamespace.getQualifiedNamespace() + "::";

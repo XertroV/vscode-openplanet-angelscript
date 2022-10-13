@@ -1960,9 +1960,9 @@ function GenerateTypeInformation(scope : ASScope)
 
             let classdef = scope.previous.ast;
             let dbtype = AddDBType(scope, classdef.name.value);
-            if (classdef.superclass) {
-                console.log(`class ${dbtype.name} has supertype: ${JSON.stringify(classdef.superclass)}`);
-            }
+            // if (classdef.superclass) {
+            //     console.log(`class ${dbtype.name} has supertype: ${JSON.stringify(classdef.superclass)}`);
+            // }
             dbtype.supertype = classdef.superclass ? classdef.superclass.value : null;
             if (classdef.documentation)
                 dbtype.documentation = typedb.FormatDocumentationComment(classdef.documentation);
@@ -3116,13 +3116,18 @@ export function ResolveTypeFromExpression(scope : ASScope, node : any) : typedb.
         }
         // { X, Y, Z } -- array
         case node_types.ArrayInline: {
+            let arrTy = typedb.LookupType(null, `array<T>`);
             let argList = node.children[0];
+            // console.log(JSON.stringify(argList, null, 2));
+            if (!argList) return arrTy;
             let elements = argList.children;
             let type: typedb.DBType;
-            for (let i = 0; !type && i < elements.length; i++) {
-                type = ResolveTypeFromExpression(scope, node.children[i]);
+            for (let i = 0; i < elements.length; i++) {
+                type = ResolveTypeFromExpression(scope, elements[i]);
+                if (type) break;
             }
-            let arrTy = typedb.LookupType(null, `array<T>`);
+            if (type)
+                console.log(`found array's type: ${type.name}`);
             if (type)
                 return arrTy.createTemplateInstance([type.name]);
             return arrTy;
