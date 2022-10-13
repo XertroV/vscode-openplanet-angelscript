@@ -48,6 +48,7 @@ const lexer = moo.compile({
             break_token: "break",
             import_token: "import",
             class_token: "class",
+            interface_token: "interface",
             struct_token: "struct",
             default_token: "default",
             void_token: "void",
@@ -403,7 +404,7 @@ global_declaration -> typename {%
     }; }
 %}
 # todo: superclasses like MLHook::HookMLEventsByType aren't detected
-global_declaration -> (%shared_token _):? %class_token _ (%atsign):? %identifier ( _ %colon):? (_ typename_identifier):? {%
+global_declaration -> (%shared_token _):? (%class_token | %interface_token) _ (%atsign):? %identifier ( _ %colon):? (_ typename_identifier):? {%
     function (d) { return {
         ...Compound(d, n.ClassDefinition, null),
         name: Identifier(d[4]),

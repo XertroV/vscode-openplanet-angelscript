@@ -52,6 +52,7 @@ const lexer = moo.compile({
             break_token: "break",
             import_token: "import",
             class_token: "class",
+            interface_token: "interface",
             struct_token: "struct",
             default_token: "default",
             void_token: "void",
@@ -404,6 +405,8 @@ var grammar = {
     {"name": "global_declaration$ebnf$2$subexpression$1", "symbols": [(lexer.has("shared_token") ? {type: "shared_token"} : shared_token), "_"]},
     {"name": "global_declaration$ebnf$2", "symbols": ["global_declaration$ebnf$2$subexpression$1"], "postprocess": id},
     {"name": "global_declaration$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "global_declaration$subexpression$1", "symbols": [(lexer.has("class_token") ? {type: "class_token"} : class_token)]},
+    {"name": "global_declaration$subexpression$1", "symbols": [(lexer.has("interface_token") ? {type: "interface_token"} : interface_token)]},
     {"name": "global_declaration$ebnf$3$subexpression$1", "symbols": [(lexer.has("atsign") ? {type: "atsign"} : atsign)]},
     {"name": "global_declaration$ebnf$3", "symbols": ["global_declaration$ebnf$3$subexpression$1"], "postprocess": id},
     {"name": "global_declaration$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
@@ -413,7 +416,7 @@ var grammar = {
     {"name": "global_declaration$ebnf$5$subexpression$1", "symbols": ["_", "typename_identifier"]},
     {"name": "global_declaration$ebnf$5", "symbols": ["global_declaration$ebnf$5$subexpression$1"], "postprocess": id},
     {"name": "global_declaration$ebnf$5", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "global_declaration", "symbols": ["global_declaration$ebnf$2", (lexer.has("class_token") ? {type: "class_token"} : class_token), "_", "global_declaration$ebnf$3", (lexer.has("identifier") ? {type: "identifier"} : identifier), "global_declaration$ebnf$4", "global_declaration$ebnf$5"], "postprocess": 
+    {"name": "global_declaration", "symbols": ["global_declaration$ebnf$2", "global_declaration$subexpression$1", "_", "global_declaration$ebnf$3", (lexer.has("identifier") ? {type: "identifier"} : identifier), "global_declaration$ebnf$4", "global_declaration$ebnf$5"], "postprocess": 
         function (d) { return {
             ...Compound(d, n.ClassDefinition, null),
             name: Identifier(d[4]),
