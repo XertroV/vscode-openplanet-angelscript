@@ -87,10 +87,15 @@ function AddGeneratedCodeForClass(asmodule : scriptfiles.ASModule, dbtype : type
     {
         console.log(`AddGeneratedCodeForClass: ${dbtype.name} : ${dbtype.supertype}`);
         if (dbtype.supertype) {
+            // todo: clearing old `super` functions doesn't seem to work.
+            // clear old super definitions
+            // dbtype.findSymbols("super").forEach(s => { if (s) dbtype.removeSymbol(s); });
+            dbtype.symbols.delete("super");
+            // dbtype.symbolsByPrefix.delete // todo, needs an impl
+            // get the supertype so we can get the function signature(s)
             let sty = typedb.LookupType(null, dbtype.supertype);
             let supers: typedb.DBMethod[] = [];
             if (sty) {
-
                 let superCons = [
                     ...sty.namespace.findSymbols(typedb.StripNamespaceFromTypeName(dbtype.supertype), DBAllowSymbol.Functions),
                     // ...sty.namespace.findSymbols(dbtype.supertype, DBAllowSymbol.Functions)
@@ -107,7 +112,7 @@ function AddGeneratedCodeForClass(asmodule : scriptfiles.ASModule, dbtype : type
             for (let superCon of supers) {
                 let method = AddGlobalFunction(asmodule, dbtype, nsType, "super");
                 method.returnType = "void";
-                method.documentation = "Call constructor of parent class.";
+                method.documentation = `Call constructor of parent class: ${dbtype.supertype}`;
                 method.args = superCon.args;
                 dbtype.addSymbol(method);
             }
