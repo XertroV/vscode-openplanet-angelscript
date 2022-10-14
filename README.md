@@ -2,7 +2,34 @@ todo:
 
 * `array<A::B>`, or `namespace A { auto x = {B()}; class B {} }` accessing x from outside A
   * types don't resolve right
-* declare `super` method in class contexts when .superclass exists
+* funcdefs
+* function casting via funcdefs
+* function handles
+
+changelog:
+
+- 0.1.2-0.1.3
+  - fixes WRT parsing lvalues that are references
+  - work on funcdef
+  - try/catch parsing
+  - template type bug fixes; template types being e.g., `array<T>`
+  - add `super` definitions for classes
+  - imported get/set accessors
+  - `shared` and other keywords
+  - enum parsing
+  - fix bug WRT openplaent type class properties
+  - goto definition of superclasses like `A::B`
+  - inline array parsing + type resolution
+  - refactor imports to avoid cpu usage and clobbering
+- 0.1.1
+  - imports and shared, icons, added is and !is support, global get_ accessors work, arrays work, references sorta work (they're just ignored), settings declarations work (are ignored), and mb some other things I forgot.
+- 0.1.0
+  - initial support, openplanet types (no game enums) and inheritance
+
+
+------
+
+# old readme
 
 Language Server and Debug Adapter for use with the UnrealEngine-Angelscript plugin from https://angelscript.hazelight.se
 
