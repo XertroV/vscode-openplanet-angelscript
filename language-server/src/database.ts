@@ -525,7 +525,7 @@ export class DBType implements DBSymbol
     typeid : number = -1;
     name : string;
     supertype : string;
-    unrealsuper : string;
+    // unrealsuper : string;
     documentation : string;
     namespace : DBNamespace;
     ns : string;
@@ -917,12 +917,12 @@ export class DBType implements DBSymbol
                 depth += 1;
                 continue;
             }
-            else if (it.unrealsuper)
-            {
-                it = LookupType(it.namespace, it.unrealsuper);
-                depth += 1;
-                continue;
-            }
+            // else if (it.unrealsuper)
+            // {
+            //     it = LookupType(it.namespace, it.unrealsuper);
+            //     depth += 1;
+            //     continue;
+            // }
             else
             {
                 break;

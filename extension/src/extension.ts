@@ -201,7 +201,7 @@ export function activate(context: ExtensionContext) {
             else if (char_number >= text_line.text.length || text_line.text[char_number] != '(')
             {
                 let parenConfig = vscode.workspace.getConfiguration("OpenplanetAngelscript");
-                if (!parenConfig.get("insertParenthesisOnFunctionCompletion"))
+                if (!parenConfig.get("helper.insertParenthesisOnFunctionCompletion"))
                     return;
 
                 // There is not an opening paren here, and we are at the end of the line,

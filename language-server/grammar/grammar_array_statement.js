@@ -588,31 +588,32 @@ var grammar = {
             return args;
         }
         },
-    {"name": "var_decl$ebnf$1$subexpression$1", "symbols": [(lexer.has("atsign") ? {type: "atsign"} : atsign)]},
-    {"name": "var_decl$ebnf$1", "symbols": ["var_decl$ebnf$1$subexpression$1"], "postprocess": id},
-    {"name": "var_decl$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "var_decl", "symbols": ["typename", "_", "var_decl$ebnf$1", (lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": 
+    {"name": "mb_ref_identifier$ebnf$1$subexpression$1", "symbols": [(lexer.has("atsign") ? {type: "atsign"} : atsign)]},
+    {"name": "mb_ref_identifier$ebnf$1", "symbols": ["mb_ref_identifier$ebnf$1$subexpression$1"], "postprocess": id},
+    {"name": "mb_ref_identifier$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "mb_ref_identifier", "symbols": ["mb_ref_identifier$ebnf$1", (lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": 
         function (d) { return {
-            ...Compound(d, n.VariableDecl, null),
-            name: Identifier(d[3]),
-            typename: d[0],
+            ...ExtendedCompound(d, Identifier(d[1])),
             is_reference: !!d[2],
         }; }
         },
-    {"name": "var_decl$ebnf$2$subexpression$1", "symbols": [(lexer.has("atsign") ? {type: "atsign"} : atsign)]},
-    {"name": "var_decl$ebnf$2", "symbols": ["var_decl$ebnf$2$subexpression$1"], "postprocess": id},
-    {"name": "var_decl$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "var_decl$ebnf$3$subexpression$1", "symbols": ["_", "expression"]},
-    {"name": "var_decl$ebnf$3", "symbols": ["var_decl$ebnf$3$subexpression$1"], "postprocess": id},
-    {"name": "var_decl$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "var_decl", "symbols": ["typename", "_", "var_decl$ebnf$2", (lexer.has("identifier") ? {type: "identifier"} : identifier), "_", {"literal":"="}, "var_decl$ebnf$3"], "postprocess": 
+    {"name": "var_decl", "symbols": ["typename", "_", "mb_ref_identifier"], "postprocess": 
         function (d) { return {
             ...Compound(d, n.VariableDecl, null),
-            name: Identifier(d[3]),
+            name: d[2],
             typename: d[0],
-            expression: d[6] ? d[6][1] : null,
-            inline_assignment: d[6] ? true : false,
-            is_reference: !!d[2],
+        }; }
+        },
+    {"name": "var_decl$ebnf$1$subexpression$1", "symbols": ["_", "expression"]},
+    {"name": "var_decl$ebnf$1", "symbols": ["var_decl$ebnf$1$subexpression$1"], "postprocess": id},
+    {"name": "var_decl$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "var_decl", "symbols": ["typename", "_", "mb_ref_identifier", "_", {"literal":"="}, "var_decl$ebnf$1"], "postprocess": 
+        function (d) { return {
+            ...Compound(d, n.VariableDecl, null),
+            name: d[2],
+            typename: d[0],
+            expression: d[5] ? d[5][1] : null,
+            inline_assignment: d[5] ? true : false,
         }; }
         },
     {"name": "var_decl", "symbols": ["typename", "_", (lexer.has("identifier") ? {type: "identifier"} : identifier), "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "argumentlist", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
@@ -624,11 +625,11 @@ var grammar = {
             inline_constructor: true,
         }; }
         },
-    {"name": "var_decl$ebnf$4$subexpression$1", "symbols": ["_", (lexer.has("comma") ? {type: "comma"} : comma), "_", "var_decl_multi_part"]},
-    {"name": "var_decl$ebnf$4", "symbols": ["var_decl$ebnf$4$subexpression$1"]},
-    {"name": "var_decl$ebnf$4$subexpression$2", "symbols": ["_", (lexer.has("comma") ? {type: "comma"} : comma), "_", "var_decl_multi_part"]},
-    {"name": "var_decl$ebnf$4", "symbols": ["var_decl$ebnf$4", "var_decl$ebnf$4$subexpression$2"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "var_decl", "symbols": ["typename", "_", "var_decl_multi_part", "var_decl$ebnf$4"], "postprocess": 
+    {"name": "var_decl$ebnf$2$subexpression$1", "symbols": ["_", (lexer.has("comma") ? {type: "comma"} : comma), "_", "var_decl_multi_part"]},
+    {"name": "var_decl$ebnf$2", "symbols": ["var_decl$ebnf$2$subexpression$1"]},
+    {"name": "var_decl$ebnf$2$subexpression$2", "symbols": ["_", (lexer.has("comma") ? {type: "comma"} : comma), "_", "var_decl_multi_part"]},
+    {"name": "var_decl$ebnf$2", "symbols": ["var_decl$ebnf$2", "var_decl$ebnf$2$subexpression$2"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "var_decl", "symbols": ["typename", "_", "var_decl_multi_part", "var_decl$ebnf$2"], "postprocess": 
         function (d) {
             let vars = [d[2]];
             vars[0].typename = d[0];

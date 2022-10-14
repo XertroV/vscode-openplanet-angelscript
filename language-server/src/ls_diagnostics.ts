@@ -551,18 +551,18 @@ function IsMaybeActorType(dbtype : typedb.DBType) : boolean
                 return checkType.supertype.startsWith('A');
         }
 
-        if (checkType.unrealsuper)
-        {
-            let superType = typedb.GetTypeByName(checkType.unrealsuper);
-            if (superType)
-            {
-                checkType = superType;
-                depth += 1;
-                continue;
-            }
-            else
-                return checkType.unrealsuper.startsWith('A');
-        }
+        // if (checkType.unrealsuper)
+        // {
+        //     let superType = typedb.GetTypeByName(checkType.unrealsuper);
+        //     if (superType)
+        //     {
+        //         checkType = superType;
+        //         depth += 1;
+        //         continue;
+        //     }
+        //     else
+        //         return checkType.unrealsuper.startsWith('A');
+        // }
 
         return false;
     }

@@ -1137,29 +1137,20 @@ connection.onRequest("angelscript/provideInlineValues", (...params: any[]) : any
     let scriptSettings = scriptfiles.GetScriptSettings();
     let dirtyDiagnostics = false;
 
-    // if (diagnosticSettings.namingConventionDiagnostics != settings.diagnosticsForUnrealNamingConvention)
-    // {
-    //     diagnosticSettings.namingConventionDiagnostics = settings.diagnosticsForUnrealNamingConvention;
-    //     dirtyDiagnostics = true;
-    // }
-
-    if (diagnosticSettings.markUnreadVariablesAsUnused != settings.markUnreadVariablesAsUnused)
-    {
-        diagnosticSettings.markUnreadVariablesAsUnused = settings.markUnreadVariablesAsUnused;
+    if (scriptSettings.openplanetNextLocation != settings.openplanetNextLocation
+      || diagnosticSettings.markUnreadVariablesAsUnused != settings.helper.markUnreadVariablesAsUnused) {
         dirtyDiagnostics = true;
     }
-
-     if (scriptSettings.openplanetNextLocation != settings.openplanetNextLocation) {
-        scriptSettings.openplanetNextLocation = settings.openplanetNextLocation;
-        dirtyDiagnostics = true;
-     }
+    scriptSettings.openplanetNextLocation = settings.openplanetNextLocation;
+    scriptSettings.enableDebugOutput = settings.parser.enableDebugOutput;
+    scriptSettings.crashOnParseError = settings.parser.crashOnParseError;
 
     if (dirtyDiagnostics)
         DirtyAllDiagnostics();
 
     let completionSettings = parsedcompletion.GetCompletionSettings();
-    completionSettings.mathCompletionShortcuts = settings.mathCompletionShortcuts;
-    completionSettings.correctFloatLiteralsWhenExpectingDoublePrecision = settings.correctFloatLiteralsWhenExpectingDoublePrecision;
+    completionSettings.mathCompletionShortcuts = settings.helper.mathCompletionShortcuts;
+    completionSettings.correctFloatLiteralsWhenExpectingDoublePrecision = settings.helper.correctFloatLiteralsWhenExpectingDoublePrecision;
 
     let inlayHintSettings = inlayhints.GetInlayHintSettings();
     inlayHintSettings.inlayHintsEnabled = settings.inlayHints.inlayHintsEnabled;

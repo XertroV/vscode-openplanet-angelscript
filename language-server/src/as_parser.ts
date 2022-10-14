@@ -40,6 +40,8 @@ export interface ASSettings
     floatIsFloat64 : boolean,
     useAngelscriptHaze: boolean,
     openplanetNextLocation: string,
+    enableDebugOutput: boolean,
+    crashOnParseError: boolean,
 };
 
 let ScriptSettings : ASSettings = {
@@ -47,6 +49,8 @@ let ScriptSettings : ASSettings = {
     floatIsFloat64: false,
     useAngelscriptHaze: false,
     openplanetNextLocation: path.join(os.homedir(), 'OpenplanetNext'),
+    enableDebugOutput: false,
+    crashOnParseError: false,
 };
 
 let PreParsedIdentifiersInModules = new Map<string, Set<ASModule>>();
@@ -3025,8 +3029,11 @@ export function ResolveTypeFromExpression(scope : ASScope, node : any) : typedb.
         case node_types.MemberAccess:
         {
             let left_type = ResolveTypeFromExpression(scope, node.children[0]);
-            if (!left_type || !node.children[1])
+            if (!left_type || !node.children[1]) {
+                console.warn(`Could not find type for: ${node.children[0].value} -- ${JSON.stringify(node.children[0])}`)
+                console.warn(`${scope.getNamespace()?.getQualifiedNamespace()}\n${JSON.stringify(node)}`)
                 return null;
+            }
             return ResolvePropertyType(left_type, node.children[1].value);
         }
         break;
@@ -3078,6 +3085,7 @@ export function ResolveTypeFromExpression(scope : ASScope, node : any) : typedb.
                 return null;
             }
             return typedb.LookupType(left_func.namespace, left_func.returnType);
+                // || typedb.LookupType(null, left_func.returnType);
         }
         break;
         // TType<TSubType>()
@@ -3440,7 +3448,7 @@ function ResolveTypeFromIdentifier(scope : ASScope, identifier : string) : typed
             }
         }
 
-        if (!ScriptSettings.automaticImports)
+        if (!ScriptSettings.automaticImports || true)
         {
             for (let sym of globalSymbols)
             {
@@ -6792,13 +6800,17 @@ export function ParseStatement(scopetype : ASScopeType, statement : ASStatement,
 
         if (useOrigError) {
             // Debugging for unparseable statements
-            if (debug)
+            if (debug || GetScriptSettings().enableDebugOutput)
             {
                 console.log(error);
                 console.log("Error Parsing Statement: ");
-                console.log(statement.content);
-                console.log(ASScopeTypeToString(statement.parsedType));
-                throw "ParseError";
+                console.log(`content: ${statement.content}`);
+                console.log(`scope type: ${ASScopeTypeToString(statement.parsedType)}`);
+                if (debug || GetScriptSettings().crashOnParseError) {
+                    throw "ParseError";
+                } else {
+                    console.warn(`parse error... continuing.`);
+                }
             }
 
             parseError = true;

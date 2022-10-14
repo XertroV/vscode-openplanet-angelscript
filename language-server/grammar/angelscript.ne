@@ -566,22 +566,27 @@ access_mod_list -> %identifier (_ "," _ %identifier):* (_ %comma):? {%
     }
 %}
 
-var_decl -> typename _ (%atsign):? %identifier {%
+mb_ref_identifier -> (%atsign):? %identifier {%
     function (d) { return {
-        ...Compound(d, n.VariableDecl, null),
-        name: Identifier(d[3]),
-        typename: d[0],
+        ...ExtendedCompound(d, Identifier(d[1])),
         is_reference: !!d[2],
     }; }
 %}
-var_decl -> typename _ (%atsign):? %identifier _ "=" (_ expression):? {%
+
+var_decl -> typename _ mb_ref_identifier {%
     function (d) { return {
         ...Compound(d, n.VariableDecl, null),
-        name: Identifier(d[3]),
+        name: d[2],
         typename: d[0],
-        expression: d[6] ? d[6][1] : null,
-        inline_assignment: d[6] ? true : false,
-        is_reference: !!d[2],
+    }; }
+%}
+var_decl -> typename _ mb_ref_identifier _ "=" (_ expression):? {%
+    function (d) { return {
+        ...Compound(d, n.VariableDecl, null),
+        name: d[2],
+        typename: d[0],
+        expression: d[5] ? d[5][1] : null,
+        inline_assignment: d[5] ? true : false,
     }; }
 %}
 var_decl -> typename _ %identifier _ %lparen argumentlist _ %rparen {%

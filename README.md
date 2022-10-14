@@ -5,6 +5,7 @@ todo:
 * funcdefs
 * function casting via funcdefs
 * function handles
+* some constructors not added to scope
 
 changelog:
 
@@ -17,7 +18,7 @@ changelog:
   - imported get/set accessors
   - `shared` and other keywords
   - enum parsing
-  - fix bug WRT openplaent type class properties
+  - fix bug WRT openplaent type class properties scope (was global when shouldn't have been)
   - goto definition of superclasses like `A::B`
   - inline array parsing + type resolution
   - refactor imports to avoid cpu usage and clobbering

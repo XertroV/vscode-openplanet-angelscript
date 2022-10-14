@@ -26,25 +26,39 @@
             "properties": {
                 "OpenplanetAngelscript.openplanetNextLocation": {
                     "type": "string",
+                    "order": 0,
                     "default": "",
                     "description": "Location of OpenplanetNext folder; typically %userprofile%\\OpenplanetNext\\. On linux: `$HOME/OpenplanetNext/`"
                 },
-                "OpenplanetAngelscript.insertParenthesisOnFunctionCompletion": {
+                "OpenplanetAngelscript.parser.enableDebugOutput": {
+                    "type": "boolean",
+                    "order": 1,
+                    "default": false,
+                    "description": "Whether to print debug output for parsing errors under Output > Angelscript Language Server"
+                },
+                "OpenplanetAngelscript.parser.crashOnParseError": {
+                    "type": "boolean",
+                    "order": 2,
+                    "default": false,
+                    "dependencies": {"enableDebugOutput": {"oneOf": [true]}},
+                    "description": "Whether to crash on a parsing error"
+                },
+                "OpenplanetAngelscript.helper.insertParenthesisOnFunctionCompletion": {
                     "type": "boolean",
                     "default": false,
                     "description": "Insert parenthesis pair when auto-completing a function call. (note: bugged when using '(' to complete a suggestion)"
                 },
-                "OpenplanetAngelscript.markUnreadVariablesAsUnused": {
+                "OpenplanetAngelscript.helper.markUnreadVariablesAsUnused": {
                     "type": "boolean",
                     "default": false,
                     "description": "Variables that are written to but never read are marked as unused as well."
                 },
-                "OpenplanetAngelscript.mathCompletionShortcuts": {
+                "OpenplanetAngelscript.helper.mathCompletionShortcuts": {
                     "type": "boolean",
                     "default": true,
                     "description": "Add completions for functions in the Math:: namespace so they can be completed without typing Math:: first."
                 },
-                "OpenplanetAngelscript.correctFloatLiteralsWhenExpectingDoublePrecision": {
+                "OpenplanetAngelscript.helper.correctFloatLiteralsWhenExpectingDoublePrecision": {
                     "type": "boolean",
                     "default": false,
                     "markdownDescription": "When a float literal is typed (eg `1.f`) in a context where double-precision is expected, automatically correct it (eg to `1.0`)"

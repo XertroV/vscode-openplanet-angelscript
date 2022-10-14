@@ -698,8 +698,8 @@ function GetHoverForType(hoveredType : typedb.DBType) : Hover
         hover += hoveredType.name;
         if (hoveredType.supertype)
             hover += " : "+hoveredType.supertype;
-        else if (hoveredType.unrealsuper)
-            hover += " : "+hoveredType.unrealsuper;
+        // else if (hoveredType.unrealsuper)
+        //     hover += " : "+hoveredType.unrealsuper;
     }
 
     hover += "\n```";
