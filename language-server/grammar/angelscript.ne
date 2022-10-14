@@ -883,22 +883,25 @@ expr_leaf -> unary_operator {%
     };}
 %}
 
-lvalue -> %atsign lvalue {%
-    function(d) { return d[1]; }
+lvalue -> lvalue_inner {% id %}
+lvalue -> %atsign lvalue_inner {%
+    function(d) {
+        return ExtendedCompound(d, {...d[1], is_reference: true});
+    }
 %}
 
-lvalue -> %identifier {%
+lvalue_inner -> %identifier {%
     function(d, l) { return Identifier(d[0]); }
 %}
 
-lvalue -> %this_token {%
+lvalue_inner -> %this_token {%
     function (d) { return Literal(n.This, d[0]); }
 %}
 
-lvalue -> lvalue _ %dot _ %identifier {%
+lvalue_inner -> lvalue_inner _ %dot _ %identifier {%
     function (d) { return Compound(d, n.MemberAccess, [d[0], Identifier(d[4])]); }
 %}
-lvalue -> %lparen _ expression _ %rparen {%
+lvalue_inner -> %lparen _ expression _ %rparen {%
     function (d) {
         if (!d[2])
             return null;
@@ -910,17 +913,17 @@ lvalue -> %lparen _ expression _ %rparen {%
             });
     }
 %}
-lvalue -> lvalue _ %lparen argumentlist _ %rparen {%
+lvalue_inner -> lvalue_inner _ %lparen argumentlist _ %rparen {%
     function (d) { return Compound(d, n.FunctionCall, [d[0], d[3]]); }
 %}
-lvalue -> lvalue _ %lsqbracket optional_expression _ %rsqbracket {%
+lvalue_inner -> lvalue_inner _ %lsqbracket optional_expression _ %rsqbracket {%
     function (d) { return Compound(d, n.IndexOperator, [d[0], d[3]]); }
 %}
-lvalue -> template_typename _ %lparen argumentlist _ %rparen {%
+lvalue_inner -> template_typename _ %lparen argumentlist _ %rparen {%
     function (d) { return Compound(d, n.ConstructorCall, [d[0], d[3]]); }
 %}
 
-lvalue -> %cast_token _ "<" _ typename _ ">" _ %lparen optional_expression _ %rparen {%
+lvalue_inner -> %cast_token _ "<" _ typename _ ">" _ %lparen optional_expression _ %rparen {%
     function (d) { return Compound(d, n.CastOperation, [d[4], d[9]]); }
 %}
 # INCOMPLETE: Attempts to parse an incomplete cast while the user is typing
@@ -931,7 +934,7 @@ expression -> %cast_token _ "<" _ typename (_ ">"):? {%
     function (d) { return Compound(d, n.CastOperation, [d[4], null]); }
 %}
 
-lvalue -> namespace_access {% id %}
+lvalue_inner -> namespace_access {% id %}
 namespace_access -> namespace_access _ %ns _ %identifier {%
     function (d) { return Compound(d, n.NamespaceAccess, [d[0], Identifier(d[4])]); }
 %}
@@ -943,22 +946,22 @@ namespace_access -> %ns _ %identifier {%
 %}
 
 # INCOMPLETE: Attempts to parse an incomplete namespace access while the user is typing
-lvalue -> %identifier _ %ns {%
+lvalue_inner -> %identifier _ %ns {%
     function (d) { return Compound(d, n.NamespaceAccess, [Identifier(d[0]), null]); }
 %}
 # INCOMPLETE: Attempts to parse an incomplete namespace access while the user is typing
-lvalue -> namespace_access _ %ns {%
+lvalue_inner -> namespace_access _ %ns {%
     function (d) { return Compound(d, n.NamespaceAccess, [d[0], null]); }
 %}
 # INCOMPLETE: Attempts to parse an incomplete namespace access while the user is typing
-lvalue -> %identifier _ ":" {%
+lvalue_inner -> %identifier _ ":" {%
     function (d) { return {
         ...Compound(d, n.NamespaceAccess, [Identifier(d[0]), null]),
         incomplete_colon: true
      } }
 %}
 # INCOMPLETE: Attempts to parse an incomplete namespace access while the user is typing
-lvalue -> namespace_access _ ":" {%
+lvalue_inner -> namespace_access _ ":" {%
     function (d) { return {
         ...Compound(d, n.NamespaceAccess, [d[0], null]),
         incomplete_colon: true
@@ -966,11 +969,11 @@ lvalue -> namespace_access _ ":" {%
 %}
 
 # INCOMPLETE: Attempts to parse an incomplete member access while the user is typing
-lvalue -> lvalue _ %dot {%
+lvalue_inner -> lvalue_inner _ %dot {%
     function (d) { return Compound(d, n.MemberAccess, [d[0], null]); }
 %}
 # INCOMPLETE: Attempts to parse an incomplete bracketed expression
-lvalue -> %lparen _ %rparen {%
+lvalue_inner -> %lparen _ %rparen {%
     function (d) { return null; }
 %}
 # INCOMPLETE: Attempts to parse an incomplete assignment while the user is typing

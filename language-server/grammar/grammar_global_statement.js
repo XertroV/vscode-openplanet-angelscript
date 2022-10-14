@@ -930,19 +930,22 @@ var grammar = {
             operator: Operator(d[0]),
         };}
         },
-    {"name": "lvalue", "symbols": [(lexer.has("atsign") ? {type: "atsign"} : atsign), "lvalue"], "postprocess": 
-        function(d) { return d[1]; }
+    {"name": "lvalue", "symbols": ["lvalue_inner"], "postprocess": id},
+    {"name": "lvalue", "symbols": [(lexer.has("atsign") ? {type: "atsign"} : atsign), "lvalue_inner"], "postprocess": 
+        function(d) {
+            return ExtendedCompound(d, {...d[1], is_reference: true});
+        }
         },
-    {"name": "lvalue", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": 
+    {"name": "lvalue_inner", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": 
         function(d, l) { return Identifier(d[0]); }
         },
-    {"name": "lvalue", "symbols": [(lexer.has("this_token") ? {type: "this_token"} : this_token)], "postprocess": 
+    {"name": "lvalue_inner", "symbols": [(lexer.has("this_token") ? {type: "this_token"} : this_token)], "postprocess": 
         function (d) { return Literal(n.This, d[0]); }
         },
-    {"name": "lvalue", "symbols": ["lvalue", "_", (lexer.has("dot") ? {type: "dot"} : dot), "_", (lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": 
+    {"name": "lvalue_inner", "symbols": ["lvalue_inner", "_", (lexer.has("dot") ? {type: "dot"} : dot), "_", (lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": 
         function (d) { return Compound(d, n.MemberAccess, [d[0], Identifier(d[4])]); }
         },
-    {"name": "lvalue", "symbols": [(lexer.has("lparen") ? {type: "lparen"} : lparen), "_", "expression", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
+    {"name": "lvalue_inner", "symbols": [(lexer.has("lparen") ? {type: "lparen"} : lparen), "_", "expression", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
         function (d) {
             if (!d[2])
                 return null;
@@ -954,16 +957,16 @@ var grammar = {
                 });
         }
         },
-    {"name": "lvalue", "symbols": ["lvalue", "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "argumentlist", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
+    {"name": "lvalue_inner", "symbols": ["lvalue_inner", "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "argumentlist", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
         function (d) { return Compound(d, n.FunctionCall, [d[0], d[3]]); }
         },
-    {"name": "lvalue", "symbols": ["lvalue", "_", (lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), "optional_expression", "_", (lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": 
+    {"name": "lvalue_inner", "symbols": ["lvalue_inner", "_", (lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), "optional_expression", "_", (lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": 
         function (d) { return Compound(d, n.IndexOperator, [d[0], d[3]]); }
         },
-    {"name": "lvalue", "symbols": ["template_typename", "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "argumentlist", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
+    {"name": "lvalue_inner", "symbols": ["template_typename", "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "argumentlist", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
         function (d) { return Compound(d, n.ConstructorCall, [d[0], d[3]]); }
         },
-    {"name": "lvalue", "symbols": [(lexer.has("cast_token") ? {type: "cast_token"} : cast_token), "_", {"literal":"<"}, "_", "typename", "_", {"literal":">"}, "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "optional_expression", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
+    {"name": "lvalue_inner", "symbols": [(lexer.has("cast_token") ? {type: "cast_token"} : cast_token), "_", {"literal":"<"}, "_", "typename", "_", {"literal":">"}, "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "optional_expression", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
         function (d) { return Compound(d, n.CastOperation, [d[4], d[9]]); }
         },
     {"name": "expression$ebnf$1$subexpression$1", "symbols": ["_", {"literal":"<"}]},
@@ -978,7 +981,7 @@ var grammar = {
     {"name": "expression", "symbols": [(lexer.has("cast_token") ? {type: "cast_token"} : cast_token), "_", {"literal":"<"}, "_", "typename", "expression$ebnf$2"], "postprocess": 
         function (d) { return Compound(d, n.CastOperation, [d[4], null]); }
         },
-    {"name": "lvalue", "symbols": ["namespace_access"], "postprocess": id},
+    {"name": "lvalue_inner", "symbols": ["namespace_access"], "postprocess": id},
     {"name": "namespace_access", "symbols": ["namespace_access", "_", (lexer.has("ns") ? {type: "ns"} : ns), "_", (lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": 
         function (d) { return Compound(d, n.NamespaceAccess, [d[0], Identifier(d[4])]); }
         },
@@ -988,28 +991,28 @@ var grammar = {
     {"name": "namespace_access", "symbols": [(lexer.has("ns") ? {type: "ns"} : ns), "_", (lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": 
         function (d) { return Compound(d, n.NamespaceAccess, [null, Identifier(d[2])]); }
         },
-    {"name": "lvalue", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), "_", (lexer.has("ns") ? {type: "ns"} : ns)], "postprocess": 
+    {"name": "lvalue_inner", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), "_", (lexer.has("ns") ? {type: "ns"} : ns)], "postprocess": 
         function (d) { return Compound(d, n.NamespaceAccess, [Identifier(d[0]), null]); }
         },
-    {"name": "lvalue", "symbols": ["namespace_access", "_", (lexer.has("ns") ? {type: "ns"} : ns)], "postprocess": 
+    {"name": "lvalue_inner", "symbols": ["namespace_access", "_", (lexer.has("ns") ? {type: "ns"} : ns)], "postprocess": 
         function (d) { return Compound(d, n.NamespaceAccess, [d[0], null]); }
         },
-    {"name": "lvalue", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), "_", {"literal":":"}], "postprocess": 
+    {"name": "lvalue_inner", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), "_", {"literal":":"}], "postprocess": 
         function (d) { return {
             ...Compound(d, n.NamespaceAccess, [Identifier(d[0]), null]),
             incomplete_colon: true
          } }
         },
-    {"name": "lvalue", "symbols": ["namespace_access", "_", {"literal":":"}], "postprocess": 
+    {"name": "lvalue_inner", "symbols": ["namespace_access", "_", {"literal":":"}], "postprocess": 
         function (d) { return {
             ...Compound(d, n.NamespaceAccess, [d[0], null]),
             incomplete_colon: true
          } }
         },
-    {"name": "lvalue", "symbols": ["lvalue", "_", (lexer.has("dot") ? {type: "dot"} : dot)], "postprocess": 
+    {"name": "lvalue_inner", "symbols": ["lvalue_inner", "_", (lexer.has("dot") ? {type: "dot"} : dot)], "postprocess": 
         function (d) { return Compound(d, n.MemberAccess, [d[0], null]); }
         },
-    {"name": "lvalue", "symbols": [(lexer.has("lparen") ? {type: "lparen"} : lparen), "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
+    {"name": "lvalue_inner", "symbols": [(lexer.has("lparen") ? {type: "lparen"} : lparen), "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
         function (d) { return null; }
         },
     {"name": "assignment", "symbols": ["lvalue", "_", {"literal":"="}], "postprocess": 

@@ -1586,9 +1586,15 @@ var grammar = {
     {"name": "settings_tab_kwarg$subexpression$1", "symbols": [{"literal":"name="}]},
     {"name": "settings_tab_kwarg$subexpression$2", "symbols": [(lexer.has("dqstring") ? {type: "dqstring"} : dqstring)]},
     {"name": "settings_tab_kwarg$subexpression$2", "symbols": [(lexer.has("sqstring") ? {type: "sqstring"} : sqstring)]},
-    {"name": "settings_tab_kwarg", "symbols": ["settings_tab_kwarg$subexpression$1", "settings_tab_kwarg$subexpression$2"], "postprocess": id}
+    {"name": "settings_tab_kwarg", "symbols": ["settings_tab_kwarg$subexpression$1", "settings_tab_kwarg$subexpression$2"], "postprocess": id},
+    {"name": "main", "symbols": ["array_statement", "_"], "postprocess": 
+        function (d) { return d[0]; }
+        },
+    {"name": "main", "symbols": ["_"], "postprocess": 
+        function (d) { return null; }
+        }
 ]
-  , ParserStart: "optional_statement"
+  , ParserStart: "main"
 }
 if (typeof module !== 'undefined'&& typeof module.exports !== 'undefined') {
    module.exports = grammar;

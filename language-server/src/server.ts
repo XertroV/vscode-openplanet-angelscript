@@ -52,6 +52,7 @@ import { NotificationType } from 'vscode-languageclient';
 // let glob = require('glob');
 import * as glob from 'glob';
 import * as AdmZip from 'adm-zip';
+import { _DEBUG } from './as_parser';
 
 // Create a connection for the server. The connection uses Node's IPC as a transport
 let connection: Connection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
@@ -444,7 +445,7 @@ function LoadOpenplanetDependencies(deps: string[]) {
     let modules = asFilesToLoad.map(LoadDependencyModule);
     modules.forEach(scriptfiles.UpdateModuleFromDisk);
     let doParse = () => {
-        modules.forEach(m => scriptfiles.ParseModule(m, true));
+        modules.forEach(m => scriptfiles.ParseModule(m, _DEBUG));
         setTimeout(doPostProcess, 1);
     };
     let doPostProcess = () => {
@@ -520,7 +521,7 @@ function TickQueues()
         for (let n = 0; n < 5 && ParseQueueIndex < ParseQueue.length; ++n, ++ParseQueueIndex)
         {
             if (!ParseQueue[ParseQueueIndex].parsed)
-                scriptfiles.ParseModule(ParseQueue[ParseQueueIndex]);
+                scriptfiles.ParseModule(ParseQueue[ParseQueueIndex], _DEBUG);
             PostProcessTypesQueue.push(ParseQueue[ParseQueueIndex]);
         }
     }
