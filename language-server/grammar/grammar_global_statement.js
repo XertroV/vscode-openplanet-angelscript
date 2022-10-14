@@ -45,7 +45,6 @@ const lexer = moo.compile({
     binary_number: /0[bB][01]*/,
     identifier: { match: /[A-Za-z_][A-Za-z0-9_]*/,
         type: moo.keywords({
-            if_token: "if",
             enum_token: "enum",
             return_token: "return",
             continue_token: "continue",
@@ -59,14 +58,15 @@ const lexer = moo.compile({
             const_token: "const",
             final_token: "final",
             override_token: "override",
-            delegate_token: "delegate",
             property_token: "property",
             mixin_token: "mixin",
             shared_token: "shared",
             funcdef_token: "funcdef",
             local_token: "local",
-            // event_token: "event",
+            if_token: "if",
             else_token: "else",
+            try_token: "try",
+            catch_token: "catch",
             while_token: "while",
             for_token: "for",
             case_token: "case",
@@ -278,6 +278,8 @@ var grammar = {
     {"name": "statement", "symbols": [(lexer.has("else_token") ? {type: "else_token"} : else_token), "optional_statement"], "postprocess": 
         function (d) { return Compound(d, n.ElseStatement, [d[1]]); }
         },
+    {"name": "statement", "symbols": [(lexer.has("try_token") ? {type: "try_token"} : try_token)], "postprocess": d => Compound(d, n.TryStatement, [])},
+    {"name": "statement", "symbols": [(lexer.has("catch_token") ? {type: "catch_token"} : catch_token)], "postprocess": d => Compound(d, n.CatchStatement, [])},
     {"name": "statement", "symbols": [(lexer.has("switch_token") ? {type: "switch_token"} : switch_token), "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "optional_expression", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
         function (d) { return Compound(d, n.SwitchStatement, [d[3]]); }
         },
@@ -593,23 +595,31 @@ var grammar = {
             return args;
         }
         },
-    {"name": "var_decl", "symbols": ["typename", "_", (lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": 
-        function (d) { return {
-            ...Compound(d, n.VariableDecl, null),
-            name: Identifier(d[2]),
-            typename: d[0],
-        }; }
-        },
-    {"name": "var_decl$ebnf$1$subexpression$1", "symbols": ["_", "expression"]},
+    {"name": "var_decl$ebnf$1$subexpression$1", "symbols": [(lexer.has("atsign") ? {type: "atsign"} : atsign)]},
     {"name": "var_decl$ebnf$1", "symbols": ["var_decl$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "var_decl$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "var_decl", "symbols": ["typename", "_", (lexer.has("identifier") ? {type: "identifier"} : identifier), "_", {"literal":"="}, "var_decl$ebnf$1"], "postprocess": 
+    {"name": "var_decl", "symbols": ["typename", "_", "var_decl$ebnf$1", (lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": 
         function (d) { return {
             ...Compound(d, n.VariableDecl, null),
-            name: Identifier(d[2]),
+            name: Identifier(d[3]),
             typename: d[0],
-            expression: d[5] ? d[5][1] : null,
-            inline_assignment: d[5] ? true : false,
+            is_reference: !!d[2],
+        }; }
+        },
+    {"name": "var_decl$ebnf$2$subexpression$1", "symbols": [(lexer.has("atsign") ? {type: "atsign"} : atsign)]},
+    {"name": "var_decl$ebnf$2", "symbols": ["var_decl$ebnf$2$subexpression$1"], "postprocess": id},
+    {"name": "var_decl$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "var_decl$ebnf$3$subexpression$1", "symbols": ["_", "expression"]},
+    {"name": "var_decl$ebnf$3", "symbols": ["var_decl$ebnf$3$subexpression$1"], "postprocess": id},
+    {"name": "var_decl$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "var_decl", "symbols": ["typename", "_", "var_decl$ebnf$2", (lexer.has("identifier") ? {type: "identifier"} : identifier), "_", {"literal":"="}, "var_decl$ebnf$3"], "postprocess": 
+        function (d) { return {
+            ...Compound(d, n.VariableDecl, null),
+            name: Identifier(d[3]),
+            typename: d[0],
+            expression: d[6] ? d[6][1] : null,
+            inline_assignment: d[6] ? true : false,
+            is_reference: !!d[2],
         }; }
         },
     {"name": "var_decl", "symbols": ["typename", "_", (lexer.has("identifier") ? {type: "identifier"} : identifier), "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "argumentlist", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
@@ -621,11 +631,11 @@ var grammar = {
             inline_constructor: true,
         }; }
         },
-    {"name": "var_decl$ebnf$2$subexpression$1", "symbols": ["_", (lexer.has("comma") ? {type: "comma"} : comma), "_", "var_decl_multi_part"]},
-    {"name": "var_decl$ebnf$2", "symbols": ["var_decl$ebnf$2$subexpression$1"]},
-    {"name": "var_decl$ebnf$2$subexpression$2", "symbols": ["_", (lexer.has("comma") ? {type: "comma"} : comma), "_", "var_decl_multi_part"]},
-    {"name": "var_decl$ebnf$2", "symbols": ["var_decl$ebnf$2", "var_decl$ebnf$2$subexpression$2"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "var_decl", "symbols": ["typename", "_", "var_decl_multi_part", "var_decl$ebnf$2"], "postprocess": 
+    {"name": "var_decl$ebnf$4$subexpression$1", "symbols": ["_", (lexer.has("comma") ? {type: "comma"} : comma), "_", "var_decl_multi_part"]},
+    {"name": "var_decl$ebnf$4", "symbols": ["var_decl$ebnf$4$subexpression$1"]},
+    {"name": "var_decl$ebnf$4$subexpression$2", "symbols": ["_", (lexer.has("comma") ? {type: "comma"} : comma), "_", "var_decl_multi_part"]},
+    {"name": "var_decl$ebnf$4", "symbols": ["var_decl$ebnf$4", "var_decl$ebnf$4$subexpression$2"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "var_decl", "symbols": ["typename", "_", "var_decl_multi_part", "var_decl$ebnf$4"], "postprocess": 
         function (d) {
             let vars = [d[2]];
             vars[0].typename = d[0];

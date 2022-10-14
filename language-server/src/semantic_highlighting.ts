@@ -9,8 +9,8 @@ export let SemanticTypeList : Array<string> = [
     "namespace", "template_base_type", "parameter",
     "local_variable", "member_variable", "member_accessor", "global_variable",
     "global_accessor", "member_function", "global_function", "unknown_error",
-    "typename", "typename_actor", "typename_component", "typename_struct", "typename_event",
-    "typename_delegate", "typename_primitive", "unimported_symbol", "access_specifier"
+    "typename", // "typename_actor", "typename_component", "typename_struct", "typename_event", "typename_delegate",
+    "typename_primitive", "unimported_symbol", "access_specifier"
 ];
 
 for (let i = 0, Count = SemanticTypeList.length; i < Count; ++i)
@@ -117,15 +117,15 @@ function BuildSymbols(asmodule : scriptfiles.ASModule, builder : SemanticTokensB
                 // case typedb.DBTypeClassification.Actor:
                 //     type = SemanticTypes.typename_actor;
                 // break;
-                case typedb.DBTypeClassification.Struct:
-                    type = SemanticTypes.typename_struct;
-                break;
-                case typedb.DBTypeClassification.Event:
-                    type = SemanticTypes.typename_event;
-                break;
-                case typedb.DBTypeClassification.Delegate:
-                    type = SemanticTypes.typename_delegate;
-                break;
+                // case typedb.DBTypeClassification.Struct:
+                //     type = SemanticTypes.typename_struct;
+                // break;
+                // case typedb.DBTypeClassification.Event:
+                //     type = SemanticTypes.typename_event;
+                // break;
+                // case typedb.DBTypeClassification.Delegate:
+                //     type = SemanticTypes.typename_delegate;
+                // break;
                 case typedb.DBTypeClassification.Primitive:
                     type = SemanticTypes.typename_primitive;
                 break;

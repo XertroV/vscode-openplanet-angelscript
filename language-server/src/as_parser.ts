@@ -65,7 +65,7 @@ export let ASKeywords = [
     "for", "if", "enum", "return", "continue", "break", "import", "class", "struct", "default",
     "void", "const", "else", "while", "case", "cast", "namespace",
     "true", "false", "this", "auto", "null", "shared", "funcdef",
-    "final", "property", "override", "mixin", "switch",
+    "final", "property", "override", "mixin", "switch", "try", "catch",
     // "UFUNCTION", "UPROPERTY", "UCLASS", "USTRUCT", "nullptr",
     // "delegate", "event",
 ];
@@ -1288,7 +1288,7 @@ function PreParseImports(module : ASModule)
 
 // Use regex to lift out types, namespaces and global functions so resolve can find them later
 let re_preparse_type = /\s*(class|struct|namespace|enum)\s+([A-Za-z0-9_]+)(\s*:\s*([A-Za-z0-9_]+))?\s*\{/g;
-let re_preparse_function = /(\n|^)[ \t]*((mixin|delegate|event)[ \t]+)?((const[ \t]+)?([A-Za-z_0-9]+(\<[A-Za-z0-9_]+(,\s*[A-Za-z0-9_]+)*\>)?)([ \t]*&)?)[\t ]+([A-Za-z0-9_]+)\(((.|\n|\r)*?)\)/g;
+let re_preparse_function = /(\n|^)[ \t]*((mixzzzzin|delezzzzgate|ezzzzzvent)[ \t]+)?((const[ \t]+)?([A-Za-z_0-9]+(\<[A-Za-z0-9_]+(,\s*[A-Za-z0-9_]+)*\>)?)([ \t]*&)?)[\t ]+([A-Za-z0-9_]+)\(((.|\n|\r)*?)\)/g;
 function PreParseTypes(module : ASModule)
 {
     module.preParsedIdentifiers = [];
@@ -2335,6 +2335,8 @@ function GenerateTypeInformation(scope : ASScope)
             break;
             case node_types.IfStatement:
             case node_types.ElseStatement:
+            case node_types.TryStatement:
+            case node_types.CatchStatement:
             case node_types.ForLoop:
             case node_types.WhileLoop:
             case node_types.CaseStatement:
@@ -3161,12 +3163,12 @@ export function GetOverloadMethodForOperator(operator : string) : string
         case ">": return "opCmp";
         case ">=": return "opCmp";
         case "<=": return "opCmp";
-        case "-": return "opNeg";
+        case "-": return "opNeg"; //
         case "~": return "opCom";
         case "++": return "opPreInc";
         case "--": return "opPreDec";
-        case "++": return "opPostInc";
-        case "--": return "opPostDec";
+        case "++": return "opPostInc"; //
+        case "--": return "opPostDec"; //
         case "+=": return "opAddAssign";
         case "-=": return "opSubAssign";
         case "*=": return "opMulAssign";
@@ -3292,6 +3294,9 @@ function ResolvePropertyType(dbtype : typedb.DBType, name : string) : typedb.DBT
         if (setAccessor.isProperty && setAccessor.args.length != 0)
             return typedb.LookupType(dbtype.namespace, setAccessor.args[0].typename);
     }
+
+    // Find function / funcdef
+    // todo
 
     return null;
 }

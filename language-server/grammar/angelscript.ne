@@ -41,7 +41,6 @@ const lexer = moo.compile({
     binary_number: /0[bB][01]*/,
     identifier: { match: /[A-Za-z_][A-Za-z0-9_]*/,
         type: moo.keywords({
-            if_token: "if",
             enum_token: "enum",
             return_token: "return",
             continue_token: "continue",
@@ -55,14 +54,15 @@ const lexer = moo.compile({
             const_token: "const",
             final_token: "final",
             override_token: "override",
-            delegate_token: "delegate",
             property_token: "property",
             mixin_token: "mixin",
             shared_token: "shared",
             funcdef_token: "funcdef",
             local_token: "local",
-            // event_token: "event",
+            if_token: "if",
             else_token: "else",
+            try_token: "try",
+            catch_token: "catch",
             while_token: "while",
             for_token: "for",
             case_token: "case",
@@ -280,6 +280,9 @@ statement -> %return_token {%
 statement -> %else_token optional_statement {%
     function (d) { return Compound(d, n.ElseStatement, [d[1]]); }
 %}
+
+statement -> %try_token {% d => Compound(d, n.TryStatement, []) %}
+statement -> %catch_token {% d => Compound(d, n.CatchStatement, []) %}
 
 statement -> %switch_token _ %lparen optional_expression _ %rparen {%
     function (d) { return Compound(d, n.SwitchStatement, [d[3]]); }
@@ -564,20 +567,22 @@ access_mod_list -> %identifier (_ "," _ %identifier):* (_ %comma):? {%
     }
 %}
 
-var_decl -> typename _ %identifier {%
+var_decl -> typename _ (%atsign):? %identifier {%
     function (d) { return {
         ...Compound(d, n.VariableDecl, null),
-        name: Identifier(d[2]),
+        name: Identifier(d[3]),
         typename: d[0],
+        is_reference: !!d[2],
     }; }
 %}
-var_decl -> typename _ %identifier _ "=" (_ expression):? {%
+var_decl -> typename _ (%atsign):? %identifier _ "=" (_ expression):? {%
     function (d) { return {
         ...Compound(d, n.VariableDecl, null),
-        name: Identifier(d[2]),
+        name: Identifier(d[3]),
         typename: d[0],
-        expression: d[5] ? d[5][1] : null,
-        inline_assignment: d[5] ? true : false,
+        expression: d[6] ? d[6][1] : null,
+        inline_assignment: d[6] ? true : false,
+        is_reference: !!d[2],
     }; }
 %}
 var_decl -> typename _ %identifier _ %lparen argumentlist _ %rparen {%

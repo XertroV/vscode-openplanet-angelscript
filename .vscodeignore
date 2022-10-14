@@ -2,3 +2,13 @@
 .vscode-test/**
 .gitignore
 vsc-extension-quickstart.md
+# node_modules
+# out/
+language-server/src/
+#language-server/node_modules
+# language-server/out/
+extension/src/
+#extension/node_modules
+# extension/out/
+tsconfig.json
+test.as

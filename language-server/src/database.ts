@@ -68,9 +68,9 @@ export enum DBTypeClassification
     Other,
     // Component,
     // Actor,
-    Struct,
-    Event,
-    Delegate,
+    // Struct,
+    // Event,
+    // Delegate,
     Primitive
 };
 
@@ -967,7 +967,7 @@ export class DBType implements DBSymbol
             let method = dbsuper.getMethod(methodname, false);
             if (method)
             {
-                if (!dbsuper.isUnrealType || method.isBlueprintEvent)
+                if (!dbsuper.isUnrealType() || method.isBlueprintEvent)
                     return true;
             }
             checktype = dbsuper.supertype;
@@ -1163,13 +1163,13 @@ export class DBType implements DBSymbol
     {
         if (this.classification == DBTypeClassification.Unknown)
         {
-            if (this.isDelegate)
-                this.classification = DBTypeClassification.Delegate;
-            else if (this.isEvent)
-                this.classification = DBTypeClassification.Event;
-            else if (this.isStruct)
-                this.classification = DBTypeClassification.Struct;
-            else if (this.isPrimitive)
+            // if (this.isDelegate)
+            //     this.classification = DBTypeClassification.Delegate;
+            // else if (this.isEvent)
+            //     this.classification = DBTypeClassification.Event;
+            // else if (this.isStruct)
+            //     this.classification = DBTypeClassification.Struct;
+            if (this.isPrimitive)
                 this.classification = DBTypeClassification.Primitive;
             else
                 this.classification = DBTypeClassification.Other;

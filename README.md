@@ -1,3 +1,9 @@
+todo:
+
+* `array<A::B>`, or `namespace A { auto x = {B()}; class B {} }` accessing x from outside A
+  * types don't resolve right
+* declare `super` method in class contexts when .superclass exists
+
 Language Server and Debug Adapter for use with the UnrealEngine-Angelscript plugin from https://angelscript.hazelight.se
 
 ## Getting Started

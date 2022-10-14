@@ -1091,10 +1091,10 @@ export function WorkspaceSymbols( query : string ) : WorkspaceSymbol[]
                         symbol.data = [namespace.getQualifiedNamespace(), dbfunc.name];
                         symbol.location = {uri: symbolModule.displayUri};
 
-                        if (dbfunc.isBlueprintEvent)
-                            symbol.kind = SymbolKind.Event;
-                        else
-                            symbol.kind = SymbolKind.Method;
+                        // if (dbfunc.isBlueprintEvent)
+                        //     symbol.kind = SymbolKind.Event;
+                        // else
+                        symbol.kind = SymbolKind.Method;
                         symbol.containerName = qualifiedName;
 
                         symbols.push(symbol);

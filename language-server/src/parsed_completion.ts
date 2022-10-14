@@ -924,8 +924,8 @@ function AddCompletionsFromKeywords(context : CompletionContext, completions : A
         && (!context.isSubExpression && !context.isRightExpression))
     {
         AddCompletionsFromKeywordList(context, [
-            "delegate", "event", "class",
-            "property", "shared"
+            // "delegate", "event",
+            "class", "property", "shared", "funcdef"
         ], completions);
 
         if (CanCompleteTo(context, "UCLASS"))

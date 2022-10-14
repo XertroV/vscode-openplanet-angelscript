@@ -36,6 +36,8 @@ module.exports = {
 
     IfStatement: indexed ? i++ : "IfStatement",
     ElseStatement: indexed ? i++ : "ElseStatement",
+    TryStatement: indexed ? i++ : "TryStatement",
+    CatchStatement: indexed ? i++ : "CatchStatement",
     ReturnStatement: indexed ? i++ : "ReturnStatement",
     ImportStatement: indexed ? i++ : "ImportStatement",
     ImportFunctionStatement: indexed ? i++ : "ImportFunctionStatement",
@@ -57,7 +59,7 @@ module.exports = {
     VariableDecl: indexed ? i++ : "VariableDecl",
     VariableDeclMulti: indexed ? i++ : "VariableDeclMulti",
     FunctionDecl: indexed ? i++ : "FunctionDecl",
-    DelegateDecl: indexed ? i++ : "DelegateDecl",
+    // DelegateDecl: indexed ? i++ : "DelegateDecl",
     // EventDecl: indexed ? i++ : "EventDecl",
     ConstructorDecl: indexed ? i++ : "ConstructorDecl",
     DestructorDecl: indexed ? i++ : "ConstructorDecl",
