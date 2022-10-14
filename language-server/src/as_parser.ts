@@ -3920,6 +3920,39 @@ export function GetConstantNumberFromNode(node : any) : [boolean, number]
     return [false, 0.0];
 }
 
+function AddFunctionSignature(scope: ASScope, statement: ASStatement, parseContext: ASParseContext, signature: any) {
+    if (signature)
+    {
+        // Add the symbol for the return type
+        if (signature.returntype && signature.returntype.value != 'void')
+            AddTypenameSymbol(scope, statement, signature.returntype);
+
+        // Add the function name
+        if (signature.name)
+        {
+            let namespace = scope.getNamespace().getQualifiedNamespace();
+            AddIdentifierSymbol(scope, statement, signature.name, ASSymbolType.GlobalFunction, namespace, signature.name.value);
+        }
+
+        // Add symbols for all parameters of the function
+        if (signature.parameters)
+        {
+           for (let param of signature.parameters)
+            {
+                // Add the typename of the parameter
+                if (param.typename)
+                    AddTypenameSymbol(scope, statement, param.typename);
+                // Add the name of the parameter
+                if (param.name)
+                    AddIdentifierSymbol(scope, statement, param.name, ASSymbolType.Parameter, null, param.name.value);
+                // Detect inside the default expression for the parameter
+                if (param.expression)
+                    DetectNodeSymbols(scope, statement, param.expression, parseContext, typedb.DBAllowSymbol.Properties);
+            }
+        }
+    }
+}
+
 function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any, parseContext : ASParseContext, symbol_type : typedb.DBAllowSymbol = typedb.DBAllowSymbol.Properties) : typedb.DBSymbol | typedb.DBType
 {
     if (!node)
@@ -4506,6 +4539,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
             }
         }
         break;
+        /*
         // event/delegate void X(...)
         case node_types.EventDecl:
         case node_types.DelegateDecl:
@@ -4541,40 +4575,25 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
             }
         }
         break;
+        */
+        // funcdef void X();
+        case node_types.FuncdefDefinition: {
+            let signature = statement.ast.children[0];
+            // if (signature) {
+            //     console.log(`funcdef signature: ${JSON.stringify(signature)}`)
+            //     let innerParams = signature.parameters;
+            //     let se = {start: signature.start, end: signature.end};
+
+            //     signature.parameters = [{typename: {name: {value: "Function"}}, name: {value: "func"}}]
+            //     signature.return_type = {name: {value: signature.name}};
+            //     AddFunctionSignature(scope, statement, parseContext, signature);
+            // }
+        }
+        break;
         // import void X() from "Y"
         case node_types.ImportFunctionStatement:
         {
-            let signature = statement.ast.children[0];
-            if (signature)
-            {
-                // Add the symbol for the return type
-                if (signature.returntype && signature.returntype.value != 'void')
-                    AddTypenameSymbol(scope, statement, signature.returntype);
-
-                // Add the function name
-                if (signature.name)
-                {
-                    let namespace = scope.getNamespace().getQualifiedNamespace();
-                    AddIdentifierSymbol(scope, statement, signature.name, ASSymbolType.GlobalFunction, namespace, signature.name.value);
-                }
-
-                // Add symbols for all parameters of the function
-                if (signature.parameters)
-                {
-                   for (let param of signature.parameters)
-                    {
-                        // Add the typename of the parameter
-                        if (param.typename)
-                            AddTypenameSymbol(scope, statement, param.typename);
-                        // Add the name of the parameter
-                        if (param.name)
-                            AddIdentifierSymbol(scope, statement, param.name, ASSymbolType.Parameter, null, param.name.value);
-                        // Detect inside the default expression for the parameter
-                        if (param.expression)
-                            DetectNodeSymbols(scope, statement, param.expression, parseContext, typedb.DBAllowSymbol.Properties);
-                    }
-                }
-            }
+            AddFunctionSignature(scope, statement, parseContext, statement.ast.children[0]);
         }
         break;
         // Type X;
@@ -4852,7 +4871,11 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                 let superType = typedb.LookupType(scope.getNamespace(), node.superclass.value);
                 if (superType)
                 {
-                    let superSymbol = AddIdentifierSymbol(scope, statement, node.superclass, ASSymbolType.Typename, null, node.superclass.value);
+                    console.log(`node.superclass: ${JSON.stringify(node.superclass)}`);
+                    console.log(`node: ${JSON.stringify(node)}`);
+                    let scPass = {name: node.superclass, ...node.superclass};
+                    let superSymbol = AddTypenameSymbol(scope, statement, scPass);
+                    // let superSymbol = AddIdentifierSymbol(scope, statement, node.superclass, ASSymbolType.Typename, null, node.superclass.value);
                     if (superType.declaredModule && !ScriptSettings.automaticImports && !scope.module.isModuleImported(superType.declaredModule))
                         superSymbol.isUnimported = true;
                     scope.module.markDependencyType(superType);
