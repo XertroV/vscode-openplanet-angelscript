@@ -10,7 +10,7 @@ import { ProcessScriptTypeGeneratedCode } from "./generated_code";
 import path = require("path");
 import { performance } from "perf_hooks";
 
-export const _DEBUG = true;
+export const _DEBUG = false;
 
 export const getAccPrefix = "get_";
 export const setAccPrefix = "set_";
