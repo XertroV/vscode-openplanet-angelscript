@@ -56,6 +56,11 @@ module.exports = {
     NamespaceDefinition: indexed ? i++ : "NamespaceDefinition",
     FuncdefDefinition: indexed ? i++ : "FuncdefDefinition",
 
+    SettingDeclaration: indexed ? i++ : "SettingDeclaration",
+    SettingKwarg: indexed ? i++ : "SettingKwarg",
+    SettingsTabDeclaration: indexed ? i++ : "SettingsTabDeclaration",
+    SettingsTabKwarg: indexed ? i++ : "SettingsTabKwarg",
+
     VariableDecl: indexed ? i++ : "VariableDecl",
     VariableDeclMulti: indexed ? i++ : "VariableDeclMulti",
     FunctionDecl: indexed ? i++ : "FunctionDecl",

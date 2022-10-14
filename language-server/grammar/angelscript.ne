@@ -393,7 +393,6 @@ global_statement -> %import_token _ function_decl _ "from" _ (%dqstring | %sqstr
         return Compound(d, n.ImportFunctionStatement, [d[2], IdentifierFromString(d[6][0])]);
     }
 %}
-# global_statement -> settings_decl {% function (d) { console.dir({'settings_decl': d}); return null; } %}
 
 global_declaration -> function_decl {% id %}
 global_declaration -> (settings_decl _):? var_decl {%
@@ -406,7 +405,7 @@ global_declaration -> typename {%
         typename: d[0],
     }; }
 %}
-# todo: superclasses like MLHook::HookMLEventsByType aren't detected
+
 global_declaration -> (%shared_token _):? (%class_token | %interface_token) _ (%atsign):? %identifier ( _ %colon):? (_ typename_identifier):? {%
     function (d) { return {
         ...Compound(d, n.ClassDefinition, null),
@@ -439,14 +438,14 @@ global_declaration -> (%shared_token _):? %funcdef_token _ function_signature {%
 #     }; }
 # %}
 
-# todo
-global_declaration -> "settings" _ %identifier _ "for" _ typename {%
-    function (d) { return {
-        ...Compound(d, n.AssetDefinition, null),
-        name: Identifier(d[2]),
-        typename: d[6],
-    }; }
-%}
+# # todo
+# global_declaration -> "settings" _ %identifier _ "for" _ typename {%
+#     function (d) { return {
+#         ...Compound(d, n.AssetDefinition, null),
+#         name: Identifier(d[2]),
+#         typename: d[6],
+#     }; }
+# %}
 
 namespace_definition_name -> %identifier (_ %ns _ %identifier):* {%
     function (d) { return CompoundIdentifier(d, null); }
@@ -1428,27 +1427,49 @@ settings_decl -> setting_var_decl {% id %}
 settings_decl -> setting_tab_decl {% id %}
 # settings_decl -> setting_tab_decl {% id %}
 
-setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs %rsqbracket {% function(d) { return d[3]; } %}
-setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ setting_type_kwargs %rsqbracket {% function(d) { return [...d[3], ...d[5]]; } %}
-setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ setting_type_kwargs _ setting_std_optional_kwargs %rsqbracket {% function(d) { return [...d[3], ...d[5], ...d[7]]; } %}
+setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, d[3]); } %}
+setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ setting_type_kwargs %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, [...d[3], ...d[5]]); } %}
+setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ setting_type_kwargs _ setting_std_optional_kwargs %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, [...d[3], ...d[5], ...d[7]]); } %}
 
-setting_std_optional_kwargs -> (setting_std_optional_kwarg _):* setting_std_optional_kwarg # {% id %}
-setting_std_optional_kwarg -> ("hidden") | (("name=" | "category=" | "description=") (%dqstring | %sqstring)) # {% id %}
+setting_std_optional_kwarg -> ("hidden") | (("name=" | "category=" | "description=") (%dqstring | %sqstring)) {% id %}
+setting_std_optional_kwargs -> (setting_std_optional_kwarg _):* setting_std_optional_kwarg {%
+    (d) => {
+        let result = [d[1]];
+        if (d[0])
+        {
+            for (let sub of d[1])
+                result.push(sub[0]);
+        }
+        return Compound(d, n.SettingKwarg, result);
+    }
+%}
 
 # int, uint, float
-setting_type_kwargs -> setting_type_int_uint_float # {% id %}
-setting_type_int_uint_float -> ("drag" | ("min=" | "max=") (%dqstring | %sqstring)) (setting_type_int_uint_float) # {% id %}
+setting_type_kwargs -> setting_type_int_uint_float {% id %}
+setting_type_int_uint_float -> ("drag" | ("min=" | "max=") (%dqstring | %sqstring)) (setting_type_int_uint_float) {% id %}
 # vec2,vec3,vec4
-setting_type_kwargs -> setting_type_vec234 # {% id %}
-setting_type_vec234 -> ("drag" _) # {% id %}
+setting_type_kwargs -> setting_type_vec234 {% id %}
+setting_type_vec234 -> ("drag" _) {% id %}
 # vec34
-setting_type_kwargs -> (setting_type_vec34 _):* setting_type_vec34 # {% id %}
-setting_type_vec34 -> ("drag" | "color") # {% id %}
+setting_type_kwargs -> (setting_type_vec34 _):* setting_type_vec34 {% id %}
+setting_type_vec34 -> ("drag" | "color") {% id %}
 # string
-setting_type_kwargs -> (setting_type_string _):* setting_type_string # {% id %}
-setting_type_string -> ("multiline" | "password" | "max=" (%dqstring | %sqstring)) # {% id %}
+setting_type_kwargs -> (setting_type_string _):* setting_type_string {% id %}
+setting_type_string -> ("multiline" | "password" | "max=" (%dqstring | %sqstring)) {% id %}
 
-setting_tab_decl -> %lsqbracket _ "SettingsTab" _ settings_tab_kwargs _ %rsqbracket # {% id %}
+setting_tab_decl -> %lsqbracket _ "SettingsTab" _ settings_tab_kwargs _ %rsqbracket {%
+    function(d) { return Compound(d, n.SettingsTabDeclaration, d[4]); }
+%}
 
-settings_tab_kwargs -> (settings_tab_kwarg _):* settings_tab_kwarg # {% id %}
-settings_tab_kwarg -> ("icon=" | "name=") (%dqstring | %sqstring) # {% id %}
+settings_tab_kwargs -> (settings_tab_kwarg _):* settings_tab_kwarg {%
+    (d) => {
+        let result = [d[1]];
+        if (d[0])
+        {
+            for (let sub of d[1])
+                result.push(sub[0]);
+        }
+        return Compound(d, n.SettingsTabKwarg, result);
+    }
+%}
+settings_tab_kwarg -> ("icon=" | "name=") (%dqstring | %sqstring) {% id %}
