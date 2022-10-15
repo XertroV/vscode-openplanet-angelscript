@@ -7,6 +7,7 @@ todo:
 * function handles
 * some constructors not added to scope
 * `auto landmarks = cp.Arena.MapLandmarks;` should be detected as `MwFastBuffer<CGameScriptMapLandmark@>`
+* add https://openplanet.dev/docs/reference/plugin-callbacks suggestions
 
 package: `vsce package`
 
@@ -15,6 +16,9 @@ install from cli: `code --install-extension openplanet-angelscript-X.Y.Z.vsix`
 changelog:
 
 - 0.1.4
+  - load dependencies even if info.toml not found
+  - add completion helpers for openplanet callbacks
+  - added openplanet plugins as dependency options
   - fix settings parsing
   - add options for debug output
   - fix parsing of `auto @x = bar;`

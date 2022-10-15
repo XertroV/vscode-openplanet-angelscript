@@ -30,15 +30,21 @@
                     "default": "",
                     "description": "Location of OpenplanetNext folder; typically %userprofile%\\OpenplanetNext\\. On linux: `$HOME/OpenplanetNext/`"
                 },
+                "OpenplanetAngelscript.openplanetNextPluginsLocation": {
+                    "type": "string",
+                    "order": 1,
+                    "default": "",
+                    "description": "Location of Trackmania/Openplanet folder (Reload required on change). typically `C:\\Program Files (x86)\\Ubisoft\\Ubisoft Game Launcher\\games\\Trackmania\\Openplanet\\Plugins\\`. On WSL: `/mnt/c/Program Files (x86)/Ubisoft/Ubisoft Game Launcher/games/Trackmania/Openplanet/Plugins/`"
+                },
                 "OpenplanetAngelscript.parser.enableDebugOutput": {
                     "type": "boolean",
-                    "order": 1,
+                    "order": 11,
                     "default": false,
                     "description": "Whether to print debug output for parsing errors under Output > Angelscript Language Server"
                 },
                 "OpenplanetAngelscript.parser.crashOnParseError": {
                     "type": "boolean",
-                    "order": 2,
+                    "order": 12,
                     "default": false,
                     "dependencies": {"enableDebugOutput": {"oneOf": [true]}},
                     "description": "Whether to crash on a parsing error (a reload will be required)"

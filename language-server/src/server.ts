@@ -396,14 +396,16 @@ connection.onInitialize((_params): InitializeResult => {
 function LoadOpenplanetInfoToml(file: string) {
     fs.readFile(file, 'utf-8', (err, data) => {
         let info = toml.parse(data);
-        if (!info.script) return;
-        LoadOpenplanetDependencies([...(info.script.dependencies || []), ...(info.script.optional_dependencies || [])]);
+        let deps: string[] = [];
+        if (info.script) deps = [...(info.script.dependencies || []), ...(info.script.optional_dependencies || [])];
+        LoadOpenplanetDependencies(deps);
     })
 }
 
 function LoadOpenplanetDependencies(deps: string[]) {
-    // todo: filter on dependencies to avoid importing everything
+    // todo: filter on dependencies to avoid importing everything, unless deps is empty, or mb just include everything anyway
     let opRoot = scriptfiles.GetScriptSettings().openplanetNextLocation;
+    let opPlugins = scriptfiles.GetScriptSettings().openplanetNextPluginsLocation;
     let pluginsDir = path.join(opRoot, "Plugins");
 
     // plugins as .op files
@@ -435,8 +437,8 @@ function LoadOpenplanetDependencies(deps: string[]) {
     })
 
     // plugins as directories
-    files = glob.sync(pluginsDir+"/*/")
-    files.forEach(f => depDirsToCheck.push(f));
+    glob.sync(path.join(pluginsDir, "*/")).forEach(f => depDirsToCheck.push(f));
+    glob.sync(path.join(opPlugins, "*/")).forEach(f => depDirsToCheck.push(f));
 
     // load dependency stuff
     // console.log(`loading plugins in directories: ${JSON.stringify(depDirsToCheck)}`);
@@ -1142,6 +1144,7 @@ connection.onRequest("angelscript/provideInlineValues", (...params: any[]) : any
         dirtyDiagnostics = true;
     }
     scriptSettings.openplanetNextLocation = settings.openplanetNextLocation;
+    scriptSettings.openplanetNextPluginsLocation = settings.openplanetNextPluginsLocation;
     scriptSettings.enableDebugOutput = settings.parser.enableDebugOutput;
     scriptSettings.crashOnParseError = settings.parser.crashOnParseError;
 

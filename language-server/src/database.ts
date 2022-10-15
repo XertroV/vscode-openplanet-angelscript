@@ -275,6 +275,8 @@ export class DBMethod implements DBSymbol
     moduleScopeStart : number = -1;
     moduleScopeEnd : number = -1;
 
+    suggestionDecl?: string;
+
     createTemplateInstance(templateTypes : Array<string>, actualTypes : Array<string>) : DBMethod
     {
         let inst = new DBMethod();
@@ -367,6 +369,8 @@ export class DBMethod implements DBSymbol
         //         this.macroMeta.set(metaSpec.toLowerCase(), input['meta'][metaSpec]);
         //     this.cacheDelegateMeta();
         // }
+
+        if ('decl' in input) this.suggestionDecl = input['decl'];
     }
 
     cacheDelegateMeta()
@@ -516,6 +520,10 @@ export class DBMethod implements DBSymbol
         }
 
         return true;
+    }
+
+    getSignature(): string {
+        return `${this.returnType} ${this.name}(${this.args.map(a => `${a.typename} ${a.name}`).join(", ")})`
     }
 };
 

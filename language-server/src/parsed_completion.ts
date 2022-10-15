@@ -160,6 +160,11 @@ export function Complete(asmodule: scriptfiles.ASModule, position: Position): Ar
     let offset = asmodule.getOffset(position);
     let context = GenerateCompletionContext(asmodule, offset - 1);
 
+    // if (context.scope.getNamespace().isRootNamespace()) {
+    //     console.warn(`root namespace completions`)
+    //     AddOpenplanetCallbackCompletions(context, completions);
+    // }
+
     // No completions when in ignored code (comments, strings, etc)
     if (context.isIgnoredCode)
         return [];
@@ -982,6 +987,7 @@ function AddCompletionsFromKeywords(context : CompletionContext, completions : A
             AddCompletionsFromKeywordList(context, [
                 "void",
             ], completions);
+            AddOpenplanetCallbackCompletions(context, completions);
         }
     }
 
@@ -3992,14 +3998,101 @@ function AddSuperCallSnippet(context : CompletionContext, completions : Array<Co
     });
 }
 
+let OpenplanetCallbackFunctions: typedb.DBMethod[] = new Array();
+interface OpArg {typedecl: string; name: string}
+
+function MkOpCallbackFunc(name: string, returntypedecl: string = "void", args: OpArg[] = [], desc: string = "") {
+    let ret = new typedb.DBMethod();
+    ret.fromJSON({
+        name,
+        returntypedecl,
+        args,
+        "decl": `${returntypedecl} ${name}(${args.map(a => `${a.typedecl} ${a.name}`).join(", ")})`,
+        desc
+    });
+    OpenplanetCallbackFunctions.push(ret);
+}
+
+function MkArg(typedecl: string, name: string): OpArg {
+    return {typedecl, name};
+}
+
+function PopulateOpenplanetCallbackFunctions() {
+    if (OpenplanetCallbackFunctions?.length > 0) return;
+    MkOpCallbackFunc("Main", "void", [], "Main entry point. Yieldable.")
+    MkOpCallbackFunc("Render", "void", [], "Render function called every frame.")
+    MkOpCallbackFunc("RenderInterface", "void", [], "Render function called every frame intended for `UI`.")
+    MkOpCallbackFunc("RenderMenu", "void", [], "Render function called every frame intended only for menu items in `UI`.")
+    MkOpCallbackFunc("RenderMenuMain", "void", [], "Render function called every frame intended only for menu items in the main menu of the `UI`.")
+    MkOpCallbackFunc("RenderSettings", "void", [], "**Deprecated:** Use `[SettingsTab]` instead! See [Settings](https://openplanet.dev/docs/reference/settings) for more information.\nRender function called every frame intended only for within Openplanet's settings window for `UI`.")
+    MkOpCallbackFunc("Update", "void", [MkArg("float", "dt")], "Called every frame. `dt` is the delta time (milliseconds since last frame).")
+    MkOpCallbackFunc("OnDisabled", "void", [], "Called when the plugin is disabled from the settings, the menu or programatically via the [`Meta` API](https://openplanet.dev/docs/api/Meta).")
+    MkOpCallbackFunc("OnEnabled", "void", [], "Called when the plugin is enabled from the settings, the menu or programatically via the [`Meta` API](https://openplanet.dev/docs/api/Meta).")
+    MkOpCallbackFunc("OnDestroyed", "void", [], "Called when the plugin is unloaded and completely removed from memory.")
+    MkOpCallbackFunc("OnSettingsChanged", "void", [], "Called when a setting in the settings panel was changed.")
+    MkOpCallbackFunc("OnSettingsSave", "void", [MkArg("Settings::Section&", "section")], "Called when the settings for the plugin are being saved.")
+    MkOpCallbackFunc("OnSettingsLoad", "void", [MkArg("Settings::Section&", "section")], "Called when the settings for the plugin are being loaded.")
+    MkOpCallbackFunc("OnLoadCallback", "void", [MkArg("CMwNod@", "nod")], "Called when a Nod is loaded from a file. You have to call `RegisterLoadCallback` first before this is called. This callback is meant as an early callback for a loaded nod. If you're not sure whether you need an early callback and you can avoid using this callback, then avoid using this function.")
+    MkOpCallbackFunc("OnMouseMove", "void", [MkArg("int", "x"), MkArg("int", "y")], "Called whenever the mouse moves. `x` and `y` are the viewport coordinates.")
+    MkOpCallbackFunc("OnMouseButton", "UI::InputBlocking", [MkArg("bool", "down"), MkArg("int", "button"), MkArg("int", "x"), MkArg("int", "y")], "Called whenever a mouse button is pressed. `x` and `y` are the viewport coordinates.")
+    MkOpCallbackFunc("OnMouseWheel", "UI::InputBlocking", [MkArg("int", "x"), MkArg("int", "y")], "Called whenever the mouse wheel is scrolled. `x` and `y` are the scroll delta values.")
+    MkOpCallbackFunc("OnKeyPress", "UI::InputBlocking", [MkArg("bool", "down"), MkArg("VirtualKey", "key")], "Called whenever a key is pressed on the keyboard. See the documentation for the [`VirtualKey` enum](https://openplanet.dev/docs/api/global/VirtualKey).")
+}
+
+export function AddOpenplanetCallbackCompletions(context: CompletionContext, completions: Array<CompletionItem>) {
+    if (!context.scope.getNamespace().isRootNamespace()) return;
+    PopulateOpenplanetCallbackFunctions();
+    let completionNames = new Set<string>();
+
+    OpenplanetCallbackFunctions.forEach(func => {
+        // if (!CanCompleteToOnlyStart(context, func.name))
+        //     return;
+
+        let commitCharacters = ["{"];
+
+        // let toComplete = func.returnType + " " + func.name;
+        let toComplete = func.name;
+        let compl = <CompletionItem>{
+            label: "Define: " + func.name,
+            kind: CompletionItemKind.Function,
+            data: ["global_func", null, func.name, func.id],
+            commitCharacters,
+            filterText: toComplete,
+            sortText: Sort.Typename,
+            insertText: `/** ${func.documentation}\n*/\n` + (func.suggestionDecl || func.getSignature()) + " ",
+            // documentation: func.documentation,
+            detail: func.documentation,
+        };
+
+        compl.labelDetails = <CompletionItemLabelDetails>
+        {
+            detail: (func.args && func.args.length > 0) ? FunctionLabelWithParamsSuffix : FunctionLabelSuffix,
+        };
+
+        compl.command = <Command> {
+            title: "",
+            command: "angelscript.paren",
+        };
+
+        compl.labelDetails.description = func.returnType;
+
+        if (!typedb.IsPrimitive(func.returnType))
+            compl.commitCharacters.push(".");
+        // if (func.returnType && func.returnType != "void")
+        // {
+        // }
+
+        completions.push(compl);
+        completionNames.add(compl.label);
+    });
+}
+
 export function AddMathShortcutCompletions(context : CompletionContext, completions : Array<CompletionItem>)
 {
     if (!CompletionSettings.mathCompletionShortcuts)
         return;
 
     let mathNamespace = typedb.LookupNamespace(null, "Math");
-    // if (!mathNamespace)
-    //     mathNamespace = typedb.LookupNamespace(null, "FMath");
     if (!mathNamespace)
         return;
 

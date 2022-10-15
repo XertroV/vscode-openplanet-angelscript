@@ -40,6 +40,7 @@ export interface ASSettings
     floatIsFloat64 : boolean,
     useAngelscriptHaze: boolean,
     openplanetNextLocation: string,
+    openplanetNextPluginsLocation: string,
     enableDebugOutput: boolean,
     crashOnParseError: boolean,
 };
@@ -49,9 +50,18 @@ let ScriptSettings : ASSettings = {
     floatIsFloat64: false,
     useAngelscriptHaze: false,
     openplanetNextLocation: path.join(os.homedir(), 'OpenplanetNext'),
+    openplanetNextPluginsLocation: GetDefaultOpenplanetPluginsDir(),
     enableDebugOutput: false,
     crashOnParseError: false,
 };
+
+function GetDefaultOpenplanetPluginsDir(): string {
+    let winDefault = `C:\\Program Files (x86)\\Ubisoft\\Ubisoft Game Launcher\\games\\Trackmania\\Openplanet\\Plugins\\`;
+    let wslDefault = `/mnt/c/Program Files (x86)/Ubisoft/Ubisoft Game Launcher/games/Trackmania/Openplanet/Plugins/`;
+    if (fs.existsSync(winDefault)) return winDefault;
+    if (fs.existsSync(wslDefault)) return wslDefault;
+    return "";
+}
 
 let PreParsedIdentifiersInModules = new Map<string, Set<ASModule>>();
 let InitialParseDone = false;
@@ -4723,7 +4733,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                 else if (scope.scopetype == ASScopeType.Namespace || scope.scopetype == ASScopeType.Global)
                 {
                     symType = ASSymbolType.GlobalVariable;
-                    console.log(`insideType ${insideType}`)
+                    // console.log(`insideType ${insideType}`)
                     insideType = (scope.getNamespace() || typedb.GetRootNamespace()).getQualifiedNamespace();
                 }
 
