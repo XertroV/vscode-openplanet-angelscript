@@ -6,9 +6,18 @@ todo:
 * function casting via funcdefs
 * function handles
 * some constructors not added to scope
+* `auto landmarks = cp.Arena.MapLandmarks;` should be detected as `MwFastBuffer<CGameScriptMapLandmark@>`
+
+package: `vsce package`
+
+install from cli: `code --install-extension openplanet-angelscript-X.Y.Z.vsix`
 
 changelog:
 
+- 0.1.4
+  - fix settings parsing
+  - add options for debug output
+  - fix parsing of `auto @x = bar;`
 - 0.1.2-0.1.3
   - fixes WRT parsing lvalues that are references
   - work on funcdef

@@ -1212,7 +1212,7 @@ export class DBType implements DBSymbol
         // todo: bug `MLHook::array<PlayerCpInfo>`
         let typename = this.namespace.getQualifiedNamespace() + "::" + this.name;
         if (this.isTemplateType())
-            typename = this.createTemplateInstance([this.templateSubTypes[0]]).name;
+            typename = this.createTemplateInstance([CleanTypeName(this.templateSubTypes[0])]).name;
         //     typename = this.createTemplateInstance([this.namespace.getQualifiedNamespace() + "::" + this.templateSubTypes[0]]).name;
         if (accessNamespace && !accessNamespace.isRootNamespace())
         {

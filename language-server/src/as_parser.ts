@@ -6141,10 +6141,16 @@ function CheckIfInlineArray(scope: ASScope, cur_element: ASElement, cur_offset: 
         }
         // console.log(`cur_element.content: ${cur_element.content}`);
         let contentTrimmed = cur_element.content.replace("\r", " ").replace("\n", " ").trim();
-        if (contentTrimmed.startsWith("enum ") || cur_element.content.includes(" enum ") || cur_element.content.includes("\nenum ")) return false;
-        if (contentTrimmed.startsWith("class ") || cur_element.content.includes(" class ") || cur_element.content.includes("\nclass ")) return false;
-        if (contentTrimmed.endsWith(")")) return false; // function definition
-        if (contentTrimmed.includes("enum"))
+        let matchesKeyword = (kw: string) =>
+                contentTrimmed.startsWith(`${kw} `)
+                || cur_element.content.includes(` ${kw} `)
+                || cur_element.content.includes(`\n${kw} `);
+        if (matchesKeyword("enum")) return false;
+        if (matchesKeyword("class")) return false;
+        if (matchesKeyword("namespace")) return false;
+        if (matchesKeyword("else")) return false;
+        if (contentTrimmed.endsWith(")")) return false; // function definition; if () {}; while () {}; etc
+        if (contentTrimmed.includes("enum")) // warn if our checks failed somehow, but could be false positive b/c of a lack of whitespace
             console.warn(`Found enum!: "${contentTrimmed}"`)
     }
 

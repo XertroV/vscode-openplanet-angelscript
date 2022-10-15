@@ -145,6 +145,19 @@ function CompoundIdentifier(tokens, children)
     return CompoundLiteral(n.Identifier, tokens, children);
 }
 
+/** turn `thing (_ thing):*` or `(thing _):* thing` into a list of things
+  extract example for `(_ thing):*`: (p) => p[1]
+*/
+function FromMultiple(node, nodes, extract) {
+    let ret = [node];
+    if (nodes) {
+        for (let part of nodes) {
+            ret.push(extract(part));
+        }
+    }
+    return ret;
+}
+
 // A literal based on multiple lexer tokens or child nodes together
 function CompoundLiteral(node_type, tokens, children)
 {
@@ -223,6 +236,20 @@ function Operator(token)
 {
     return token.value;
 }
+
+
+function MkSettingKwarg(d, node_type = n.SettingKwarg) {
+    let hasArg = !!d[1];
+    return {
+        ...Compound(d, node_type, hasArg ? [d[0], d[2]] : [d[0]]),
+        hasArg
+    };
+}
+
+function MkSettingsTabKwarg(d) {
+    return MkSettingKwarg(d, n.SettingsTabKwarg)
+}
+
 
 %}
 
@@ -1433,19 +1460,18 @@ scuffed_template_statement -> %template_basetype _ "<" _ typename {%
 
 settings_decl -> setting_var_decl {% id %}
 settings_decl -> setting_tab_decl {% id %}
-# settings_decl -> setting_tab_decl {% id %}
 
-setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, d[3]); } %}
-setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ setting_type_kwargs %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, [...d[3], ...d[5]]); } %}
-setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ setting_type_kwargs _ setting_std_optional_kwargs %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, [...d[3], ...d[5], ...d[7]]); } %}
+setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration,[d[3]]); } %}
+setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ setting_type_kwargs _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5]]); } %}
+setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ setting_type_kwargs _ setting_std_optional_kwargs _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5], d[7]]); } %}
 
-setting_std_optional_kwarg -> ("hidden") | (("name=" | "category=" | "description=") (%dqstring | %sqstring)) {% id %}
+setting_std_optional_kwarg -> ("hidden") | (("name" | "category" | "description") %op_assignment (%dqstring | %sqstring)) {% MkSettingKwarg %}
 setting_std_optional_kwargs -> (setting_std_optional_kwarg _):* setting_std_optional_kwarg {%
     (d) => {
         let result = [d[1]];
         if (d[0])
         {
-            for (let sub of d[1])
+            for (let sub of d[0])
                 result.push(sub[0]);
         }
         return Compound(d, n.SettingKwarg, result);
@@ -1453,17 +1479,17 @@ setting_std_optional_kwargs -> (setting_std_optional_kwarg _):* setting_std_opti
 %}
 
 # int, uint, float
-setting_type_kwargs -> setting_type_int_uint_float {% id %}
-setting_type_int_uint_float -> ("drag" | ("min=" | "max=") (%dqstring | %sqstring)) (setting_type_int_uint_float) {% id %}
+setting_type_kwargs -> (setting_type_int_uint_float _):* setting_type_int_uint_float {% d => FromMultiple(d[1], d[0], p => p[0]) %}
+setting_type_int_uint_float -> ("drag" | ("min" | "max") %op_assignment (%dqstring | %sqstring)) {% MkSettingKwarg %}
 # vec2,vec3,vec4
 setting_type_kwargs -> setting_type_vec234 {% id %}
-setting_type_vec234 -> ("drag" _) {% id %}
+setting_type_vec234 -> ("drag") {% MkSettingKwarg %}
 # vec34
-setting_type_kwargs -> (setting_type_vec34 _):* setting_type_vec34 {% id %}
-setting_type_vec34 -> ("drag" | "color") {% id %}
+setting_type_kwargs -> (setting_type_vec34 _):* setting_type_vec34 {% d => FromMultiple(d[1], d[0], p => p[0]) %}
+setting_type_vec34 -> ("drag" | "color") {% MkSettingKwarg %}
 # string
-setting_type_kwargs -> (setting_type_string _):* setting_type_string {% id %}
-setting_type_string -> ("multiline" | "password" | "max=" (%dqstring | %sqstring)) {% id %}
+setting_type_kwargs -> (setting_type_string _):* setting_type_string {% d => FromMultiple(d[1], d[0], p => p[0]) %}
+setting_type_string -> ("multiline" | "password" | "max" %op_assignment (%dqstring | %sqstring)) {% MkSettingKwarg %}
 
 setting_tab_decl -> %lsqbracket _ "SettingsTab" _ settings_tab_kwargs _ %rsqbracket {%
     function(d) { return Compound(d, n.SettingsTabDeclaration, d[4]); }
@@ -1474,10 +1500,10 @@ settings_tab_kwargs -> (settings_tab_kwarg _):* settings_tab_kwarg {%
         let result = [d[1]];
         if (d[0])
         {
-            for (let sub of d[1])
+            for (let sub of d[0])
                 result.push(sub[0]);
         }
         return Compound(d, n.SettingsTabKwarg, result);
     }
 %}
-settings_tab_kwarg -> ("icon=" | "name=") (%dqstring | %sqstring) {% id %}
+settings_tab_kwarg -> ("icon" | "name") %op_assignment (%dqstring | %sqstring) {% MkSettingsTabKwarg %}
