@@ -1,10 +1,14 @@
+import { CleanTypeName } from "./database";
 
 
 export interface CoreMethod {
+    i: number,
     returntypedecl: string,
     name: string,
     args: CoreArg[],
     decl?: string,
+    desc?: string,
+    isEnum: false
 }
 
 export interface CoreArg {
@@ -14,8 +18,11 @@ export interface CoreArg {
 }
 
 export interface CoreProperty {
+    i: number,
     name: string,
-    typedecl: string
+    typedecl: string,
+    desc?: string,
+    isEnum: false
 }
 
 export interface CoreTy {
@@ -25,14 +32,39 @@ export interface CoreTy {
     methods?: CoreMethod[],
     props?: CoreProperty[],
     subtypes?: string[],
+    enums?: CoreEnum[],
+    isEnum: false
 }
 
-export function ConvertNadeoType(ty: string, tyDeets: any): CoreTy {
+export interface CoreEnum {
+    name: string, ns: string, desc: string,
+    values: Record<string, number>,
+    isEnum: true
+}
+
+export const NadeoTypesToDocsNS: Map<string, string> = new Map();
+
+export function ConvertNadeoType(ty: string, tyDeets: any, docsNS: string): CoreTy {
     let inherits = tyDeets.p;
-    let ret: CoreTy = { name: ty, ns: null, desc: '', inherits }
+    let ret: CoreTy = { name: ty, ns: null, inherits, desc: '', isEnum: false }
     ret.behaviors = [];
     ret.methods = [];
     ret.props = [];
+    ret.enums = [];
+    let allAddedMembers: (CoreProperty | CoreMethod)[] = []
+
+    NadeoTypesToDocsNS.set(ty, docsNS);
+
+    let knownEnums = new Set<string>(); // just for this type
+    let addToProps = (t: CoreProperty) => {
+        ret.props.push(t);
+        allAddedMembers.push(t);
+    }
+    let addToMethods = (t: CoreMethod) => {
+        ret.methods.push(t);
+        allAddedMembers.push(t);
+    }
+
     let members = tyDeets.m;
     if (members) {
         for (let key in members) {
@@ -41,16 +73,58 @@ export function ConvertNadeoType(ty: string, tyDeets: any): CoreTy {
             let isFunc = !isEnum && typeof(mDeets.t) == "number";
             let isProp = !isEnum && typeof(mDeets.t) == "string";
 
-            if (isEnum) {}
+            if (isEnum) {
+                //console.log(JSON.stringify({key, mDeets}, null, 2))
+                if (!knownEnums.has(mDeets.e.n)) {
+                    ret.enums.push(ConvertNadeoTypeEnum(key, mDeets, ty, docsNS));
+                    knownEnums.add(mDeets.e.n)
+                }
+                addToProps(ConvertNadeoTypeProp(key, mDeets));
+            }
             else if (isFunc)
-                ret.methods.push(ConvertNadeoTypeMethod(key, mDeets));
+                addToMethods(ConvertNadeoTypeMethod(key, mDeets));
             else if (isProp)
-                ret.props.push(ConvertNadeoTypeProp(key, mDeets))
+                addToProps(ConvertNadeoTypeProp(key, mDeets))
         }
     }
     // addSubTypes(ty, tyDeets, ret); // no nadeo types are templates
-    // todo: also add methods and props recursively
+    // 2022-10-09: todo: also add methods and props recursively...
+    // 2022-10-16: not sure this todo is requred anymore?
+
+    // add enums -- these seem bugged compared to when converted from elsewhere
+    if (tyDeets.e) { // enums defined under type
+        for (let e of tyDeets.e) {
+            if (!knownEnums.has(e.n) && ty != "NSysCfgVision_SCptInGame_Global") {
+                ret.enums.push(ConvertNadeoTypeEnum(e.n, {e, t: `${ty}::${e.n}`}, ret.name, docsNS))
+                knownEnums.add(e.n);
+            }
+        }
+    }
+
+    // add docs
+    if (tyDeets.d) {
+        if (tyDeets.d.d) ret.desc = tyDeets.d.d;
+        if (tyDeets.d.o) {
+            for (let [ix, doc, warn, unk] of tyDeets.d.o) {
+                allAddedMembers.filter((v) => v.i == ix).forEach(m => {
+                    let prefix = (warn <= 0) ? "" : (warn == 1 ? "Warning: " : "" /*unknown when ==2*/)
+                    m.desc = `${prefix}${doc}`
+                    // console.log(`Added docs to ${ty}.${m.name}: ${doc}`)
+                })
+            }
+        }
+    }
+
+    let docsLink = `Docs: <https://next.openplanet.dev/${docsNS}/${ty}>`;
+    if (ret.desc.length == 0) ret.desc = docsLink;
+    else ret.desc = [ret.desc, docsLink].join('\n\n')
+
     return ret;
+}
+
+export function GenerateOpDocsLink(typeName: string) {
+    let clean = CleanTypeName(typeName)
+    return `Docs: <https://next.openplanet.dev/${NadeoTypesToDocsNS.get(clean)}/${clean}>`;
 }
 
 function addSubTypes(ty: string, tyDeets: any, ret: CoreTy) {
@@ -69,12 +143,35 @@ export function ConvertNadeoTypeMethod(name: string, deets: any): CoreMethod {
             args.push({name, typedecl});
         })
     }
-    return { name, returntypedecl, args };
+    return { name, returntypedecl, args, i: deets.i, isEnum: false };
 }
 export function ConvertNadeoTypeProp(name: string, deets: any): CoreProperty {
-    return {name, typedecl: deets.t};
+    return { name, typedecl: deets.t, i: deets.i, isEnum: false };
 }
 
-export function ConvertNadeoTypeBehaviour(name: string, deets: any) {
+export function ConvertNadeoTypeBehaviour(name: string, deets: any) {} // this is constructor destructor stuff, which I don't think we ever need
 
+export function ConvertNadeoTypeEnum(propName: string, deets: any, parentClass: string, docsNS: string): CoreEnum {
+    let name = deets['t'];
+    // let namePreValue: string = deets['e']['n'];
+    // if (name != namePreValue) console.warn(`Unexpected nonequal: ${JSON.stringify([name, namePreValue])}`);
+    // ^^ all good now
+    let ns = "";
+    if (!name.includes("::")) {
+        ns = parentClass;
+    //     let err = `Nadeo enum name does not include :: ! name: ${name}`;
+    //     throw err;
+    // }
+        // console.log(`Set enum namespace: to ${ns} :: ${name}`)
+    } else {
+        let parts = name.split("::");
+        name = parts[parts.length - 1];
+        ns = parts.slice(0, parts.length - 1).join("::");
+        // console.log(`Converting enum namespace: \n From: ${deets.t} to ${ns} :: ${name}`)
+    }
+    let desc = `Docs: <https://next.openplanet.dev/${docsNS}/${parentClass}#${name}>`; //${parentClass}.${propName} at
+    let v: string[] = deets['e']['v'];
+    let values: Record<string, number> = {};
+    v.forEach((s, i) => values[s] = i)
+    return {name, ns, desc, values, isEnum: true}
 }

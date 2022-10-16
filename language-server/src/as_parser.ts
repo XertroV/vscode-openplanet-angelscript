@@ -506,6 +506,13 @@ export class ASSemanticSymbol
         }
     }
 
+    setNamespaceInfo(nss: string[]) {
+        if (!this.name_parts) {
+            this.name_parts = [...nss, this.symbol_name];
+            this.ns_name = this.name_parts.slice(0, -1).join("::");
+        }
+    }
+
     getSymbolNameWithoutNamespace(): string {
         this.cacheNameParts();
         return this.name_parts[this.name_parts.length - 1];
@@ -514,6 +521,10 @@ export class ASSemanticSymbol
     getNamespaceIfAny(): string {
         this.cacheNameParts();
         return this.ns_name;
+    }
+
+    isNamespaceOrTypename() {
+        return this.type == ASSymbolType.Namespace || ASScopeType.Namespace;
     }
 };
 
@@ -1008,17 +1019,18 @@ export function ResolveModule(module : ASModule)
 
 function EnsureTypeHierarchyFullyParsed(dbtype : typedb.DBType) : boolean
 {
+    // does this ever get called or do anythign?
     let newTypesLoaded = false;
 
     let superTypeName = dbtype.supertype;
-    console.log(`super type name: ${superTypeName}`);
+    // console.log(`super type name: ${superTypeName}`);
     let superNamespace = dbtype.namespace;
     while (superTypeName)
     {
         let superType = typedb.LookupType(superNamespace, superTypeName);
         if (superType)
         {
-            console.log(`Found superType: ${superType.name} via type: ${dbtype.name}`);
+            // console.log(`Found superType: ${superType.name} via type: ${dbtype.name}`);
             if (superType.declaredModule)
             {
                 let superModule = GetModule(superType.declaredModule);
@@ -1354,8 +1366,7 @@ function PreParseTypes(module : ASModule)
 }
 
 // Get all modules that could potentially have imported this symbol
-export function GetModulesPotentiallyImportingSymbol(asmodule : ASModule, findSymbol : ASSemanticSymbol) : Array<ASModule>
-{
+export function GetModulesPotentiallyImportingSymbol(asmodule : ASModule, findSymbol : ASSemanticSymbol) : Array<ASModule> {
     switch (findSymbol.type)
     {
         case ASSymbolType.Typename:
@@ -3017,7 +3028,7 @@ export function ResolveTypeFromExpression(scope : ASScope, node : any) : typedb.
         // f"X"
         case node_types.ConstFormatString:
         {
-            return typedb.GetTypeByName("FString");
+            return typedb.GetTypeByName("string");
         }
         break;
         // true/false
@@ -3041,7 +3052,7 @@ export function ResolveTypeFromExpression(scope : ASScope, node : any) : typedb.
             let left_type = ResolveTypeFromExpression(scope, node.children[0]);
             if (!left_type || !node.children[1]) {
                 console.warn(`Could not find type for: ${node.children[0].value} -- ${JSON.stringify(node.children[0])}`)
-                console.warn(`${scope.getNamespace()?.getQualifiedNamespace()}\n${JSON.stringify(node)}`)
+                // console.warn(`Scope NS: ${scope.getNamespace()?.getQualifiedNamespace()}\n${JSON.stringify(node)}`)
                 return null;
             }
             return ResolvePropertyType(left_type, node.children[1].value);
@@ -3173,8 +3184,8 @@ export function ResolveTypeFromExpression(scope : ASScope, node : any) : typedb.
                 type = ResolveTypeFromExpression(scope, elements[i]);
                 if (type) break;
             }
-            if (type)
-                console.log(`found array's type: ${type.name}`);
+            // if (type)
+            //     console.log(`found array's type: ${type.name}`);
             if (!type)
                 console.warn(`could not resolve type for elements: ${JSON.stringify(elements)}`)
             if (type)
@@ -4025,12 +4036,12 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
         break;
         case node_types.ConstFloat: return typedb.GetTypeByName("float"); break;
         case node_types.ConstName: return typedb.GetTypeByName("FName"); break;
-        case node_types.ConstString: return typedb.GetTypeByName("FString"); break;
+        case node_types.ConstString: return typedb.GetTypeByName("string"); break;
         case node_types.ConstNullptr: return null; break;
         // Format string f"Blah {CODE}"
         case node_types.ConstFormatString:
             DetectFormatStringSymbols(scope, statement, node, parseContext);
-            return typedb.GetTypeByName("FString");
+            return typedb.GetTypeByName("string");
         break;
         // X
         case node_types.Identifier:
@@ -6161,7 +6172,7 @@ function CheckIfInlineArray(scope: ASScope, cur_element: ASElement, cur_offset: 
         if (matchesKeyword("else")) return false;
         if (contentTrimmed.endsWith(")")) return false; // function definition; if () {}; while () {}; etc
         if (contentTrimmed.includes("enum")) // warn if our checks failed somehow, but could be false positive b/c of a lack of whitespace
-            console.warn(`Found enum!: "${contentTrimmed}"`)
+            console.warn(`Found enum! (and we shouldnt have): "${contentTrimmed}"`)
     }
 
     let depth_brace = 0;
@@ -6807,7 +6818,7 @@ export function ParseStatement(scopetype : ASScopeType, statement : ASStatement,
                 parser.restore(parser_array_statement_initial);
                 parser.feed(statement.content);
                 useOrigError = false;  // we succeeded parsing it as an array statement
-                console.log(`Successfully parsed as array when unable to otherwise: ${statement.content}`);
+                // console.log(`Successfully parsed as array when unable to otherwise: ${statement.content}`);
             } catch (err) {
                 // do nothing, throw original
                 parser = prev_parser;

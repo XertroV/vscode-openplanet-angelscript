@@ -90,7 +90,13 @@ function BuildSymbols(asmodule : scriptfiles.ASModule, builder : SemanticTokensB
 
             if (symbol.type == scriptfiles.ASSymbolType.Typename)
             {
-                let dbtype = typedb.GetTypeByName(symbol.symbol_name);
+                let symbol_ns;
+                let priorSymbol = asmodule.getSymbolAtOrBefore(symbol.start-2);
+                if (priorSymbol && (priorSymbol.type == scriptfiles.ASSymbolType.Namespace || priorSymbol.type == scriptfiles.ASSymbolType.Typename))
+                    symbol_ns = priorSymbol.symbol_name;
+                // console.log(`${symbol_ns}: ` + JSON.stringify([priorSymbol, symbol]));
+
+                let dbtype = typedb.GetTypeByName(symbol.symbol_name, symbol_ns);
                 if (dbtype)
                     classification = dbtype.getTypeClassification();
             }

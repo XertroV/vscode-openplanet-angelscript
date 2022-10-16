@@ -85,7 +85,7 @@ function AddProperty(dbtype : typedb.DBType, name : string) : typedb.DBProperty
 function AddGeneratedCodeForClass(asmodule : scriptfiles.ASModule, dbtype : typedb.DBType, nsType : typedb.DBNamespace)
 {
     {
-        console.log(`AddGeneratedCodeForClass: ${dbtype.name} : ${dbtype.supertype}`);
+        // console.log(`AddGeneratedCodeForClass: ${dbtype.name} : ${dbtype.supertype}`);
         if (dbtype.supertype) {
             // todo: clearing old `super` functions doesn't seem to work.
             // clear old super definitions

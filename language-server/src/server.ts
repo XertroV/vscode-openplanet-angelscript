@@ -77,6 +77,9 @@ function load_openplanet() {
     typedb.AddPrimitiveTypes(false);
 }
 
+let JsonLoaded_Core = false;
+let JsonLoaded_Next = false;
+
 function LoadOpenplanetJson() {
     const opDir = scriptfiles.GetScriptSettings().openplanetNextLocation;
     // const opHeader = path.join(opDir, 'Openplanet.h');
@@ -84,190 +87,33 @@ function LoadOpenplanetJson() {
     const opNextJson = path.join(opDir, 'OpenplanetNext.json');
 
     fs.readFile(opCoreJson, (err, data) => {
-        if (err)
+        if (err) {
             console.error(`Error reading ${opCoreJson} -- does it exist?`);
-        else {
+            JsonLoaded_Core = true;
+        } else {
             typedb.AddTypesFromOpenplanet(JSON.parse(data.toLocaleString()));
             DirtyAllDiagnostics();
             typedb.OnDirtyTypeCaches();
+            JsonLoaded_Core = true;
         }
     })
 
     fs.readFile(opNextJson, (err, data) => {
-        if (err)
+        if (err) {
             console.error(`Error reading ${opNextJson} -- does it exist?`);
-        else {
+            JsonLoaded_Next = true;
+        } else {
             typedb.AddNadeoTypesFromOpenplanet(JSON.parse(data.toLocaleString()));
             DirtyAllDiagnostics();
             typedb.OnDirtyTypeCaches();
+            JsonLoaded_Next = true;
         }
     })
 }
 
-// function connect_unreal() {
-//     if (unreal != null)
-//     {
-//         unreal.write(buildDisconnect());
-//         unreal.destroy();
-//     }
-//     unreal = new Socket;
-//     //connection.console.log('Connecting to unreal editor...');
-
-//     unreal.on("data", function(data : Buffer) {
-//         let messages : Array<Message> = readMessages(data);
-//         for (let msg of messages)
-//         {
-//             if (msg.type == MessageType.Diagnostics)
-//             {
-//                 let diagnostics: Diagnostic[] = [];
-
-//                 // Based on https://en.wikipedia.org/wiki/File_URI_scheme,
-//                 // file:/// should be on both platforms, but on Linux the path
-//                 // begins with / while on Windows it is omitted. So we need to
-//                 // add it here to make sure both platforms are valid.
-//                 let localpath = msg.readString();
-//                 let filename = (localpath[0] == '/') ? ("file://" + localpath) : ("file:///" + localpath);
-//                 //connection.console.log('Diagnostics received: '+filename);
-
-//                 let msgCount = msg.readInt();
-//                 for (let i = 0; i < msgCount; ++i)
-//                 {
-//                     let message = msg.readString();
-//                     let line = msg.readInt();
-//                     let char = msg.readInt();
-//                     let isError = msg.readBool();
-//                     let isInfo = msg.readBool();
-
-//                     if (isInfo)
-//                     {
-//                         let hasExisting : boolean = false;
-//                         for(let diag of diagnostics)
-//                         {
-//                             if (diag.range.start.line == line-1)
-//                                 hasExisting = true;
-//                         }
-
-//                         if(!hasExisting)
-//                             continue;
-//                     }
-
-//                     if (line <= 0)
-//                         line = 1;
-
-//                     let diagnosic: Diagnostic = {
-//                         severity: isInfo ? DiagnosticSeverity.Information : (isError ? DiagnosticSeverity.Error : DiagnosticSeverity.Warning),
-//                         range: {
-//                             start: { line: line-1, character: 0 },
-//                             end: { line: line-1, character: 10000 }
-//                         },
-//                         message: message,
-//                         source: 'as'
-//                     };
-//                     diagnostics.push(diagnosic);
-//                 }
-
-//                 scriptdiagnostics.UpdateCompileDiagnostics(filename, diagnostics);
-//             }
-//             else if(msg.type == MessageType.DebugDatabase)
-//             {
-//                 let dbStr = msg.readString();
-//                 let dbObj = JSON.parse(dbStr);
-//                 typedb.AddTypesFromUnreal(dbObj);
-
-//                 UnrealTypesTimedOut = false;
-//                 if (ReceivingTypesTimeout)
-//                     clearTimeout(ReceivingTypesTimeout);
-//                 ReceivingTypesTimeout = setTimeout(DetectUnrealTypeListTimeout, 1000);
-//             }
-//             else if(msg.type == MessageType.DebugDatabaseFinished)
-//             {
-//                 if (ReceivingTypesTimeout)
-//                     clearTimeout(ReceivingTypesTimeout);
-//                 typedb.FinishTypesFromUnreal();
-
-//                 let scriptSettings = scriptfiles.GetScriptSettings()
-//                 typedb.AddPrimitiveTypes(scriptSettings.floatIsFloat64);
-
-//                 // Make sure no modules are resolved anymore
-//                 ReResolveAllModules();
-//             }
-//             else if(msg.type == MessageType.AssetDatabase)
-//             {
-//                 let version = msg.readInt();
-//                 if (version == 1)
-//                 {
-//                     let assetCount = msg.readInt();
-//                     for (let i = 0; i < assetCount; i += 2)
-//                     {
-//                         let assetPath = msg.readString();
-//                         let className = msg.readString();
-
-//                         if (className.length == 0)
-//                             assets.RemoveAsset(assetPath);
-//                         else
-//                             assets.AddAsset(assetPath, className);
-//                     }
-//                 }
-//             }
-//             else if(msg.type == MessageType.AssetDatabaseInit)
-//             {
-//                 // Remove all old asset info from the database, we're receiving new stuff
-//                 assets.ClearDatabase();
-//             }
-//             else if(msg.type == MessageType.AssetDatabaseFinished)
-//             {
-//             }
-//             else if(msg.type == MessageType.DebugDatabaseSettings)
-//             {
-//                 let version = msg.readInt();
-
-//                 let scriptSettings = scriptfiles.GetScriptSettings()
-//                 scriptSettings.automaticImports = msg.readBool();
-
-//                 if (version >= 2)
-//                     scriptSettings.floatIsFloat64 = msg.readBool();
-//                 if (version >= 3)
-//                     scriptSettings.useAngelscriptHaze = msg.readBool();
-//             }
-//         }
-//     });
-
-//     unreal.on("error", function() {
-//         if (unreal != null)
-//         {
-//             unreal.destroy();
-//             unreal = null;
-//             setTimeout(connect_unreal, 5000);
-//         }
-//     });
-
-//     unreal.on("close", function() {
-//         if (unreal != null)
-//         {
-//             unreal.destroy();
-//             unreal = null;
-//             setTimeout(connect_unreal, 5000);
-//         }
-//     });
-
-//     unreal.connect(27099, "localhost", function()
-//     {
-//         //connection.console.log('Connection to unreal editor established.');
-//         setTimeout(function()
-//         {
-//             if (!unreal)
-//                 return;
-//             let reqDb = Buffer.alloc(5);
-//             reqDb.writeUInt32LE(1, 0);
-//             reqDb.writeUInt8(MessageType.RequestDebugDatabase, 4);
-
-//             unreal.write(reqDb);
-//         }, 1000);
-//     });
-// }
-
-// connect_unreal();
 load_openplanet();
+
+// load_openplanet();
 
 // Create a simple text document manager. The text document manager
 // supports full document sync only
@@ -282,7 +128,7 @@ let RootUris : string[] = [];
 connection.onInitialize((_params): InitializeResult => {
     shouldSendDiagnosticRelatedInformation = _params.capabilities && _params.capabilities.textDocument && _params.capabilities.textDocument.publishDiagnostics && _params.capabilities.textDocument.publishDiagnostics.relatedInformation;
 
-    let Roots = [];
+    let Roots: string[] = [];
 
     if (_params.workspaceFolders == null) {
         Roots.push(_params.rootPath);
@@ -326,13 +172,13 @@ connection.onInitialize((_params): InitializeResult => {
         });
 
         // Read info.toml
-        glob(RootPath+"**/info.toml", null, function(err: any, files: string[]) {
+        glob(path.join(RootPath+"/**/info.toml"), null, function(err: any, files: string[]) {
             console.dir(files);
             if (err || files.length == 0)
                 connection.sendNotification(
                     ShowMessageNotification.type,
                     { message: "Could not find `info.toml`! Please reload extensions after you add it if you need imports.",
-                      type: MessageType.Warning
+                    type: MessageType.Warning
                     });
             else
                 LoadOpenplanetInfoToml(files[0]);
@@ -406,19 +252,20 @@ function LoadOpenplanetDependencies(deps: string[]) {
     // todo: filter on dependencies to avoid importing everything, unless deps is empty, or mb just include everything anyway
     let opRoot = scriptfiles.GetScriptSettings().openplanetNextLocation;
     let opPlugins = scriptfiles.GetScriptSettings().openplanetNextPluginsLocation;
-    let pluginsDir = path.join(opRoot, "Plugins");
+    let opPluginsDir = path.join(opRoot, "Plugins");
+    console.log(JSON.stringify({opRoot, opPluginsDir}))
 
     // plugins as .op files
-    let files = glob.sync(pluginsDir+"/*.op");
+    let files = glob.sync(opPluginsDir+"/*.op");
     let depDirsToCheck: string[] = [];
     files.forEach(pluginFile => {
         // extract to a tmp dir
         let pluginFileName = path.basename(pluginFile, ".op");
         let tmpDir = path.join(os.tmpdir(), "vscode-op-as", pluginFileName);
         let tmpDir_ = path.join(tmpDir, " ").trimEnd();
-        console.info(`Clearing tmp directory: ${tmpDir}`);
+        // console.info(`Clearing tmp directory: ${tmpDir}`);
         fs.mkdirSync(tmpDir, {recursive: true});
-        console.info(`Extracting ${pluginFile} to ${tmpDir}`);
+        // console.info(`Extracting ${pluginFile} to ${tmpDir}`);
         let archive = new AdmZip(pluginFile)
         archive.extractAllTo(tmpDir, true)
         let filesInArchive: string[] = [];
@@ -430,18 +277,18 @@ function LoadOpenplanetDependencies(deps: string[]) {
             let relativePath = file.replace(tmpDir_, "");
             if (!filesInArchive.includes(relativePath)) {
                 fs.rmSync(file);
-                console.log(`removed old file: ${file}; (rp: ${relativePath}, zip path example: ${filesInArchive[0]})`);
+                console.log(`removed old file while extracting .op: ${file}; (rp: ${relativePath}, zip path example: ${filesInArchive[0]})`);
             }
         })
         depDirsToCheck.push(tmpDir_)
     })
 
     // plugins as directories
-    glob.sync(path.join(pluginsDir, "*/")).forEach(f => depDirsToCheck.push(f));
+    glob.sync(path.join(opPluginsDir, "*/")).forEach(f => depDirsToCheck.push(f));
     glob.sync(path.join(opPlugins, "*/")).forEach(f => depDirsToCheck.push(f));
 
     // load dependency stuff
-    // console.log(`loading plugins in directories: ${JSON.stringify(depDirsToCheck)}`);
+    console.log(`loading ${depDirsToCheck.length} plugins in directories`); // : ${JSON.stringify(depDirsToCheck)}
     let asFilesToLoad = depDirsToCheck.flatMap(FilesToLoadForDependency).filter(v => v != null);
     console.log(`individual dependency files to load: ${JSON.stringify(asFilesToLoad)}`);
     let modules = asFilesToLoad.map(LoadDependencyModule);
@@ -470,9 +317,14 @@ function LoadOpenplanetDependencies(deps: string[]) {
 }
 
 function FilesToLoadForDependency(pluginDir: string): string[] {
-    let content = fs.readFileSync(path.join(pluginDir, "info.toml"), 'utf-8');
-    let info = toml.parse(content);
-    if (!info.script) return;
+    let info;
+    try {
+        let content = fs.readFileSync(path.join(pluginDir, "info.toml"), 'utf-8');
+        info = toml.parse(content);
+    } catch (err) {
+        console.warn(`Error loading info.toml from ${pluginDir}\n  > ${err}`);
+    }
+    if (!info?.script) return;
     let filesToLoad: string[] = [...(info.script.exports || []), ...(info.script.shared_exports || [])];
     return filesToLoad.map(f => path.join(pluginDir, f));
 }

@@ -450,7 +450,7 @@ export function GetInlayHintsForNode(scope : scriptfiles.ASScope, statement : sc
                             shouldShowNameHint = false;
 
                         // Argument names that are 1 character long probably aren't worth showing
-                        if (shouldShowNameHint && dbParam.name.length == 1)
+                        if (shouldShowNameHint && dbParam.name.length <= 1)
                             shouldShowNameHint = false;
 
                         // Argument names we consider 'Generic' don't get labels

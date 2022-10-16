@@ -1,6 +1,7 @@
 import { getAccPrefix, setAccPrefix } from "./as_parser";
 import { ConvertNadeoType, CoreMethod } from "./convert_nadeo";
 import { IconNames } from "./icons";
+import { TypeCounter } from "./util/typecounter";
 
 export enum DBAllowSymbol
 {
@@ -18,7 +19,7 @@ export enum DBAllowSymbol
 
 function ReplaceArrayShorthand(_type: string): string {
     if (!_type?.includes('[]')) return _type;
-    console.log(`Replacing array shorthand in: ${_type}`);
+    // console.log(`Replacing array shorthand in: ${_type}`);
     return _type.replace(/([A-Za-z_\.:@]+)\[\]/, function(a, b) { return `array<${b}>`; });
     // return _type;
 }
@@ -122,6 +123,7 @@ export class DBProperty implements DBSymbol
     {
         this.name = input.name;
         this.typename = input.typedecl;
+        this.documentation = input.desc;
         this.isProtected = false;
         this.isPrivate = false;
         this.isNoEdit = false;
@@ -627,6 +629,9 @@ export class DBType implements DBSymbol
             }
         }
 
+        if ('isEnum' in input)
+            this.isEnum = input['isEnum'];
+
         if (!this.isEnum) {
             input.props.forEach((_prop: any) => {
                 let prop = new DBProperty();
@@ -678,9 +683,6 @@ export class DBType implements DBSymbol
             this.isStruct = input['isStruct'];
         else
             this.isStruct = false;
-
-        if ('isEnum' in input)
-            this.isEnum = input['isEnum'];
 
         let delegateSignatureMethod : DBSymbol = null;
         if ('isEvent' in input)
@@ -1861,13 +1863,28 @@ export function ReplaceTemplateType(typename : string, templateTypes : Array<str
     return typename;
 }
 
-export function GetTypeByName(typename : string) : DBType | null
+export function GetTypeByName(typename : string, inNamespace?: string) : DBType | null
 {
+    // console.log(`GetTypeByName: ${typename} w/ ns: ${inNamespace}`);
     let found = TypesByName.get(typename);
-    if (found instanceof Array)
-        return found[0];
-    else
-        return found;
+    if (found instanceof Array) {
+        if (inNamespace) {
+            // exact match of namespace
+            for (let _found of found) {
+                // console.log(`_found.namespace: ${_found.namespace.getQualifiedNamespace()}`);
+                if (_found.namespace.getQualifiedNamespace() == inNamespace)
+                   return _found;
+            }
+            // didn't find an exact match, try looser
+            for (let _found of found) {
+                if (_found.namespace.getQualifiedNamespace().includes(inNamespace))
+                    return _found;
+            }
+        }
+        // console.trace(`Found multiple types under the name: ${inNamespace || ''}::${typename}. Namespaces: ${found.map(v => v.namespace.getQualifiedNamespace()).join(", ")}`);
+        return found[0]; // return first b/c we can't really do more
+    }
+    return found;
 }
 
 export function GetTypeById(typeid : number) : DBType | null
@@ -1976,18 +1993,23 @@ export function DeclareNamespace(namespace : DBNamespace, name : string, decl : 
     if (!namespace)
         namespace = RootNamespace;
 
-    let ns = namespace.findChildNamespace(name);
+    let parts = name.split("::");
+
+    let ns = namespace.findChildNamespace(parts[0]);
     if (!ns)
     {
         ns = new DBNamespace();
-        ns.name = name;
-        ns.parentNamespace = RootNamespace;
-
+        ns.name = parts[0];
+        ns.parentNamespace = RootNamespace; // will be replaced by addChildNamespace
         namespace.addChildNamespace(ns);
     }
-
     ns.addScriptDeclaration(decl);
-    return ns;
+
+    if (parts.length == 1)
+        return ns;
+
+    // more namespaces to declare
+    return DeclareNamespace(ns, parts.slice(1).join("::"), decl);
 }
 
 export function RemoveNamespaceDeclaration(namespace : DBNamespace, moduleName : string)
@@ -2003,17 +2025,33 @@ export function LookupType(namespace : DBNamespace, typename : string) : DBType 
         return null;
     let identifier = CleanTypeName(typename);
 
+    if (namespace) {
+        let found = namespace.GetTypeByName(identifier);
+        if (found && !(found instanceof Array)) {
+            if (found.namespace != namespace) console.warn(`Unexpected mismatching namespaces: ${found.namespace.getQualifiedNamespace()} vs ${namespace.getQualifiedNamespace()}`)
+            return found;
+        }
+    }
+
     let namespaceIndex = identifier.indexOf("::");
     if (namespaceIndex == -1)
     {
         let found = TypesByName.get(identifier);
-        if (found instanceof Array)
+        let wasArray = found instanceof Array;
+        if (found instanceof Array) {
+            // console.trace(`skipping over multiple types (${namespace?.getQualifiedNamespace()}::${identifier}) in namespaces: ${found.map(t => t.namespace.getQualifiedNamespace()).join(', ')}`)
             found = found[0];
+        }
 
         if (found)
         {
-            if (!namespace || !found.namespace || namespace == found.namespace || namespace.isChildNamespaceOf(found.namespace))
+            if (!namespace || !found.namespace || namespace == found.namespace || namespace.isChildNamespaceOf(found.namespace)) {
+                // if (wasArray) console.log(`returning positive match for ${namespace?.getQualifiedNamespace()}::${identifier}`)
                 return found;
+            }
+            if (wasArray) {
+                // console.log(`did not find match for ${namespace?.getQualifiedNamespace()}::${identifier}`)
+            }
         }
     }
     else
@@ -2239,11 +2277,11 @@ export function AddPrimitiveTypes(floatIsFloat64 : boolean)
     PrimitiveAliases.set("int16", "int16");
     PrimitiveAliases.set("uint16", "uint16");
     PrimitiveAliases.set("bool", "bool");
-    PrimitiveAliases.set("string", "string");
-    PrimitiveAliases.set("wstring", "wstring");
-    PrimitiveAliases.set("vec2", "vec2");
-    PrimitiveAliases.set("vec3", "vec3");
-    PrimitiveAliases.set("vec4", "vec4");
+    // PrimitiveAliases.set("string", "string");
+    // PrimitiveAliases.set("wstring", "wstring");
+    // PrimitiveAliases.set("vec2", "vec2");
+    // PrimitiveAliases.set("vec3", "vec3");
+    // PrimitiveAliases.set("vec4", "vec4");
 
     if (DatabaseFloatIsFloat64)
         PrimitiveAliases.set("float", "float64");
@@ -2275,14 +2313,25 @@ export function IsPrimitiveFloatType(typename : string) : boolean
     return realType == "float32" || realType == "float64";
 }
 
+let NadeoTypeCounter = new TypeCounter();
+
 export function AddNadeoTypesFromOpenplanet(input: any) {
-    for (let k in input['ns']) {
+    // let enums: Array<> = [];
+    for (let k in input['ns']) { // k is a namespace, but it's not used in angelscript, only docs
         for (let ty in input['ns'][k]) {
             let tyDeets = input['ns'][k][ty];
-            let nadeoClassTy = ConvertNadeoType(ty, tyDeets);
+            let nadeoClassTy = ConvertNadeoType(ty, tyDeets, k);
             AddOpenplanetClass(nadeoClassTy, "classes");
+            NadeoTypeCounter.CountType("class");
+            NadeoTypeCounter.CountType("method", nadeoClassTy.methods?.length);
+            NadeoTypeCounter.CountType("property", nadeoClassTy.props?.length);
+            nadeoClassTy.enums?.forEach(e => {
+                AddOpenplanetClass(e, "enums");
+                NadeoTypeCounter.CountType("enum");
+            })
         }
     }
+    console.log(`AddNadeoTypes: ${NadeoTypeCounter.ToString()}`)
 }
 
 export function AddOpenplanetFunction(jData: any) {
@@ -2317,13 +2366,14 @@ export function AddOpenplanetClass(jData: any, kind: "classes" | "enums") {
 
     let ns = RootNamespace;
     if (type.ns) {
-        let decl = new DBNamespaceDeclaration();
-
         ns = LookupNamespace(ns, type.ns);
         if (!ns) {
+            let decl = new DBNamespaceDeclaration();
             ns = DeclareNamespace(ns, type.ns, decl);
+            console.log(`Declared namespace: ${type.ns}`);
         }
         ns.addSymbol(type);
+        // if (kind == "enums") console.warn(`added enum to namespace: ${type.namespace.getQualifiedNamespace()} :: ${type.name}`)
     }
     if (type.isEnum || !type.ns)
         AddTypeToDatabase(ns, type);
@@ -2338,30 +2388,30 @@ export function AddOpenplanetClass(jData: any, kind: "classes" | "enums") {
     //     else
     //         ns.addSymbol(sym);
     // }
+    return type;
 }
 
+let OpenplanetTypeCounter = new TypeCounter();
 
 export function AddTypesFromOpenplanet(input : any)
 {
-    let addedFuncs = 0;
-    let addedClasses = 0;
-    let addedEnums = 0;
     for (let key in input["functions"]) {
         let jData = input["functions"][key];
         AddOpenplanetFunction(jData);
-        addedFuncs++;
+        OpenplanetTypeCounter.CountType("function")
     }
     const kinds: ("classes" | "enums")[] = ["classes", "enums"];
     kinds.forEach((kind) => {
         input[kind].forEach((jData: any) => {
-            AddOpenplanetClass(jData, kind);
-            if (kind == "classes")
-                addedClasses++;
-            else if (kind == "enums")
-                addedEnums++;
+            let dbtype = AddOpenplanetClass(jData, kind);
+            OpenplanetTypeCounter.CountType(kind)
+            dbtype.forEachSymbol(s => {
+                if (s instanceof DBMethod) OpenplanetTypeCounter.CountType("method")
+                else if (s instanceof DBProperty) OpenplanetTypeCounter.CountType("property")
+            })
         });
     });
-    console.log(`AddOpenplanetTypes: Funcs: ${addedFuncs}, Classes: ${addedClasses}, Enums: ${addedEnums}`);
+    console.log(`AddOpenplanetTypes: ${OpenplanetTypeCounter.ToString()}`);
 }
 
 export function AddOpenplanetIcons() {

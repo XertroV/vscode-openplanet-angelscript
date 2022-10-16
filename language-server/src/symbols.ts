@@ -11,6 +11,7 @@ import * as typedb from './database';
 import * as specifiers from './specifiers';
 import { FormatFunctionDocumentation, FormatPropertyDocumentation } from './documentation';
 import { ASSymbolTypeToString, getAccPrefix, setAccPrefix } from './as_parser';
+import { GenerateOpDocsLink, NadeoTypesToDocsNS } from './convert_nadeo';
 
 export function GetDefinition(asmodule : scriptfiles.ASModule, position : Position) : Array<Location>
 {
@@ -356,9 +357,14 @@ export function GetHover(asmodule : scriptfiles.ASModule, position : Position) :
         // If there's no symbol below the cursor, try to provider a hover for the word under cursor
         let word = GetWordAt(asmodule, offset);
         if (!word)
-            return null;
+        return null;
         return GetWordHover(word);
     }
+
+    let priorSymbol = asmodule.getSymbolAtOrBefore(findSymbol.start-2);
+
+    // console.warn(`GetHover for type: ${ASSymbolTypeToString(findSymbol.type)}, ${findSymbol.ns_name} :: ${findSymbol.symbol_name}`);
+    // console.warn(`priorSymbol: ${ASSymbolTypeToString(priorSymbol?.type)} ${priorSymbol?.symbol_name}`);
 
     switch (findSymbol.type)
     {
@@ -370,6 +376,8 @@ export function GetHover(asmodule : scriptfiles.ASModule, position : Position) :
                 ns = typedb.LookupNamespace(ns, findSymbol.ns_name);
                 dbtype = ns.findFirstSymbol(findSymbol.getSymbolNameWithoutNamespace(), typedb.DBAllowSymbol.Types) as typedb.DBType;
             }
+            if (!dbtype && priorSymbol && priorSymbol.isNamespaceOrTypename())
+                dbtype = typedb.GetTypeByName(findSymbol.getSymbolNameWithoutNamespace(), priorSymbol.symbol_name);
             if (!dbtype)
                 dbtype = typedb.GetTypeByName(findSymbol.getSymbolNameWithoutNamespace());
             if (dbtype)
@@ -745,9 +753,18 @@ function GetHoverForProperty(type : typedb.DBType | typedb.DBNamespace, prop : t
             prefix = type.getQualifiedNamespace()+"::";
     }
 
+    // console.log(`GetHoverForProperty: ${type.name}.${prop.name} (${prop.typename})`);
+
     let hover = "";
     hover += FormatPropertyDocumentation(prop.documentation);
-    hover += "```angelscript_snippet\n"+prop.format(prefix)+"\n```";
+    if (NadeoTypesToDocsNS.has(type.name)) {
+        hover += `\n\nParent ${GenerateOpDocsLink(type.name)}`;
+    }
+    let cleanPropType = typedb.CleanTypeName(prop.typename);
+    if (NadeoTypesToDocsNS.has(cleanPropType)) {
+        hover += `\n\nProperty ${GenerateOpDocsLink(cleanPropType)}`;
+    }
+    hover += `\n\n${parsedcompletion.MkAsSnippet(prop.format(prefix))}`;
 
     return <Hover> {contents: <MarkupContent> {
         kind: "markdown",

@@ -7,7 +7,9 @@ todo:
 * function handles
 * some constructors not added to scope
 * `auto landmarks = cp.Arena.MapLandmarks;` should be detected as `MwFastBuffer<CGameScriptMapLandmark@>`
-* add https://openplanet.dev/docs/reference/plugin-callbacks suggestions
+* `linkedPositions.InsertLast(cast<array<vec3>>(lcps[lpKeys[i]]))` -- seems like `cast<array<vec3>>` doesn't parse -- note that `cast<vec3[]>` works fine.
+* class properties using get/set `class C { bool IsBlah { get { return true; } set { this.x = value; }}}`
+* openplanet core constructors
 
 package: `vsce package`
 
@@ -15,9 +17,14 @@ install from cli: `code --install-extension openplanet-angelscript-X.Y.Z.vsix`
 
 changelog:
 
-- 0.1.4
+- 0.1.5
+  - add game enums and fix resolution for enums with same name in diff namespaces
+  - add openplanetnext.json docs
+  - `LookupType` now prioritizes namespaces
+  - fix some symbol lookup stuff
+  - add https://openplanet.dev/docs/reference/plugin-callbacks suggestions
   - load dependencies even if info.toml not found
-  - add completion helpers for openplanet callbacks
+- 0.1.4
   - added openplanet plugins as dependency options
   - fix settings parsing
   - add options for debug output

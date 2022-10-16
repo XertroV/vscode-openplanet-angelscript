@@ -35,6 +35,10 @@ export function GetCompletionSettings() : CompletionSettings
 let FunctionLabelSuffix = "()";
 let FunctionLabelWithParamsSuffix = "(…)";
 
+export function MkAsSnippet(str: string) {
+    return "```angelscript_snippet\n"+str+"\n\n```";
+}
+
 namespace Sort
 {
     export const EnumValue_Expected = "1";
@@ -1178,6 +1182,9 @@ export function AddCompletionsFromType(context : CompletionContext, curtype : ty
                 return;
             props.add(prop.name);
 
+            // let docPrefix = prop.accessSpecifier ? prop.accessSpecifier.name + " " : "";
+            // console.warn(`Adding documentation to compl for: ${curtype.name}.${prop.name}`);
+
             let compl = <CompletionItem>{
                     label: prop.name,
                     kind : CompletionItemKind.Field,
@@ -1187,6 +1194,8 @@ export function AddCompletionsFromType(context : CompletionContext, curtype : ty
                     },
                     commitCharacters: [".", ";", ","],
                     filterText: GetSymbolFilterText(context, prop),
+                    // documentation: {kind: MarkupKind.Markdown, value: prop.documentation + "\n\n" + MkAsSnippet(`${docPrefix}${prop.typename} ${prop.name}`)},
+                    // detail: prop.documentation + "\n\n" + MkAsSnippet(`${docPrefix}${prop.typename} ${prop.name}`),
             };
 
             if (prop.containingType)
@@ -1251,7 +1260,7 @@ export function AddCompletionsFromType(context : CompletionContext, curtype : ty
                 if (func.name.startsWith(getAccPrefix))
                 {
                     let propname = func.name.substring(getAccPrefix.length);
-                    console.log(`propname: ${propname}`);
+                    // console.log(`propname: ${propname}`);
                     if(!props.has(propname) && func.args.length == 0)
                     {
                         let compl = <CompletionItem>{
@@ -1465,6 +1474,7 @@ export function AddCompletionsFromType(context : CompletionContext, curtype : ty
                                     label: enumstr,
                                     kind: CompletionItemKind.EnumMember,
                                     data: ["enum", dbtype.name, enumvalue.name],
+                                    detail: enumvalue.documentation,
                             };
 
                             let isMaxValue = enumvalue.name.includes("MAX");
@@ -3775,6 +3785,8 @@ export function Resolve(item : CompletionItem) : CompletionItem
     let dataArray = item.data as Array<any>;
     let kind = dataArray[0];
 
+    // console.warn(`Resolve called on kind: ${kind} with item: ${item.label}; ${JSON.stringify(dataArray)}`)
+
     if (kind == "type")
     {
         let type = typedb.GetTypeByName(dataArray[1]);
@@ -4060,8 +4072,8 @@ export function AddOpenplanetCallbackCompletions(context: CompletionContext, com
             filterText: toComplete,
             sortText: Sort.Typename,
             insertText: `/** ${func.documentation}\n*/\n` + (func.suggestionDecl || func.getSignature()) + " ",
-            // documentation: func.documentation,
-            detail: func.documentation,
+            documentation: {kind: MarkupKind.Markdown, value: func.documentation + "\n\n" + MkAsSnippet(func.suggestionDecl || func.getSignature())},
+            // detail: func.documentation,
         };
 
         compl.labelDetails = <CompletionItemLabelDetails>
