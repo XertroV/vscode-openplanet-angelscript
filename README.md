@@ -20,6 +20,7 @@ install from cli: `code --install-extension openplanet-angelscript-X.Y.Z.vsix`
 changelog:
 
 - 0.1.6
+  - named functions can be used as arguments e.g., for `startnew`
   - basic `get{} set{}` support (note: parses as incomplete variable decl, then some scopes. not ideal but works.)
   - prelim support for multiple inline functions in one expression.
   - inline function scopes (+ appear in global namespace)

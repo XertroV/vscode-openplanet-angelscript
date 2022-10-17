@@ -1992,13 +1992,14 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
         scope.resolvedNamespace = typedb.GetRootNamespace();
         scope.parentscope = null;
     }
+    // inline function
     if (scope.hasArguments) {
         let inlineFuncDef = scope.hasArguments;
         scope.hasArguments = null;
         parser_inline_function.restore(parser_inline_function_initial)
         let parseError = false;
         try {
-            let parsed = parser_inline_function.feed(inlineFuncDef);
+            parser_inline_function.feed(inlineFuncDef);
         } catch (err) {
             parseError = true;
         }
@@ -2467,7 +2468,7 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
             }
             break;
             case node_types.InlineFunctionDecl: {
-                console.trace(JSON.stringify(statement.ast))
+                console.trace('todo: node_types.InlineFunctionDecl.\n' + JSON.stringify(statement.ast))
             }
             break;
             case node_types.FuncdefDefinition: {
@@ -4497,7 +4498,10 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
             else
             {
                 // Detect symbols for all children
-                DetectNodeSymbols(scope, statement, node.children[1], parseContext, typedb.DBAllowSymbol.Properties);
+                // DetectNodeSymbols(scope, statement, node.children[1], parseContext, typedb.DBAllowSymbol.Properties);
+                DetectNodeSymbols(scope, statement, node.children[1], parseContext, typedb.DBAllowSymbol.PropertiesAndFunctions);
+                // if (left_symbol instanceof typedb.DBMethod && left_symbol.name == "startnew")
+                //     console.log(`starnew args: ${JSON.stringify(node.children[1])}`)
             }
 
             // Pass through the return type to be used for the next level
@@ -4526,7 +4530,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                 for (let child of node.children)
                 {
                     parseContext.argumentFunction = outerArgumentFunction;
-                    DetectNodeSymbols(scope, statement, child, parseContext);
+                    DetectNodeSymbols(scope, statement, child, parseContext, symbol_type);
                 }
             }
         }
