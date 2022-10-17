@@ -62,6 +62,8 @@ const lexer = moo.compile({
             local_token: "local",
             if_token: "if",
             else_token: "else",
+            get_token: "get",
+            set_token: "set",
             try_token: "try",
             catch_token: "catch",
             while_token: "while",
@@ -309,6 +311,9 @@ statement -> %else_token optional_statement {%
     function (d) { return Compound(d, n.ElseStatement, [d[1]]); }
 %}
 
+statement -> %get_token _ {% d => Compound(d, n.GetStatement, []) %}
+statement -> %set_token _ {% d => Compound(d, n.SetStatement, []) %}
+
 statement -> %try_token {% d => Compound(d, n.TryStatement, []) %}
 statement -> %catch_token {% d => Compound(d, n.CatchStatement, []) %}
 
@@ -486,11 +491,11 @@ global_declaration -> %namespace_token _ namespace_definition_name {%
     }; }
 %}
 
-class_declaration -> (access_specifier _):? var_decl {%
+class_declaration -> (settings_decl _):? (access_specifier _):? var_decl {%
     function (d) {
         return ExtendedCompound(d, {
-            ...d[1],
-            access: d[0] ? d[0][0] : null,
+            ...d[2],
+            access: d[1] ? d[1][0] : null,
         });
     }
 %}
@@ -600,6 +605,9 @@ mb_ref_identifier -> (%atsign):? %identifier {%
         is_reference: !!d[2],
     }; }
 %}
+
+# scoped_getter_setter ->
+# scoped_getter_setter:?
 
 var_decl -> typename _ mb_ref_identifier {%
     function (d) { return {

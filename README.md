@@ -8,9 +8,10 @@ todo:
 * some constructors not added to scope
 * `auto landmarks = cp.Arena.MapLandmarks;` should be detected as `MwFastBuffer<CGameScriptMapLandmark@>`
 * `linkedPositions.InsertLast(cast<array<vec3>>(lcps[lpKeys[i]]))` -- seems like `cast<array<vec3>>` doesn't parse -- note that `cast<vec3[]>` works fine.
-* class properties using get/set `class C { bool IsBlah { get { return true; } set { this.x = value; }}}`
+* 1/2 class properties using get/set `class C { bool IsBlah { get { return true; } set { this.x = value; }}}`
 * openplanet core constructors
 * ~~ inline function scopes in global ns
+* `value` variable in setters
 
 package: `vsce package`
 
@@ -19,6 +20,8 @@ install from cli: `code --install-extension openplanet-angelscript-X.Y.Z.vsix`
 changelog:
 
 - 0.1.6
+  - basic `get{} set{}` support (note: parses as incomplete variable decl, then some scopes. not ideal but works.)
+  - prelim support for multiple inline functions in one expression.
   - inline function scopes (+ appear in global namespace)
 - 0.1.5
   - windows compatibility supported now (seems to work, pls report bugs)

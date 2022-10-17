@@ -8,7 +8,7 @@
         },
         {
             "name": "keyword.statement.angelscript",
-            "match": "\\b(for|if|return|continue|break|default|else|while|case|switch|try|catch)\\b"
+            "match": "\\b(for|if|return|continue|break|default|else|while|case|switch|try|catch|get|set)\\b"
         },
         {
             "name": "keyword.type.angelscript",

@@ -66,6 +66,8 @@ const lexer = moo.compile({
             local_token: "local",
             if_token: "if",
             else_token: "else",
+            get_token: "get",
+            set_token: "set",
             try_token: "try",
             catch_token: "catch",
             while_token: "while",
@@ -306,6 +308,8 @@ var grammar = {
     {"name": "statement", "symbols": [(lexer.has("else_token") ? {type: "else_token"} : else_token), "optional_statement"], "postprocess": 
         function (d) { return Compound(d, n.ElseStatement, [d[1]]); }
         },
+    {"name": "statement", "symbols": [(lexer.has("get_token") ? {type: "get_token"} : get_token), "_"], "postprocess": d => Compound(d, n.GetStatement, [])},
+    {"name": "statement", "symbols": [(lexer.has("set_token") ? {type: "set_token"} : set_token), "_"], "postprocess": d => Compound(d, n.SetStatement, [])},
     {"name": "statement", "symbols": [(lexer.has("try_token") ? {type: "try_token"} : try_token)], "postprocess": d => Compound(d, n.TryStatement, [])},
     {"name": "statement", "symbols": [(lexer.has("catch_token") ? {type: "catch_token"} : catch_token)], "postprocess": d => Compound(d, n.CatchStatement, [])},
     {"name": "statement", "symbols": [(lexer.has("switch_token") ? {type: "switch_token"} : switch_token), "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "optional_expression", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
@@ -487,21 +491,24 @@ var grammar = {
             name: d[2],
         }; }
         },
-    {"name": "class_declaration$ebnf$1$subexpression$1", "symbols": ["access_specifier", "_"]},
+    {"name": "class_declaration$ebnf$1$subexpression$1", "symbols": ["settings_decl", "_"]},
     {"name": "class_declaration$ebnf$1", "symbols": ["class_declaration$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "class_declaration$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "class_declaration", "symbols": ["class_declaration$ebnf$1", "var_decl"], "postprocess": 
-        function (d) {
-            return ExtendedCompound(d, {
-                ...d[1],
-                access: d[0] ? d[0][0] : null,
-            });
-        }
-        },
     {"name": "class_declaration$ebnf$2$subexpression$1", "symbols": ["access_specifier", "_"]},
     {"name": "class_declaration$ebnf$2", "symbols": ["class_declaration$ebnf$2$subexpression$1"], "postprocess": id},
     {"name": "class_declaration$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "class_declaration", "symbols": ["class_declaration$ebnf$2", "typename"], "postprocess": 
+    {"name": "class_declaration", "symbols": ["class_declaration$ebnf$1", "class_declaration$ebnf$2", "var_decl"], "postprocess": 
+        function (d) {
+            return ExtendedCompound(d, {
+                ...d[2],
+                access: d[1] ? d[1][0] : null,
+            });
+        }
+        },
+    {"name": "class_declaration$ebnf$3$subexpression$1", "symbols": ["access_specifier", "_"]},
+    {"name": "class_declaration$ebnf$3", "symbols": ["class_declaration$ebnf$3$subexpression$1"], "postprocess": id},
+    {"name": "class_declaration$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "class_declaration", "symbols": ["class_declaration$ebnf$3", "typename"], "postprocess": 
         function (d) {
             return ExtendedCompound(d, {
                 ...Compound(d, n.VariableDecl, null),
@@ -511,10 +518,10 @@ var grammar = {
             });
         }
         },
-    {"name": "class_declaration$ebnf$3$subexpression$1", "symbols": ["access_specifier", "_"]},
-    {"name": "class_declaration$ebnf$3", "symbols": ["class_declaration$ebnf$3$subexpression$1"], "postprocess": id},
-    {"name": "class_declaration$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "class_declaration", "symbols": ["class_declaration$ebnf$3", "function_signature"], "postprocess": 
+    {"name": "class_declaration$ebnf$4$subexpression$1", "symbols": ["access_specifier", "_"]},
+    {"name": "class_declaration$ebnf$4", "symbols": ["class_declaration$ebnf$4$subexpression$1"], "postprocess": id},
+    {"name": "class_declaration$ebnf$4", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "class_declaration", "symbols": ["class_declaration$ebnf$4", "function_signature"], "postprocess": 
         function (d) {
             return ExtendedCompound(d, {
                 ...d[1],

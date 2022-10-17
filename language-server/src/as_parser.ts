@@ -85,7 +85,7 @@ export let ASKeywords = [
     "for", "if", "enum", "return", "continue", "break", "import", "class", "struct", "default",
     "void", "const", "else", "while", "case", "cast", "namespace",
     "true", "false", "this", "auto", "null", "shared", "funcdef", "function",
-    "final", "property", "override", "mixin", "switch", "try", "catch",
+    "final", "property", "override", "mixin", "switch", "try", "catch", "get", "set",
     // "UFUNCTION", "UPROPERTY", "UCLASS", "USTRUCT", "nullptr",
     // "delegate", "event",
 ];
@@ -98,7 +98,8 @@ export enum ASScopeType
     Enum,
     Code,
     Namespace,
-    ArrayValues
+    // ArrayValues,
+    // VariableGetSet
 }
 
 export function ASScopeTypeToString(t: ASScopeType): string {
@@ -109,7 +110,7 @@ export function ASScopeTypeToString(t: ASScopeType): string {
     if (t == ASScopeType.Enum) return "ASScopeType.Enum";
     if (t == ASScopeType.Code) return "ASScopeType.Code";
     if (t == ASScopeType.Namespace) return "ASScopeType.Namespace";
-    if (t == ASScopeType.ArrayValues) return "ASScopeType.ArrayValues";
+    // if (t == ASScopeType.ArrayValues) return "ASScopeType.ArrayValues";
     return "<unknown>";
 }
 
@@ -2053,6 +2054,10 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
             dbtype.moduleScopeStart = scope.start_offset;
             dbtype.moduleScopeEnd = scope.end_offset;
         }
+        // getter or setters
+        else if (_previous.ast.type == node_types.VariableDecl && _previous instanceof ASStatement && !_previous.endsWithSemicolon) {
+            ExtendScopeToStatement(scope, _previous)
+        }
         // Struct definition in global scope
         else if (_previous.ast.type == node_types.StructDefinition)
         {
@@ -2408,6 +2413,8 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
             break;
             case node_types.IfStatement:
             case node_types.ElseStatement:
+            case node_types.GetStatement:
+            case node_types.SetStatement:
             case node_types.TryStatement:
             case node_types.CatchStatement:
             case node_types.ForLoop:
@@ -2839,6 +2846,7 @@ function AddTypenameSymbol(scope : ASScope, statement : ASStatement, node : any,
 {
     if (!node)
         return null;
+    if (node?.name?.value == "get" || node?.name?.value == "set") console.trace(`get set here`)
     if (node.basetype)
     {
         let baseSymbol : ASSemanticSymbol = null;
@@ -4751,6 +4759,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
         // Type X;
         case node_types.VariableDecl:
         {
+            if (["get", "set"].includes(node?.typename?.value)) console.log(`got get set: ${node.typename.value}; ${JSON.stringify(node)}`)
             // Add symbol for access specifier if we want
             if (node.access)
                 AddAccessSpecifierSymbol(scope, statement, node.access);
@@ -6533,6 +6542,9 @@ function DetermineScopeType(scope : ASScope)
             {
                 scope.scopetype = ASScopeType.Class;
             }
+            else if (ast_type == node_types.VariableDecl && !scope.previous.endsWithSemicolon) { // getter or setter?
+                scope.scopetype = ASScopeType.Code
+            }
             else if (ast_type == node_types.StructDefinition)
             {
                 scope.scopetype = ASScopeType.Class;
@@ -6973,10 +6985,10 @@ export function ParseStatement(scopetype : ASScopeType, statement : ASStatement,
             parser = parser_enum_statement;
             parser.restore(parser_enum_statement_initial);
         break;
-        case ASScopeType.ArrayValues:
-            parser = parser_array_statement;
-            parser.restore(parser_array_statement_initial);
-        break;
+        // case ASScopeType.ArrayValues:
+        //     parser = parser_array_statement;
+        //     parser.restore(parser_array_statement_initial);
+        // break;
         case ASScopeType.Function:
         case ASScopeType.Code:
             parser = parser_statement;
