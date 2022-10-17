@@ -2222,6 +2222,7 @@ function GenerateTypeInformation(scope : ASScope)
 
             scope.dbfunc = dbfunc;
 
+
             if (scope.parentscope && scope.parentscope.dbtype)
             {
                 scope.parentscope.dbtype.addSymbol(dbfunc);
@@ -2442,7 +2443,7 @@ function GenerateTypeInformation(scope : ASScope)
             {
                 // Just create a function in this scope that shadows the imported function
                 let funcdef = statement.ast.children[0];
-                console.warn(`Loading imported function: ${funcdef.name.value}`)
+                // console.warn(`Loading imported function: ${funcdef.name.value}`)
                 let dbfunc = AddDBMethod(scope, funcdef.name.value);
                 if (funcdef.documentation)
                     dbfunc.documentation = typedb.FormatDocumentationComment(funcdef.documentation);
@@ -4535,6 +4536,26 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
             return typedb.LookupType(scope.getNamespace(), node.children[0].value);
         }
         break;
+        // function(arg, arg) { statements }
+        case node_types.InlineFunctionDecl: {
+            // Add symbols for all parameters of the function
+            if (node.parameters)
+            {
+                for (let param of node.parameters)
+                {
+                    // Add the typename of the parameter
+                    if (param.typename)
+                        AddTypenameSymbol(scope, statement, param.typename);
+                    // Add the name of the parameter
+                    if (param.name)
+                        AddIdentifierSymbol(scope, statement, param.name, ASSymbolType.Parameter, null, param.name.value);
+                    // Detect inside the default expression for the parameter
+                    if (param.expression)
+                        DetectNodeSymbols(scope, statement, param.expression, parseContext, typedb.DBAllowSymbol.Properties);
+                }
+            }
+        }
+        break;
         // void X(...)
         case node_types.FunctionDecl:
         case node_types.ConstructorDecl:
@@ -5510,7 +5531,9 @@ function DetectSymbolsInType(scope : ASScope, statement : ASStatement, inSymbol 
     if (inSymbol instanceof typedb.DBType)
         dbtype = inSymbol;
     else if (inSymbol instanceof typedb.DBProperty) {
+        // console.log(`looking for type: ${inSymbol.typename}`)
         dbtype = typedb.LookupType(inSymbol.namespace, inSymbol.typename);
+        // console.log(`looked up type, got: ${dbtype?.getDisplayName()}`)
     }
 
     if (!dbtype)
@@ -6025,8 +6048,9 @@ function ParseScopeIntoStatements(scope : ASScope)
                     finishStatement(false);
                     scope_start = cur_offset;
 
-                    // Reset paren depth, must be an error if we still have parens open
-                    depth_paren = 0;
+                    // ~~Reset paren depth, must be an error if we still have parens open
+                    // ^^ not an error with inline function definitions
+                    // depth_paren = 0;
                 } else {
                     in_array = true;
                 }
@@ -6369,6 +6393,10 @@ function DetermineScopeType(scope : ASScope)
                 scope.scopetype = ASScopeType.Namespace;
             }
             else if (ast_type == node_types.FunctionDecl)
+            {
+                scope.scopetype = ASScopeType.Function;
+            }
+            else if (ast_type == node_types.InlineFunctionDecl)
             {
                 scope.scopetype = ASScopeType.Function;
             }

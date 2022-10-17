@@ -4,7 +4,7 @@ todo:
   * types don't resolve right
 * funcdefs
 * function casting via funcdefs
-* function handles
+* function handles & function types in general
 * some constructors not added to scope
 * `auto landmarks = cp.Arena.MapLandmarks;` should be detected as `MwFastBuffer<CGameScriptMapLandmark@>`
 * `linkedPositions.InsertLast(cast<array<vec3>>(lcps[lpKeys[i]]))` -- seems like `cast<array<vec3>>` doesn't parse -- note that `cast<vec3[]>` works fine.
@@ -18,6 +18,8 @@ install from cli: `code --install-extension openplanet-angelscript-X.Y.Z.vsix`
 changelog:
 
 - 0.1.5
+  - add prelim support for inline functions
+  - fix massive performance issue looking for template types with an @ in them (literally added 1 character to some regex)
   - add game enums and fix resolution for enums with same name in diff namespaces
   - add openplanetnext.json docs
   - `LookupType` now prioritizes namespaces

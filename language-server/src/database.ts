@@ -2096,7 +2096,7 @@ export function LookupType(namespace : DBNamespace, typename : string) : DBType 
     // See if we have to create a template instance
     if (identifier.indexOf('<') != -1)
     {
-        console.log(`template instance, checked identifier: ${identifier}`)
+        // console.log(`template instance, checked identifier: ${identifier}`)
         let match = identifier.match(re_template);
         if (match != null)
         {
@@ -2119,7 +2119,7 @@ export function LookupType(namespace : DBNamespace, typename : string) : DBType 
                 if (!inst) return null;
                 if (!mainInst) mainInst = inst;
 
-                console.log(`adding to database: ${namespace.name}::${inst.getDisplayName()}`)
+                // console.log(`adding to database: ${namespace.name}::${inst.getDisplayName()}`)
                 AddTypeToDatabase(namespace, inst);
             }
             return mainInst;

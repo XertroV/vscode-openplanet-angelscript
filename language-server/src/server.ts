@@ -927,7 +927,7 @@ connection.onRequest("angelscript/provideInlineValues", (...params: any[]) : any
 
     if (!asmodule.queuedParse)
     {
-        // We don't parse because of didChange more than ten times per second,
+        // We don't parse because of didChange more than 3 times per second,
         // so we don't end up with a giant backlog of parses.
         asmodule.queuedParse = setTimeout(function() {
             asmodule.queuedParse = null;

@@ -58,6 +58,7 @@ const lexer = moo.compile({
             mixin_token: "mixin",
             shared_token: "shared",
             funcdef_token: "funcdef",
+            function_token: "function",
             local_token: "local",
             if_token: "if",
             else_token: "else",
@@ -831,6 +832,7 @@ macro_value -> ("-" _):? const_number {%
 
 expression -> expr_ternary {% id %}
 expression -> expr_array {% id %}
+expression -> expr_inline_function {% id %}
 
 expr_array -> %lbrace argumentlist _ %rbrace {%
     function(d) { return Compound(d, n.ArrayInline, d[1] ? [d[1]] : []); }
@@ -1048,6 +1050,16 @@ argument -> %identifier _ "=" optional_expression {%
 # but we haven't typed the = yet
 argument -> %identifier %WS expr_leaf {%
     function (d) { return Compound(d, n.NamedArgument, [Identifier(d[0]), d[2]]); }
+%}
+
+expr_inline_function -> %function_token _ %lparen _ parameter_list _ %rparen {%
+    function (d) { return {
+        ...Compound(d, n.InlineFunctionDecl, null),
+        name: null,
+        returntype: null,
+        parameters: d[4],
+        qualifiers: null,
+    }; }
 %}
 
 const_number -> %number {%
@@ -1269,8 +1281,8 @@ typename_identifier -> %template_basetype {%
     function (d) { return Literal(n.Typename, d[0]); }
 %}
 
-typename_identifier -> (%ns _):? (%identifier _ %ns _ ):* %identifier {%
-    function (d) { return CompoundLiteral(n.Typename, d, null); }
+typename_identifier -> (%ns _):? (%identifier _ %ns _ ):* %identifier %atsign:? {%
+    function (d) { return {...CompoundLiteral(n.Typename, d, null), is_reference: d[3]}; }
 %}
 
 const_qualifier -> %const_token _ {%

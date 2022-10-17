@@ -62,6 +62,7 @@ const lexer = moo.compile({
             mixin_token: "mixin",
             shared_token: "shared",
             funcdef_token: "funcdef",
+            function_token: "function",
             local_token: "local",
             if_token: "if",
             else_token: "else",
@@ -875,6 +876,7 @@ var grammar = {
         },
     {"name": "expression", "symbols": ["expr_ternary"], "postprocess": id},
     {"name": "expression", "symbols": ["expr_array"], "postprocess": id},
+    {"name": "expression", "symbols": ["expr_inline_function"], "postprocess": id},
     {"name": "expr_array", "symbols": [(lexer.has("lbrace") ? {type: "lbrace"} : lbrace), "argumentlist", "_", (lexer.has("rbrace") ? {type: "rbrace"} : rbrace)], "postprocess": 
         function(d) { return Compound(d, n.ArrayInline, d[1] ? [d[1]] : []); }
         },
@@ -1090,6 +1092,15 @@ var grammar = {
     {"name": "argument", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), (lexer.has("WS") ? {type: "WS"} : WS), "expr_leaf"], "postprocess": 
         function (d) { return Compound(d, n.NamedArgument, [Identifier(d[0]), d[2]]); }
         },
+    {"name": "expr_inline_function", "symbols": [(lexer.has("function_token") ? {type: "function_token"} : function_token), "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "_", "parameter_list", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
+        function (d) { return {
+            ...Compound(d, n.InlineFunctionDecl, null),
+            name: null,
+            returntype: null,
+            parameters: d[4],
+            qualifiers: null,
+        }; }
+        },
     {"name": "const_number", "symbols": [(lexer.has("number") ? {type: "number"} : number)], "postprocess": 
         function(d) { return Literal(n.ConstInteger, d[0]); }
         },
@@ -1302,8 +1313,10 @@ var grammar = {
     {"name": "typename_identifier$ebnf$2", "symbols": []},
     {"name": "typename_identifier$ebnf$2$subexpression$1", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), "_", (lexer.has("ns") ? {type: "ns"} : ns), "_"]},
     {"name": "typename_identifier$ebnf$2", "symbols": ["typename_identifier$ebnf$2", "typename_identifier$ebnf$2$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "typename_identifier", "symbols": ["typename_identifier$ebnf$1", "typename_identifier$ebnf$2", (lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": 
-        function (d) { return CompoundLiteral(n.Typename, d, null); }
+    {"name": "typename_identifier$ebnf$3", "symbols": [(lexer.has("atsign") ? {type: "atsign"} : atsign)], "postprocess": id},
+    {"name": "typename_identifier$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "typename_identifier", "symbols": ["typename_identifier$ebnf$1", "typename_identifier$ebnf$2", (lexer.has("identifier") ? {type: "identifier"} : identifier), "typename_identifier$ebnf$3"], "postprocess": 
+        function (d) { return {...CompoundLiteral(n.Typename, d, null), is_reference: d[3]}; }
         },
     {"name": "const_qualifier", "symbols": [(lexer.has("const_token") ? {type: "const_token"} : const_token), "_"], "postprocess": 
         function (d) { return Identifier(d[0]); }
