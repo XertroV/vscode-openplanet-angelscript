@@ -1824,7 +1824,7 @@ export function TransferTypeQualifiers(typename : string, newtype : string) : st
     return newtype;
 }
 
-let re_template = /([A-Za-z_0-9]+)\<(([A-Za-z_0-9]+\s*(<[A-Za-z_0-9,\s]+>)?,?)+)\>/;
+let re_template = /([A-Za-z_0-9]+)\<(([A-Za-z_0-9:]+\s*(<[A-Za-z_0-9:,\s]+>)?,?)+)@?\>/;
 export function ReplaceTemplateType(typename : string, templateTypes : Array<string>, actualTypes : Array<string>)
 {
     typename = CleanTypeName(typename);
@@ -2026,6 +2026,7 @@ export function LookupType(namespace : DBNamespace, typename : string) : DBType 
     let identifier = CleanTypeName(typename);
 
     if (namespace) {
+        // console.warn(`checking namespace: ${namespace.name}`)
         let found = namespace.GetTypeByName(identifier);
         if (found && !(found instanceof Array)) {
             if (found.namespace != namespace) console.warn(`Unexpected mismatching namespaces: ${found.namespace.getQualifiedNamespace()} vs ${namespace.getQualifiedNamespace()}`)
@@ -2069,6 +2070,7 @@ export function LookupType(namespace : DBNamespace, typename : string) : DBType 
         let finalIdentifier = nameParts[nameParts.length - 1];
 
         let checkNamespace = namespace;
+        let loopCount = 0;
         while (checkNamespace)
         {
             let targetNamespace = checkNamespace;
@@ -2086,12 +2088,15 @@ export function LookupType(namespace : DBNamespace, typename : string) : DBType 
             }
 
             checkNamespace = checkNamespace.parentNamespace;
+            loopCount++;
+            if (loopCount > 10) console.log(`checkNamespace loopCount: ${loopCount}`)
         }
     }
 
     // See if we have to create a template instance
     if (identifier.indexOf('<') != -1)
     {
+        console.log(`template instance, checked identifier: ${identifier}`)
         let match = identifier.match(re_template);
         if (match != null)
         {
@@ -2104,7 +2109,6 @@ export function LookupType(namespace : DBNamespace, typename : string) : DBType 
 
             let mainInst;
             for (let subtypes of subtypeVariants) {
-
                 let dbbasetype = LookupType(namespace, basetype);
                 if (!dbbasetype)
                 return null;
@@ -2115,6 +2119,7 @@ export function LookupType(namespace : DBNamespace, typename : string) : DBType 
                 if (!inst) return null;
                 if (!mainInst) mainInst = inst;
 
+                console.log(`adding to database: ${namespace.name}::${inst.getDisplayName()}`)
                 AddTypeToDatabase(namespace, inst);
             }
             return mainInst;
