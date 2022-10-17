@@ -283,7 +283,12 @@ export function Complete(asmodule: scriptfiles.ASModule, position: Position): Ar
     if (!context.havePreselection)
         DeterminePreSelectedCompletion(context);
 
-    return completions;
+    return completions.filter(IsNotInternalCompletion);
+}
+
+function IsNotInternalCompletion(c: CompletionItem) {
+    if (c.label.startsWith("__anon_func_")) return false;
+    return true;
 }
 
 function DeterminePreSelectedCompletion(context: CompletionContext)

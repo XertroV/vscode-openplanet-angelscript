@@ -1052,15 +1052,23 @@ argument -> %identifier %WS expr_leaf {%
     function (d) { return Compound(d, n.NamedArgument, [Identifier(d[0]), d[2]]); }
 %}
 
-expr_inline_function -> %function_token _ %lparen _ parameter_list _ %rparen {%
-    function (d) { return {
-        ...Compound(d, n.InlineFunctionDecl, null),
-        name: null,
-        returntype: null,
-        parameters: d[4],
-        qualifiers: null,
-    }; }
+expr_inline_function -> %function_token _ %lparen _ parameter_list _ %rparen _ a_complete_scope:? {%
+    function (d) {
+        // console.trace(`got inline function: ${JSON.stringify(d)}`)
+
+        return {
+            ...Compound(d, n.InlineFunctionDecl, null),
+            //name: Identifier({...d[0], value: `__anon_func_inline`}), // Identifier(d[0]),
+            name: null,
+            returntype: null,
+            parameters: d[4],
+            qualifiers: null,
+            inline_body: d[8] ? d[8] : null,
+        };
+    }
 %}
+
+a_complete_scope -> %lbrace _ (expression_or_assignment %semicolon _):* _ %rbrace
 
 const_number -> %number {%
     function(d) { return Literal(n.ConstInteger, d[0]); }

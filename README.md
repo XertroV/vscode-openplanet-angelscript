@@ -17,16 +17,19 @@ install from cli: `code --install-extension openplanet-angelscript-X.Y.Z.vsix`
 
 changelog:
 
+- 0.1.6
+  -
 - 0.1.5
+  - windows compatibility supported now (seems to work, pls report bugs)
   - add prelim support for inline functions
   - fix massive performance issue looking for template types with an @ in them (literally added 1 character to some regex)
   - add game enums and fix resolution for enums with same name in diff namespaces
   - add openplanetnext.json docs
   - `LookupType` now prioritizes namespaces
   - fix some symbol lookup stuff
+- 0.1.4
   - add https://openplanet.dev/docs/reference/plugin-callbacks suggestions
   - load dependencies even if info.toml not found
-- 0.1.4
   - added openplanet plugins as dependency options
   - fix settings parsing
   - add options for debug output

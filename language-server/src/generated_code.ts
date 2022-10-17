@@ -189,6 +189,7 @@ function AddGeneratedCodeForSubsystem(asmodule : scriptfiles.ASModule, dbtype : 
 
 function AddGeneratedCodeForDelegate(dbtype : typedb.DBType, asmodule : scriptfiles.ASModule)
 {
+    return; // unreal stuff
     {
         let method = AddMethod(dbtype, "IsBound");
         method.returnType = "bool";

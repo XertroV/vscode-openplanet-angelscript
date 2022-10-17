@@ -527,6 +527,28 @@ export class DBMethod implements DBSymbol
     getSignature(): string {
         return `${this.returnType} ${this.name}(${this.args.map(a => `${a.typename} ${a.name}`).join(", ")})`
     }
+
+    private funcType?: DBType;
+    getFuncType(): DBType {
+        if (!this.funcType) {
+            let funcType = new DBType;
+            funcType.name = this.name;
+            funcType.classification = DBTypeClassification.Other;
+            funcType.declaredModule = this.declaredModule;
+            funcType.moduleOffset = this.moduleOffset;
+            funcType.moduleOffsetEnd = this.moduleOffsetEnd;
+            funcType.moduleScopeEnd = this.moduleScopeEnd;
+            funcType.moduleScopeStart = this.moduleScopeStart;
+            funcType.namespace = this.namespace;
+            funcType.delegateArgs = this.args;
+            funcType.delegateReturn = this.returnType;
+            funcType.isDelegate = true;
+            funcType.delegateSource = this;
+            this.funcType = funcType;
+            // AddTypeToDatabase(this.namespace, funcType);
+        }
+        return this.funcType;
+    }
 };
 
 export class DBType implements DBSymbol
@@ -556,6 +578,7 @@ export class DBType implements DBSymbol
 
     delegateArgs: Array<DBArg> = null; // unreal?
     delegateReturn: string = null; // unreal?
+    delegateSource?: DBMethod;
 
     declaredModule : string;
     moduleOffset : number;
@@ -1334,11 +1357,23 @@ export class DBNamespace
     }
 
     GetTypeByName(name: string): DBType | null {
-        let syms = this.findSymbols(name, DBAllowSymbol.Types);
+        let syms = this.findSymbols(name, DBAllowSymbol.Types | DBAllowSymbol.Functions);
         if (!syms || syms.length == 0) return;
+        // return non-delegate types first
+        for (let sym of syms) {
+            if (sym instanceof DBType && !sym.isDelegate)
+               return sym
+        }
+        // delegate types
         for (let sym of syms) {
             if (sym instanceof DBType)
-                return sym
+               return sym
+        }
+        // only return methods if we don't have any other options
+        for (let sym of syms) {
+            if (sym instanceof DBMethod) {
+                return sym.getFuncType()
+            }
         }
     }
 

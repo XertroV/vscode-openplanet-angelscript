@@ -21,18 +21,21 @@ let grammar_class_statement = nearley.Grammar.fromCompiled(require("../grammar/g
 let grammar_global_statement = nearley.Grammar.fromCompiled(require("../grammar/grammar_global_statement.js"));
 let grammar_enum_statement = nearley.Grammar.fromCompiled(require("../grammar/grammar_enum_statement.js"));
 let grammar_array_statement = nearley.Grammar.fromCompiled(require("../grammar/grammar_array_statement.js"));
+let grammar_inline_function = nearley.Grammar.fromCompiled(require("../grammar/grammar_inline_function.js"));
 
 let parser_statement = new nearley.Parser(grammar_statement);
 let parser_class_statement = new nearley.Parser(grammar_class_statement);
 let parser_global_statement = new nearley.Parser(grammar_global_statement);
 let parser_enum_statement = new nearley.Parser(grammar_enum_statement);
 let parser_array_statement = new nearley.Parser(grammar_array_statement);
+let parser_inline_function = new nearley.Parser(grammar_inline_function);
 
 let parser_statement_initial = parser_statement.save();
 let parser_class_statement_initial = parser_class_statement.save();
 let parser_global_statement_initial = parser_global_statement.save();
 let parser_enum_statement_initial = parser_enum_statement.save();
 let parser_array_statement_initial = parser_array_statement.save();
+let parser_inline_function_initial = parser_inline_function.save();
 
 export interface ASSettings
 {
@@ -81,7 +84,7 @@ export let node_types = require("../grammar/node_types.js");
 export let ASKeywords = [
     "for", "if", "enum", "return", "continue", "break", "import", "class", "struct", "default",
     "void", "const", "else", "while", "case", "cast", "namespace",
-    "true", "false", "this", "auto", "null", "shared", "funcdef",
+    "true", "false", "this", "auto", "null", "shared", "funcdef", "function",
     "final", "property", "override", "mixin", "switch", "try", "catch",
     // "UFUNCTION", "UPROPERTY", "UCLASS", "USTRUCT", "nullptr",
     // "delegate", "event",
@@ -386,6 +389,7 @@ export class ASElement
 {
     previous : ASElement = null;
     next : ASElement = null;
+    swapWithNext: boolean = false;
 };
 
 export class ASVariable
@@ -554,6 +558,7 @@ export class ASScope extends ASElement
 
     resolvedNamespace : typedb.DBNamespace = null;
     available_global_types : Array<typedb.DBType> = null;
+    hasArguments?: string;
 
     isInFunctionBody() : boolean
     {
@@ -1726,7 +1731,7 @@ function AddDBMethod(scope : ASScope, funcname : string) : typedb.DBMethod
     dbfunc.isProtected = false;
     dbfunc.isConstructor = false;
     dbfunc.isConst = false;
-    dbfunc.isProperty = funcname.startsWith(getAccPrefix) || funcname.startsWith(setAccPrefix);
+    dbfunc.isProperty = funcname && (funcname.startsWith(getAccPrefix) || funcname.startsWith(setAccPrefix));
     dbfunc.isBlueprintEvent = false;
     return dbfunc;
 }
@@ -1978,17 +1983,40 @@ function ExtendScopeToStatement(scope : ASScope, statement : ASStatement)
     scope.start_offset = statement.start_offset;
 }
 
-function GenerateTypeInformation(scope : ASScope)
+function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
 {
     scope.resolvedNamespace = scope.parentscope ? scope.parentscope.resolvedNamespace : typedb.GetRootNamespace();
-    if (scope.previous && scope.previous instanceof ASStatement && scope.previous.ast)
+    if (scope.hasArguments) {
+        let inlineFuncDef = scope.hasArguments;
+        scope.hasArguments = null;
+        parser_inline_function.restore(parser_inline_function_initial)
+        let parseError = false;
+        try {
+            let parsed = parser_inline_function.feed(inlineFuncDef);
+        } catch (err) {
+            parseError = true;
+        }
+
+        if (!parseError && parser_inline_function.results.length > 0) {
+            let _statement = new ASStatement()
+            _statement.ast = parser_inline_function.results[1];
+            _statement.content = inlineFuncDef;
+            GenerateTypeInformation(scope, _statement);
+        }
+    }
+
+    if (!_previous) {
+        _previous = scope.previous;
+    }
+
+    if (_previous && _previous instanceof ASStatement && _previous.ast)
     {
         // Class definition in global scope
-        if (scope.previous.ast.type == node_types.ClassDefinition)
+        if (_previous.ast.type == node_types.ClassDefinition)
         {
-            scope.declaration = scope.previous;
+            scope.declaration = _previous;
 
-            let classdef = scope.previous.ast;
+            let classdef = _previous.ast;
             let dbtype = AddDBType(scope, classdef.name.value);
             // if (classdef.superclass) {
             //     console.log(`class ${dbtype.name} has supertype: ${JSON.stringify(classdef.superclass)}`);
@@ -1997,8 +2025,8 @@ function GenerateTypeInformation(scope : ASScope)
             if (classdef.documentation)
                 dbtype.documentation = typedb.FormatDocumentationComment(classdef.documentation);
 
-            dbtype.moduleOffset = scope.previous.start_offset + classdef.name.start;
-            dbtype.moduleOffsetEnd = scope.previous.start_offset + classdef.name.end;
+            dbtype.moduleOffset = _previous.start_offset + classdef.name.start;
+            dbtype.moduleOffsetEnd = _previous.start_offset + classdef.name.end;
 
             scope.module.types.push(dbtype);
             scope.dbtype = dbtype;
@@ -2016,21 +2044,21 @@ function GenerateTypeInformation(scope : ASScope)
                     dbtype.keywords = keywords.split(" ");
             }
 
-            ExtendScopeToStatement(scope, scope.previous);
+            ExtendScopeToStatement(scope, _previous);
             dbtype.moduleScopeStart = scope.start_offset;
             dbtype.moduleScopeEnd = scope.end_offset;
         }
         // Struct definition in global scope
-        else if (scope.previous.ast.type == node_types.StructDefinition)
+        else if (_previous.ast.type == node_types.StructDefinition)
         {
-            scope.declaration = scope.previous;
+            scope.declaration = _previous;
 
-            let structdef = scope.previous.ast;
+            let structdef = _previous.ast;
             let dbtype = AddDBType(scope, structdef.name.value);
             if (structdef.documentation)
                 dbtype.documentation = typedb.FormatDocumentationComment(structdef.documentation);
-            dbtype.moduleOffset = scope.previous.start_offset + structdef.name.start;
-            dbtype.moduleOffsetEnd = scope.previous.start_offset + structdef.name.end;
+            dbtype.moduleOffset = _previous.start_offset + structdef.name.start;
+            dbtype.moduleOffsetEnd = _previous.start_offset + structdef.name.end;
             dbtype.isStruct = true;
 
             scope.module.types.push(dbtype);
@@ -2049,25 +2077,25 @@ function GenerateTypeInformation(scope : ASScope)
                     dbtype.keywords = keywords.split(" ");
             }
 
-            ExtendScopeToStatement(scope, scope.previous);
+            ExtendScopeToStatement(scope, _previous);
             dbtype.moduleScopeStart = scope.start_offset;
             dbtype.moduleScopeEnd = scope.end_offset;
         }
         // Namespace definition in global scope
-        else if (scope.previous.ast.type == node_types.NamespaceDefinition)
+        else if (_previous.ast.type == node_types.NamespaceDefinition)
         {
-            scope.declaration = scope.previous;
+            scope.declaration = _previous;
 
             let parentNamespace = typedb.GetRootNamespace();
             if (scope.parentscope)
                 parentNamespace = scope.parentscope.getNamespace();
 
-            let nsdef = scope.previous.ast;
+            let nsdef = _previous.ast;
 
             let decl = new typedb.DBNamespaceDeclaration();
             decl.declaredModule = scope.module.modulename;
-            decl.declaredOffset = scope.previous.start_offset + nsdef.name.start;
-            decl.declaredOffsetEnd = scope.previous.start_offset + nsdef.name.end;
+            decl.declaredOffset = _previous.start_offset + nsdef.name.start;
+            decl.declaredOffsetEnd = _previous.start_offset + nsdef.name.end;
             decl.scopeOffsetStart = scope.start_offset;
             decl.scopeOffsetEnd = scope.end_offset;
             decl.isNestedParent = false;
@@ -2084,8 +2112,8 @@ function GenerateTypeInformation(scope : ASScope)
                 {
                     let parentDecl = new typedb.DBNamespaceDeclaration();
                     parentDecl.declaredModule = scope.module.modulename;
-                    parentDecl.declaredOffset = scope.previous.start_offset + nsdef.name.start;
-                    parentDecl.declaredOffsetEnd = scope.previous.start_offset + nsdef.name.end;
+                    parentDecl.declaredOffset = _previous.start_offset + nsdef.name.start;
+                    parentDecl.declaredOffsetEnd = _previous.start_offset + nsdef.name.end;
                     parentDecl.scopeOffsetStart = scope.start_offset;
                     parentDecl.scopeOffsetEnd = scope.end_offset;
                     parentDecl.isNestedParent = true;
@@ -2101,46 +2129,48 @@ function GenerateTypeInformation(scope : ASScope)
                 scope.dbnamespace.documentation = typedb.FormatDocumentationComment(nsdef.documentation);
 
             scope.module.namespaces.push(scope.dbnamespace);
-            ExtendScopeToStatement(scope, scope.previous);
+            ExtendScopeToStatement(scope, _previous);
         }
         // Enum definition in global scope
-        else if (scope.previous.ast.type == node_types.EnumDefinition)
+        else if (_previous.ast.type == node_types.EnumDefinition)
         {
-            scope.declaration = scope.previous;
+            scope.declaration = _previous;
 
-            let enumdef = scope.previous.ast;
+            let enumdef = _previous.ast;
             let dbtype = AddDBType(scope, enumdef.name.value);
             dbtype.isEnum = true;
             if (enumdef.documentation)
                 dbtype.documentation = typedb.FormatDocumentationComment(enumdef.documentation);
-            dbtype.moduleOffset = scope.previous.start_offset + enumdef.name.start;
-            dbtype.moduleOffsetEnd = scope.previous.start_offset + enumdef.name.end;
+            dbtype.moduleOffset = _previous.start_offset + enumdef.name.start;
+            dbtype.moduleOffsetEnd = _previous.start_offset + enumdef.name.end;
 
             scope.module.types.push(dbtype);
             scope.dbtype = dbtype;
 
-            ExtendScopeToStatement(scope, scope.previous);
+            ExtendScopeToStatement(scope, _previous);
             dbtype.moduleScopeStart = scope.start_offset;
             dbtype.moduleScopeEnd = scope.end_offset;
         }
         // Function declaration, either in a class or global
-        else if (scope.previous.ast.type == node_types.FunctionDecl)
+        else if (_previous.ast.type == node_types.FunctionDecl || _previous.ast.type == node_types.InlineFunctionDecl)
         {
-            scope.declaration = scope.previous;
+            scope.declaration = _previous;
 
-            let funcdef = scope.previous.ast;
-            let dbfunc = AddDBMethod(scope, funcdef.name.value);
+            let funcdef = _previous.ast;
+            let isNamedFunction = !!funcdef.name?.value;
+
+            let dbfunc = AddDBMethod(scope, funcdef.name?.value);
             if (funcdef.documentation)
                 dbfunc.documentation = typedb.FormatDocumentationComment(funcdef.documentation);
-            dbfunc.moduleOffset = scope.previous.start_offset + funcdef.name.start;
-            dbfunc.moduleOffsetEnd = scope.previous.start_offset + funcdef.name.end;
+            dbfunc.moduleOffset = _previous.start_offset + (funcdef.name?.start || 0);
+            dbfunc.moduleOffsetEnd = _previous.start_offset + (funcdef.name?.end || 0);
 
             if (funcdef.returntype)
                 dbfunc.returnType = GetQualifiedTypename(funcdef.returntype);
             else
                 dbfunc.returnType = "void";
 
-            AddParametersToFunction(scope, scope.previous, dbfunc, funcdef.parameters);
+            AddParametersToFunction(scope, _previous, dbfunc, funcdef.parameters);
 
             if (funcdef.macro)
             {
@@ -2178,7 +2208,7 @@ function GenerateTypeInformation(scope : ASScope)
                     dbfunc.accessSpecifier = scope.parentscope.dbtype.getAccessSpecifier(funcdef.access.value);
             }
 
-            dbfunc.isProperty = dbfunc.name.startsWith(getAccPrefix) || dbfunc.name.startsWith(setAccPrefix);
+            dbfunc.isProperty = isNamedFunction && (dbfunc.name.startsWith(getAccPrefix) || dbfunc.name.startsWith(setAccPrefix));
             if (funcdef.qualifiers)
             {
                 // console.log(`function ${dbfunc.name} qualifiers: ${funcdef.qualifiers}`);
@@ -2222,35 +2252,37 @@ function GenerateTypeInformation(scope : ASScope)
 
             scope.dbfunc = dbfunc;
 
+            // only add functions that are named to parent scopes and things
+            if (isNamedFunction) {
+                if (scope.parentscope && scope.parentscope.dbtype)
+                {
+                    scope.parentscope.dbtype.addSymbol(dbfunc);
+                }
+                else
+                {
+                    let namespace = typedb.GetRootNamespace();
+                    if (scope.parentscope)
+                        namespace = scope.parentscope.getNamespace();
 
-            if (scope.parentscope && scope.parentscope.dbtype)
-            {
-                scope.parentscope.dbtype.addSymbol(dbfunc);
+                    scope.module.globalSymbols.push(dbfunc);
+                    namespace.addSymbol(dbfunc);
+                }
             }
-            else
-            {
-                let namespace = typedb.GetRootNamespace();
-                if (scope.parentscope)
-                    namespace = scope.parentscope.getNamespace();
 
-                scope.module.globalSymbols.push(dbfunc);
-                namespace.addSymbol(dbfunc);
-            }
-
-            ExtendScopeToStatement(scope, scope.previous);
-            dbfunc.moduleScopeStart = scope.previous.start_offset + funcdef.name.start;
+            ExtendScopeToStatement(scope, _previous);
+            dbfunc.moduleScopeStart = _previous.start_offset + (funcdef.name?.start || 0);
             dbfunc.moduleScopeEnd = scope.end_offset;
         }
         // Constructor declaration placed inside a class
-        else if (scope.previous.ast.type == node_types.ConstructorDecl)
+        else if (_previous.ast.type == node_types.ConstructorDecl)
         {
-            scope.declaration = scope.previous;
+            scope.declaration = _previous;
 
-            let constrdef = scope.previous.ast;
+            let constrdef = _previous.ast;
             let dbfunc = AddDBMethod(scope, constrdef.name.value);
-            AddParametersToFunction(scope, scope.previous, dbfunc, constrdef.parameters);
-            dbfunc.moduleOffset = scope.previous.start_offset + constrdef.name.start;
-            dbfunc.moduleOffsetEnd = scope.previous.start_offset + constrdef.name.end;
+            AddParametersToFunction(scope, _previous, dbfunc, constrdef.parameters);
+            dbfunc.moduleOffset = _previous.start_offset + constrdef.name.start;
+            dbfunc.moduleOffsetEnd = _previous.start_offset + constrdef.name.end;
             dbfunc.isConstructor = true;
             scope.dbfunc = dbfunc;
 
@@ -2265,23 +2297,27 @@ function GenerateTypeInformation(scope : ASScope)
                 namespace.addSymbol(dbfunc);
             }
 
-            ExtendScopeToStatement(scope, scope.previous);
+            ExtendScopeToStatement(scope, _previous);
         }
         // Destructor declaration placed inside a class
-        else if (scope.previous.ast.type == node_types.DestructorDecl)
+        else if (_previous.ast.type == node_types.DestructorDecl)
         {
-            scope.declaration = scope.previous;
+            scope.declaration = _previous;
 
-            let destrdef = scope.previous.ast;
+            let destrdef = _previous.ast;
             let dbfunc = AddDBMethod(scope, destrdef.name.value);
-            dbfunc.moduleOffset = scope.previous.start_offset + destrdef.name.start;
-            dbfunc.moduleOffsetEnd = scope.previous.start_offset + destrdef.name.end;
+            dbfunc.moduleOffset = _previous.start_offset + destrdef.name.start;
+            dbfunc.moduleOffsetEnd = _previous.start_offset + destrdef.name.end;
             scope.dbfunc = dbfunc;
 
             if (scope.parentscope && scope.parentscope.dbtype)
             {
                 scope.parentscope.dbtype.addSymbol(dbfunc);
             }
+        }
+        // inline function
+        else if (_previous.ast.type == node_types.InlineFunctionDecl) {
+            console.log(`todo >> process inline function decl for scope`);
         }
     }
 
@@ -2293,6 +2329,7 @@ function GenerateTypeInformation(scope : ASScope)
             continue;
         if (!statement.ast)
             continue;
+
         switch (statement.ast.type)
         {
             case node_types.ImportStatement:
@@ -2415,6 +2452,10 @@ function GenerateTypeInformation(scope : ASScope)
 
                     scope.module.types.push(dbtype);
                 }
+            }
+            break;
+            case node_types.InlineFunctionDecl: {
+                console.trace(JSON.stringify(statement.ast))
             }
             break;
             case node_types.FuncdefDefinition: {
@@ -2867,6 +2908,8 @@ function AddTypenameSymbol(scope : ASScope, statement : ASStatement, node : any,
 
                 // Add a symbol for the actual typename
                 {
+
+                    // if (node.name.value == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 1 _ProcessAllEventsFor`)
                     let symbol = new ASSemanticSymbol;
                     symbol.start = node.name.start + statement.start_offset + prevNamespaceIndex;
                     symbol.end = node.name.end + statement.start_offset;
@@ -2878,7 +2921,9 @@ function AddTypenameSymbol(scope : ASScope, statement : ASStatement, node : any,
             }
             else
             {
+                // if (node.name.value == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 2 _ProcessAllEventsFor`)
                 let addSymbol = AddIdentifierSymbol(scope, statement, node.name, ASSymbolType.Typename, null, node.name.value);
+
                 if (exists instanceof typedb.DBType)
                 {
                     if (exists.isEnum)
@@ -2991,6 +3036,8 @@ export function ResolveTypeFromExpression(scope : ASScope, node : any) : typedb.
         // X
         case node_types.Identifier:
         {
+
+            // if (node.value == "_ProcessAllEventsFor") console.log(`seen _ProcessAllEventsFor at Identifier; resolved: ${ResolveTypeFromIdentifier(scope, node.value)?.name}`)
             return ResolveTypeFromIdentifier(scope, node.value);
         }
         break;
@@ -3095,6 +3142,7 @@ export function ResolveTypeFromExpression(scope : ASScope, node : any) : typedb.
         case node_types.FunctionCall:
         {
             let left_func = ResolveFunctionFromExpression(scope, node.children[0]);
+            // if (node.children[0].value == "_ProcessAllEventsFor") console.log(`seen _ProcessAllEventsFor at FunctionCall; left_func null? ${left_func?.name}`)
             if (!left_func)
             {
                 // Check if this is a constructor to some type
@@ -4153,6 +4201,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                         scope.module.markDependencyType(shadowedType);
                         addedSymbol.symbol_name = shadowedType.name;
                         addedSymbol.type = ASSymbolType.Typename;
+                        // if (addedSymbol.symbol_name == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 3 _ProcessAllEventsFor`)
                     }
                     else if (namespace)
                     {
@@ -4164,6 +4213,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                         scope.module.markDependencyType(parentType);
                         addedSymbol.symbol_name = parentType.name;
                         addedSymbol.type = ASSymbolType.Typename;
+                        // if (addedSymbol.symbol_name == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 4 _ProcessAllEventsFor`)
                     }
                 }
 
@@ -4255,6 +4305,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                                 scope.module.markDependencyType(shadowedType);
                                 addedSymbol.symbol_name = shadowedType.name;
                                 addedSymbol.type = ASSymbolType.Typename;
+                                // if (addedSymbol.symbol_name == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 5 _ProcessAllEventsFor`)
                             }
                             else
                             {
@@ -4268,6 +4319,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                             if (enumType && enumType.isEnum)
                             {
                                 AddIdentifierSymbol(scope, statement, identifierNodes[i], ASSymbolType.Typename, null, enumType.name);
+                                // if (enumType.name == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 6 _ProcessAllEventsFor`)
 
                                 let enumValueNode = identifierNodes[i+1];
                                 if (enumValueNode)
@@ -4324,11 +4376,12 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                 {
                     left_type = refType;
                     let addedSymbol = AddIdentifierSymbol(scope, statement, node.children[0], ASSymbolType.Typename, null, refType.name);
+                    // if (refType.name == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 7 _ProcessAllEventsFor`)
                     if (refType.declaredModule && !ScriptSettings.automaticImports && !scope.module.isModuleImported(refType.declaredModule))
                         addedSymbol.isUnimported = true;
                     scope.module.markDependencyType(refType);
                 }
-                else if (refType)
+                else if (refType && !refType.delegateSource)
                 {
                     scope.module.markDependencyType(refType);
 
@@ -4341,23 +4394,24 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                     left_type = refType;
 
                     let addedSymbol = AddIdentifierSymbol(scope, statement, node.children[0], ASSymbolType.Typename, null, refType.name);
+                    // if (refType.name == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 8 _ProcessAllEventsFor`)
                     if (refType.declaredModule && !ScriptSettings.automaticImports && !scope.module.isModuleImported(refType.declaredModule))
                         addedSymbol.isUnimported = true;
 
-                    // If this is a delegate constructor call, mark it for later diagnostics
-                    if (left_type.isDelegate && node.children[1])
-                    {
-                        delegateBind = new ASDelegateBind;
-                        delegateBind.scope = scope;
-                        delegateBind.statement = statement;
-                        delegateBind.node_expression = node;
-                        if (node.children[1].children[0])
-                            delegateBind.node_object = node.children[1].children[0];
-                        if (node.children[1].children[1])
-                            delegateBind.node_name = node.children[1].children[1];
-                        delegateBind.delegateType = left_type.name;
-                        scope.module.delegateBinds.push(delegateBind);
-                    }
+                    // // If this is a delegate constructor call, mark it for later diagnostics
+                    // if (left_type.isDelegate && node.children[1])
+                    // {
+                    //     delegateBind = new ASDelegateBind;
+                    //     delegateBind.scope = scope;
+                    //     delegateBind.statement = statement;
+                    //     delegateBind.node_expression = node;
+                    //     if (node.children[1].children[0])
+                    //         delegateBind.node_object = node.children[1].children[0];
+                    //     if (node.children[1].children[1])
+                    //         delegateBind.node_name = node.children[1].children[1];
+                    //     delegateBind.delegateType = left_type.name;
+                    //     scope.module.delegateBinds.push(delegateBind);
+                    // }
                 }
             }
 
@@ -4580,6 +4634,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                 {
                     insideType = null;
                     symType = ASSymbolType.Typename;
+                    // if (node.name.value == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 9 _ProcessAllEventsFor`)
                 }
 
                 AddIdentifierSymbol(scope, statement, node.name, symType, insideType, node.name.value);
@@ -4613,6 +4668,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                     start: node.name.start + 1,
                     end: node.name.end,
                 }, ASSymbolType.Typename, null, node.name.value.substr(1));
+                // if (node.name.value == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 10 _ProcessAllEventsFor`)
             }
         }
         break;
@@ -4848,6 +4904,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                     if (specType)
                     {
                         AddIdentifierSymbol(scope, statement, cls.className, ASSymbolType.Typename, null, cls.className.value);
+                        // if (cls.className.value == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 11 _ProcessAllEventsFor`)
                     }
                     else
                     {
@@ -4956,6 +5013,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
         {
             // Add the typename of the class itself
             AddIdentifierSymbol(scope, statement, node.name, ASSymbolType.Typename, null, node.name.value);
+            // if (node.name.value == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 12 _ProcessAllEventsFor`)
 
             // If we specified a super type, add the symbol for that too
             if (node.superclass)
@@ -5040,8 +5098,20 @@ function DetectIdentifierSymbols(scope : ASScope, statement : ASStatement, node 
     if (!node)
         return null;
 
-    // Check for local variables
-    if (typedb.AllowsProperties(symbol_type))
+    // if (node.value == "funcSendEvent") { // debug
+    //     // console.trace(`DetectIdentifierSymbols: funcSendEvent`)
+    //     console.trace(`
+
+    //     node.value: ${node.value}
+    //     typedb.AllowsProperties(symbol_type): ${typedb.AllowsProperties(symbol_type)}
+    //     symbol_type: ${symbol_type}
+    //     typedb.DBAllowSymbol.Functions: ${typedb.DBAllowSymbol.Functions}
+
+    //     `)
+    // }
+
+    // Check for local variables or functions that are arguments, etc
+    if (typedb.AllowsProperties(symbol_type) || typedb.AllowsFunctions(symbol_type))
     {
         let checkscope = scope;
         while (checkscope && checkscope.isInFunctionBody())
@@ -5049,6 +5119,7 @@ function DetectIdentifierSymbols(scope : ASScope, statement : ASStatement, node 
             let usedVariable = checkscope.variablesByName.get(node.value);
             if (usedVariable)
             {
+                // console.log(`got used variable: ${usedVariable.name}`);
                 if (!parseContext.isRootIdentifier && (!parseContext.isWriteAccess || usedVariable.isReference()))
                     usedVariable.isUnused = false;
                 usedVariable.hasAnyUsages = true;
@@ -5210,6 +5281,7 @@ function DetectIdentifierSymbols(scope : ASScope, statement : ASStatement, node 
         if (symType)
         {
             let addedSymbol = AddIdentifierSymbol(scope, statement, node, ASSymbolType.Typename, null, symType.name);
+            // if (symType.name == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 13 _ProcessAllEventsFor`)
             if (symType.declaredModule && !ScriptSettings.automaticImports && !scope.module.isModuleImported(symType.declaredModule))
                 addedSymbol.isUnimported = true;
 
@@ -5290,6 +5362,7 @@ function DetectSymbolFromNamespacedIdentifier(scope : ASScope, statement : ASSta
     {
         nsSymbol.type = ASSymbolType.Typename;
         nsSymbol.symbol_name = refType.name;
+        // if (refType.name == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 14 _ProcessAllEventsFor`)
     }
     else
     {
@@ -5681,6 +5754,7 @@ function DetectSymbolsInNamespace(scope : ASScope, statement : ASStatement, name
         if (usedSymbol instanceof typedb.DBType)
         {
             let identifierSym = AddIdentifierSymbol(scope, statement, node, ASSymbolType.Typename, null, usedSymbol.name);
+            // if (usedSymbol.name == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 15 _ProcessAllEventsFor`)
             if (!ScriptSettings.automaticImports && usedSymbol.declaredModule && !scope.module.isModuleImported(usedSymbol.declaredModule))
                 identifierSym.isUnimported = true;
 
@@ -5900,12 +5974,43 @@ function ParseScopeIntoStatements(scope : ASScope)
     let cur_element : ASElement = null;
     function finishElement(element : ASElement)
     {
+        let this_el = element;
+        let prior_el = cur_element;
+        let prior_prior_el = cur_element?.previous;
+
         if (!scope.element_head)
             scope.element_head = element;
         element.previous = cur_element;
         if (cur_element)
             cur_element.next = element;
         cur_element = element;
+
+        if (prior_el?.swapWithNext) {
+            prior_el.swapWithNext = false; // once only
+
+            // replace nexts
+            if (prior_prior_el) prior_prior_el.next = this_el;
+            this_el.next = prior_el;
+            prior_el.next = null;
+            // replace prevs
+            this_el.previous = prior_prior_el;
+            prior_el.previous = this_el;
+            // set current
+            cur_element = prior_el;
+
+            // console.log(`swapped`)
+            // console.log(`---`)
+            // console.log(`Head Statement N: ${(cur_element as ASStatement)?.content}`);
+            // console.log(`H-1 Statement C: ${(cur_element?.previous as ASStatement)?.content}`);
+            // console.log(`H-2 Statement N: ${(cur_element?.previous?.previous as ASStatement)?.content}`);
+            // console.log(`H-3 Statement C: ${(cur_element?.previous?.previous?.previous as ASStatement)?.content}`);
+            // console.log(`---`)
+            // console.log(`This-2 Statement C: ${(this_el?.previous?.previous as ASStatement)?.content}`);
+            // console.log(`This-1 Statement N: ${(this_el?.previous as ASStatement)?.content}`);
+            // console.log(`This Statement C: ${(this_el as ASStatement)?.content}`);
+            // console.log(`This+1 Statement N: ${(this_el?.next as ASStatement)?.content}`);
+            // console.log(`---`)
+        }
     }
 
     function genHypotheticalStatement(endsWithSemicolon : boolean)
@@ -5941,6 +6046,20 @@ function ParseScopeIntoStatements(scope : ASScope)
     function restartStatement()
     {
         statement_start = cur_offset+1;
+    }
+
+    function resumeStatement(subscope_to_add?: ASScope) {
+        if (cur_element instanceof ASStatement) {
+            let incomplete = cur_element;
+            cur_element = incomplete.previous;
+            statement_start = incomplete.start_offset;
+            scope.statements.pop();
+            scope.module.rawStatements.pop();
+            if (subscope_to_add) {
+                finishElement(subscope_to_add);
+                subscope_to_add.swapWithNext = true;
+            }
+        }
     }
 
     for (; cur_offset < scope.end_offset; ++cur_offset)
@@ -6045,6 +6164,7 @@ function ParseScopeIntoStatements(scope : ASScope)
                     // prior_scope_start = scope_start;
                     // tmp_depth_paren = depth_paren;
 
+                    // if (!genHypotheticalStatement(false).content?.includes('function('))
                     finishStatement(false);
                     scope_start = cur_offset;
 
@@ -6070,18 +6190,39 @@ function ParseScopeIntoStatements(scope : ASScope)
             if (depth_brace == 0)
             {
                 if (!in_array) {
+                    // for use later -- possible Inline Function Decl
+                    let prev = cur_element;
+
                     // Create a subscope for this content
                     let subscope = new ASScope;
                     subscope.parentscope = scope;
                     subscope.module = scope.module;
                     subscope.start_offset = scope_start+1;
                     subscope.end_offset = cur_offset;
+                    subscope.previous = cur_element;
 
                     scope.scopes.push(subscope);
-                    finishElement(subscope);
                     scope_start = null;
 
-                    restartStatement();
+                    // for use later -- possible Inline Function Decl
+                    if (prev instanceof ASStatement
+                        && !prev.endsWithSemicolon
+                        && !prev.parsed
+                        && prev.content?.includes('function(')
+                    ) {
+                        resumeStatement(subscope);
+                        subscope.hasArguments = 'function(' + prev.content.split('function(').slice(-1)[0];
+                        // console.log(`possible inline function: ${prev.content}`)
+                        // console.trace(JSON.stringify({...prev, previous: null, next: null}))
+                        // 1000s later, what does prev look like
+                        // let forlater = prev.previous.next;
+                        // setTimeout(() => {
+                        //     console.log(`prev now looks like: ${JSON.stringify({...forlater.next, previous: null, next: null})}`)
+                        // }, 1000);
+                    } else {
+                        finishElement(subscope);
+                        restartStatement();
+                    }
                     // try {
                     //     subscope.previous = cur_element;
                     //     if (cur_element instanceof ASStatement)

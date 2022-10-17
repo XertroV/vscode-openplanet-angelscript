@@ -2,7 +2,7 @@
     "name": "openplanet-angelscript",
     "displayName": "Openplanet Angelscript",
     "description": "Language Server and Debug Adapter for use with the Openplanet Angelscript",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "publisher": "XertroV",
     "engines": {
         "vscode": "^1.65.0"
@@ -399,7 +399,7 @@
         "compile": "tsc -b",
         "watch": "tsc -b -w",
         "postinstall": "cd extension && npm ci && cd ../language-server && npm ci && cd ..",
-        "grammar:compile": "cd language-server/grammar && nearleyc angelscript.ne -o angelscript.js && nearleyc grammar_statement.ne -o grammar_statement.js && nearleyc grammar_class_statement.ne -o grammar_class_statement.js && nearleyc grammar_global_statement.ne -o grammar_global_statement.js && nearleyc grammar_enum_statement.ne -o grammar_enum_statement.js && nearleyc grammar_array_statement.ne -o grammar_array_statement.js",
+        "grammar:compile": "cd language-server/grammar && nearleyc angelscript.ne -o angelscript.js && nearleyc grammar_statement.ne -o grammar_statement.js && nearleyc grammar_class_statement.ne -o grammar_class_statement.js && nearleyc grammar_global_statement.ne -o grammar_global_statement.js && nearleyc grammar_enum_statement.ne -o grammar_enum_statement.js && nearleyc grammar_array_statement.ne -o grammar_array_statement.js && nearleyc grammar_inline_function.ne -o grammar_inline_function.js",
         "grammar:test": "nearley-test language-server/grammar/grammar_global_statement.js -q <test.as",
         "grammar:test_verbose": "nearley-test language-server/grammar/grammar_global_statement.js <test.as",
         "debug-parse": "node language-server/out/debug_parse.js ."

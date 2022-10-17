@@ -363,8 +363,8 @@ export function GetHover(asmodule : scriptfiles.ASModule, position : Position) :
 
     let priorSymbol = asmodule.getSymbolAtOrBefore(findSymbol.start-2);
 
-    // console.warn(`GetHover for type: ${ASSymbolTypeToString(findSymbol.type)}, ${findSymbol.ns_name} :: ${findSymbol.symbol_name}`);
-    // console.warn(`priorSymbol: ${ASSymbolTypeToString(priorSymbol?.type)} ${priorSymbol?.symbol_name}`);
+    console.warn(`GetHover for type: ${ASSymbolTypeToString(findSymbol.type)}, ${findSymbol.ns_name} :: ${findSymbol.symbol_name}`);
+    console.warn(`priorSymbol: ${ASSymbolTypeToString(priorSymbol?.type)} ${priorSymbol?.symbol_name}`);
 
     switch (findSymbol.type)
     {
@@ -404,6 +404,9 @@ export function GetHover(asmodule : scriptfiles.ASModule, position : Position) :
                 {
                     if (asvar.name == findSymbol.symbol_name)
                     {
+                        let funcType = typedb.LookupType(scope.getNamespace(), asvar.typename);
+                        if (funcType && funcType.isDelegate)
+                            return GetHoverForFunction(scope.getNamespace(), funcType.delegateSource, false, {replaceName: asvar.name});
                         return GetHoverForLocalVariable(scope, asvar);
                     }
                 }
@@ -772,7 +775,7 @@ function GetHoverForProperty(type : typedb.DBType | typedb.DBNamespace, prop : t
     }};
 }
 
-function GetHoverForFunction(type : typedb.DBType | typedb.DBNamespace, func : typedb.DBMethod, isAccessor : boolean) : Hover
+function GetHoverForFunction(type : typedb.DBType | typedb.DBNamespace, func : typedb.DBMethod, isAccessor : boolean, opts: any = {}) : Hover
 {
     let prefix = "";
     let suffix = "";
@@ -806,7 +809,7 @@ function GetHoverForFunction(type : typedb.DBType | typedb.DBNamespace, func : t
     }
     else
     {
-        hover += "```angelscript_snippet\n"+func.format(prefix, func.isMixin)+suffix+"\n```";
+        hover += "```angelscript_snippet\n"+func.format(prefix, func.isMixin, false, opts.replaceName)+suffix+"\n```";
     }
 
     return <Hover> {contents: <MarkupContent> {
