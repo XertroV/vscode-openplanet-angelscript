@@ -390,6 +390,7 @@ export class ASElement
     previous : ASElement = null;
     next : ASElement = null;
     swapWithNext: boolean = false;
+    moveToGlobalNamespace: boolean = false;
 };
 
 export class ASVariable
@@ -1985,7 +1986,11 @@ function ExtendScopeToStatement(scope : ASScope, statement : ASStatement)
 
 function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
 {
-    scope.resolvedNamespace = scope.parentscope ? scope.parentscope.resolvedNamespace : typedb.GetRootNamespace();
+    scope.resolvedNamespace = (scope.parentscope) ? scope.parentscope.resolvedNamespace : typedb.GetRootNamespace();
+    if (scope.moveToGlobalNamespace) {
+        scope.resolvedNamespace = typedb.GetRootNamespace();
+        scope.parentscope = null;
+    }
     if (scope.hasArguments) {
         let inlineFuncDef = scope.hasArguments;
         scope.hasArguments = null;
@@ -5985,31 +5990,34 @@ function ParseScopeIntoStatements(scope : ASScope)
             cur_element.next = element;
         cur_element = element;
 
-        if (prior_el?.swapWithNext) {
-            prior_el.swapWithNext = false; // once only
+        if (cur_element instanceof ASStatement)
+            checkSwap(cur_element);
+    }
 
+    /** Given: A, B, C with .next/previous pointers.
+     * Pass in C and it will be swapped with B if appropriate,
+     * then called again to potentially swap with A, and so on.
+     */
+    function checkSwap(to_move_bwd: ASElement) {
+        if (to_move_bwd instanceof ASStatement) {
+            let to_move_fwd = to_move_bwd.previous;
+            if (!to_move_fwd || !to_move_fwd.swapWithNext) return;
+            to_move_fwd.swapWithNext = false;
+            let anchor = to_move_fwd?.previous;
             // replace nexts
-            if (prior_prior_el) prior_prior_el.next = this_el;
-            this_el.next = prior_el;
-            prior_el.next = null;
+            if (anchor) anchor.next = to_move_bwd;
+            let _next = to_move_bwd.next;
+            to_move_bwd.next = to_move_fwd;
+            to_move_fwd.next = _next;
             // replace prevs
-            this_el.previous = prior_prior_el;
-            prior_el.previous = this_el;
+            to_move_fwd.previous = to_move_bwd;
+            to_move_bwd.previous = anchor;
+            if (_next) _next.previous = to_move_fwd;
             // set current
-            cur_element = prior_el;
-
-            // console.log(`swapped`)
-            // console.log(`---`)
-            // console.log(`Head Statement N: ${(cur_element as ASStatement)?.content}`);
-            // console.log(`H-1 Statement C: ${(cur_element?.previous as ASStatement)?.content}`);
-            // console.log(`H-2 Statement N: ${(cur_element?.previous?.previous as ASStatement)?.content}`);
-            // console.log(`H-3 Statement C: ${(cur_element?.previous?.previous?.previous as ASStatement)?.content}`);
-            // console.log(`---`)
-            // console.log(`This-2 Statement C: ${(this_el?.previous?.previous as ASStatement)?.content}`);
-            // console.log(`This-1 Statement N: ${(this_el?.previous as ASStatement)?.content}`);
-            // console.log(`This Statement C: ${(this_el as ASStatement)?.content}`);
-            // console.log(`This+1 Statement N: ${(this_el?.next as ASStatement)?.content}`);
-            // console.log(`---`)
+            if (to_move_bwd == cur_element) {
+                cur_element = to_move_fwd;
+            }
+            checkSwap(to_move_bwd);
         }
     }
 
@@ -6192,6 +6200,9 @@ function ParseScopeIntoStatements(scope : ASScope)
                 if (!in_array) {
                     // for use later -- possible Inline Function Decl
                     let prev = cur_element;
+                    while (prev && !(prev instanceof ASStatement)) {
+                        prev = prev.previous;
+                    }
 
                     // Create a subscope for this content
                     let subscope = new ASScope;
@@ -6212,6 +6223,7 @@ function ParseScopeIntoStatements(scope : ASScope)
                     ) {
                         resumeStatement(subscope);
                         subscope.hasArguments = 'function(' + prev.content.split('function(').slice(-1)[0];
+                        subscope.moveToGlobalNamespace = true;
                         // console.log(`possible inline function: ${prev.content}`)
                         // console.trace(JSON.stringify({...prev, previous: null, next: null}))
                         // 1000s later, what does prev look like

@@ -2,14 +2,15 @@ todo:
 
 * `array<A::B>`, or `namespace A { auto x = {B()}; class B {} }` accessing x from outside A
   * types don't resolve right
-* funcdefs
+* ~~ funcdefs
 * function casting via funcdefs
-* function handles & function types in general
+* ~~ function handles & function types in general
 * some constructors not added to scope
 * `auto landmarks = cp.Arena.MapLandmarks;` should be detected as `MwFastBuffer<CGameScriptMapLandmark@>`
 * `linkedPositions.InsertLast(cast<array<vec3>>(lcps[lpKeys[i]]))` -- seems like `cast<array<vec3>>` doesn't parse -- note that `cast<vec3[]>` works fine.
 * class properties using get/set `class C { bool IsBlah { get { return true; } set { this.x = value; }}}`
 * openplanet core constructors
+* ~~ inline function scopes in global ns
 
 package: `vsce package`
 
@@ -18,10 +19,10 @@ install from cli: `code --install-extension openplanet-angelscript-X.Y.Z.vsix`
 changelog:
 
 - 0.1.6
-  -
+  - inline function scopes (+ appear in global namespace)
 - 0.1.5
   - windows compatibility supported now (seems to work, pls report bugs)
-  - add prelim support for inline functions
+  - add prelim support for inline functions and function handles
   - fix massive performance issue looking for template types with an @ in them (literally added 1 character to some regex)
   - add game enums and fix resolution for enums with same name in diff namespaces
   - add openplanetnext.json docs
