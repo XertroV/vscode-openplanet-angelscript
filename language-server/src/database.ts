@@ -306,7 +306,7 @@ export class DBMethod implements DBSymbol
         this.name = input.name;
 
         if ('returntypedecl' in input)
-            this.returnType = ReplaceArrayShorthand(input['returntypedecl']);
+            this.returnType = ReplaceArrayShorthand(input.returntypedecl);
         else
             this.returnType = 'void';
 
@@ -666,6 +666,9 @@ export class DBType implements DBSymbol
                 func.fromJSON(method);
                 this.addSymbol(func);
             });
+            input.behaviors.forEach((behaviour: any) => {
+
+            })
         } else {
             for(let v in input.values) {
                 let val = new DBProperty();
@@ -2389,6 +2392,25 @@ export function AddOpenplanetFunction(jData: any) {
     ns.addSymbol(func);
 }
 
+export function ConvertOpenplanetConstructorsToMethods(name: string, ns: string, behaviors: any): DBMethod[] {
+    let methods: DBMethod[] = [];
+    if (!ns) ns = "";
+    if (!behaviors || !name) return methods;
+    for (let behavior of behaviors) {
+        if (behavior.type === 0 || behavior.type === 3) {
+            let constructor = new DBMethod()
+            let bTy = behavior.type;
+            constructor.fromJSON({
+                ...behavior.func,
+                name,
+                returntypedecl: bTy === 3 ? (behavior.func.returntypedecl) : name, //  as string).replace(`${ns}::`, ''
+            })
+            methods.push(constructor);
+        }
+    }
+    return methods;
+}
+
 const OpenplanetTemplateTypes =
         ["array", "MwSArray", "MwFastArray", "MwFastBuffer", "MwNodPool", "MwRefBuffer"];
 let OpenplanetTemplateTypeMap: Map<string, string> = new Map();
@@ -2400,6 +2422,8 @@ export function AddOpenplanetClass(jData: any, kind: "classes" | "enums") {
         // jData['name'] = OpenplanetTemplateTypeMap.get(jData['name']);
         jData['subtypes'] = ["T"];
     }
+
+    let constructors = ConvertOpenplanetConstructorsToMethods(jData['name'], jData.ns, jData.behaviors);
 
     let type = new DBType(kind);
     type.fromJSON(jData);
@@ -2415,21 +2439,40 @@ export function AddOpenplanetClass(jData: any, kind: "classes" | "enums") {
         ns.addSymbol(type);
         // if (kind == "enums") console.warn(`added enum to namespace: ${type.namespace.getQualifiedNamespace()} :: ${type.name}`)
     }
-    if (type.isEnum || !type.ns)
+    constructors.forEach(m => ns.addSymbol(m)); // add to global namespace too, not just a nonglobal one
+    if (type.isEnum || !type.ns) {
         AddTypeToDatabase(ns, type);
+    }
 
-    // for (let [name, sym] of type.symbols) {
-    //     // console.log(name, sym);
-    //     // todo: seems like we're adding class properties to global namespace :/
-    //     if (sym instanceof Array) {
-    //         for (let symElem of sym)
-    //             ns.addSymbol(symElem);
-    //     }
-    //     else
-    //         ns.addSymbol(sym);
-    // }
     return type;
 }
+
+
+/* openplanet constructor/destructor notes:
+    {type: 0|2, func: {...}}
+    - $beh2, type: 2
+        - destructor? (IO::File)
+    - $beh0, type: 0
+        - constructor? (IO::File)
+        - can have args / be overloaded
+    - $beh5|$beh6, type 5|6 ?? (SQLite::Statement)
+        - no documentation on op.dev
+        - same for Discord::User
+        - same for nvg::Texture
+    - $beh3, type 3 ?? (SQLite::Database)
+        - normal constructor?
+        - has args and stuff
+    - array types 0|2|4
+        - also has type: 5|6|9|10|11|12|13|8|4
+        - bool $beh8(int&in, bool&out) -- doesn't correspond to docs
+        - type 4: "T[]@ $list(int&in type, int&in list) { repeat T }"
+    - dictionaryValue
+      - types 12|13 not used
+    - dictionary, types: 3|5|6|9|10|11|12|13|4
+    - ref: 12|13
+    - MemoryBuffer: 3|5|6
+        - lots of decls nuder 3, eg: "decl": "MemoryBuffer@ MemoryBuffer(uint64 size, uint8 init)"
+*/
 
 let OpenplanetTypeCounter = new TypeCounter();
 
