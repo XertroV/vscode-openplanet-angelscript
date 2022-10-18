@@ -8,11 +8,13 @@ export interface DiagnosticSettings
 {
     namingConventionDiagnostics : boolean,
     markUnreadVariablesAsUnused : boolean,
+    squiggleUnparsableStatements: boolean,
 };
 
 let DiagnosticSettings : DiagnosticSettings = {
     namingConventionDiagnostics: true,
     markUnreadVariablesAsUnused: false,
+    squiggleUnparsableStatements: true,
 };
 
 // Diagnostics sent over to us by the unreal editor
@@ -111,10 +113,26 @@ export function UpdateScriptModuleDiagnostics(asmodule : scriptfiles.ASModule, i
 
 function AddScopeDiagnostics(scope : scriptfiles.ASScope, diagnostics : Array<Diagnostic>)
 {
+    // if the file is open, show unparsable statements.
+    if (scope.module.isOpened) {
+        for (let statement of scope.statements) {
+            if (statement.parseError) {
+                diagnostics.push(<Diagnostic> {
+                    severity: DiagnosticSeverity.Error,
+                    tags: [],
+                    range: scope.module.getRange(statement.start_offset, statement.end_offset),
+                    message: `Unable to parse: \`${statement.content}\``,
+                    source: "angelscript"
+                });
+            }
+        }
+    }
+
     // Function code scopes can emit diagnostics for unused parameters and local variables
     // We only send these diagnostics if the file is open
     if (scope.isInFunctionBody() && scope.module.isOpened)
     {
+
         for (let asvar of scope.variables)
         {
             if (!asvar.isUnused)
