@@ -84,7 +84,8 @@ const lexer = moo.compile({
             template_basetype: ["array", "MwSArray", "MwFastArray", "MwFastBuffer", "MwNodPool", "MwRefBuffer"],
         })
     },
-    number: /[0-9]+/,
+    number: /-?[0-9]+/,
+    floatNumber: /-?[0-9]+\.[0-9]+/,
 });
 
 // A compound node containing multiple child nodes
@@ -439,7 +440,7 @@ global_declaration -> typename {%
     }; }
 %}
 
-global_declaration -> (%shared_token _):? (%class_token | %interface_token) _ (%atsign):? %identifier ( _ %colon):? (_ typename_identifier):? {%
+global_declaration -> (%shared_token _):? (%class_token | %interface_token) _ atref:? %identifier ( _ %colon):? (_ typename_identifier):? {%
     function (d) { return {
         ...Compound(d, n.ClassDefinition, null),
         name: Identifier(d[4]),
@@ -599,10 +600,10 @@ access_mod_list -> %identifier (_ "," _ %identifier):* (_ %comma):? {%
     }
 %}
 
-mb_ref_identifier -> (%atsign):? %identifier {%
+mb_ref_identifier -> atref:? %identifier {%
     function (d) { return {
         ...ExtendedCompound(d, Identifier(d[1])),
-        is_reference: !!d[2],
+        is_reference: !!d[0],
     }; }
 %}
 
@@ -926,7 +927,7 @@ expr_leaf -> unary_operator {%
 %}
 
 lvalue -> lvalue_inner {% id %}
-lvalue -> %atsign lvalue_inner {%
+lvalue -> atref lvalue_inner {%
     function(d) {
         return ExtendedCompound(d, {...d[1], is_reference: true});
     }
@@ -1152,7 +1153,11 @@ unary_operator -> %op_binary_sum {% id %}
 unary_operator -> %op_unary {% id %}
 unary_operator -> %postfix_operator {% id %}
 
-typename -> const_qualifier:? unqualified_typename %atsign:? ref_qualifiers:? {%
+atref -> _ %atsign {%
+    (d) => { return ExtendedCompound(d, Identifier(d[1])); }
+%}
+
+typename -> const_qualifier:? unqualified_typename atref:? ref_qualifiers:? {%
     function (d) { return ExtendedCompound(d, {
         ...d[1],
         const_qualifier: d[0],
@@ -1160,7 +1165,7 @@ typename -> const_qualifier:? unqualified_typename %atsign:? ref_qualifiers:? {%
         is_reference: d[2] != null,
     });}
 %}
-non_const_typename -> unqualified_typename %atsign:? ref_qualifiers:? {%
+non_const_typename -> unqualified_typename atref:? ref_qualifiers:? {%
     function (d) { return ExtendedCompound(d, {
         ...d[0],
         const_qualifier: null,
@@ -1297,7 +1302,7 @@ typename_identifier -> %template_basetype {%
     function (d) { return Literal(n.Typename, d[0]); }
 %}
 
-typename_identifier -> (%ns _):? (%identifier _ %ns _ ):* %identifier %atsign:? {%
+typename_identifier -> (%ns _):? (%identifier _ %ns _ ):* %identifier atref:? {%
     function (d) { return {...CompoundLiteral(n.Typename, d, null), is_reference: d[3]}; }
 %}
 
@@ -1492,6 +1497,7 @@ settings_decl -> setting_tab_decl {% id %}
 setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration,[d[3]]); } %}
 setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ setting_type_kwargs _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5]]); } %}
 setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ setting_type_kwargs _ setting_std_optional_kwargs _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5], d[7]]); } %}
+setting_var_decl -> %lsqbracket "Setting" _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, []); } %}
 
 setting_std_optional_kwarg -> ("hidden") | (("name" | "category" | "description") %op_assignment (%dqstring | %sqstring)) {% MkSettingKwarg %}
 setting_std_optional_kwargs -> (setting_std_optional_kwarg _):* setting_std_optional_kwarg {%
@@ -1508,7 +1514,7 @@ setting_std_optional_kwargs -> (setting_std_optional_kwarg _):* setting_std_opti
 
 # int, uint, float
 setting_type_kwargs -> (setting_type_int_uint_float _):* setting_type_int_uint_float {% d => FromMultiple(d[1], d[0], p => p[0]) %}
-setting_type_int_uint_float -> ("drag" | ("min" | "max") %op_assignment (%dqstring | %sqstring)) {% MkSettingKwarg %}
+setting_type_int_uint_float -> ("drag" | ("min" | "max") %op_assignment (%dqstring | %sqstring | %number | %number %dot %number)) {% MkSettingKwarg %}
 # vec2,vec3,vec4
 setting_type_kwargs -> setting_type_vec234 {% id %}
 setting_type_vec234 -> ("drag") {% MkSettingKwarg %}
@@ -1517,7 +1523,7 @@ setting_type_kwargs -> (setting_type_vec34 _):* setting_type_vec34 {% d => FromM
 setting_type_vec34 -> ("drag" | "color") {% MkSettingKwarg %}
 # string
 setting_type_kwargs -> (setting_type_string _):* setting_type_string {% d => FromMultiple(d[1], d[0], p => p[0]) %}
-setting_type_string -> ("multiline" | "password" | "max" %op_assignment (%dqstring | %sqstring)) {% MkSettingKwarg %}
+setting_type_string -> ("multiline" | "password" | "max" %op_assignment (%dqstring | %sqstring | %number | %number %dot %number)) {% MkSettingKwarg %}
 
 setting_tab_decl -> %lsqbracket _ "SettingsTab" _ settings_tab_kwargs _ %rsqbracket {%
     function(d) { return Compound(d, n.SettingsTabDeclaration, d[4]); }

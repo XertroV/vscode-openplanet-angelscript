@@ -88,7 +88,8 @@ const lexer = moo.compile({
             template_basetype: ["array", "MwSArray", "MwFastArray", "MwFastBuffer", "MwNodPool", "MwRefBuffer"],
         })
     },
-    number: /[0-9]+/,
+    number: /-?[0-9]+/,
+    floatNumber: /-?[0-9]+\.[0-9]+/,
 });
 
 // A compound node containing multiple child nodes
@@ -441,8 +442,7 @@ var grammar = {
     {"name": "global_declaration$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "global_declaration$subexpression$1", "symbols": [(lexer.has("class_token") ? {type: "class_token"} : class_token)]},
     {"name": "global_declaration$subexpression$1", "symbols": [(lexer.has("interface_token") ? {type: "interface_token"} : interface_token)]},
-    {"name": "global_declaration$ebnf$3$subexpression$1", "symbols": [(lexer.has("atsign") ? {type: "atsign"} : atsign)]},
-    {"name": "global_declaration$ebnf$3", "symbols": ["global_declaration$ebnf$3$subexpression$1"], "postprocess": id},
+    {"name": "global_declaration$ebnf$3", "symbols": ["atref"], "postprocess": id},
     {"name": "global_declaration$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "global_declaration$ebnf$4$subexpression$1", "symbols": ["_", (lexer.has("colon") ? {type: "colon"} : colon)]},
     {"name": "global_declaration$ebnf$4", "symbols": ["global_declaration$ebnf$4$subexpression$1"], "postprocess": id},
@@ -623,13 +623,12 @@ var grammar = {
             return args;
         }
         },
-    {"name": "mb_ref_identifier$ebnf$1$subexpression$1", "symbols": [(lexer.has("atsign") ? {type: "atsign"} : atsign)]},
-    {"name": "mb_ref_identifier$ebnf$1", "symbols": ["mb_ref_identifier$ebnf$1$subexpression$1"], "postprocess": id},
+    {"name": "mb_ref_identifier$ebnf$1", "symbols": ["atref"], "postprocess": id},
     {"name": "mb_ref_identifier$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "mb_ref_identifier", "symbols": ["mb_ref_identifier$ebnf$1", (lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": 
         function (d) { return {
             ...ExtendedCompound(d, Identifier(d[1])),
-            is_reference: !!d[2],
+            is_reference: !!d[0],
         }; }
         },
     {"name": "var_decl", "symbols": ["typename", "_", "mb_ref_identifier"], "postprocess": 
@@ -968,7 +967,7 @@ var grammar = {
         };}
         },
     {"name": "lvalue", "symbols": ["lvalue_inner"], "postprocess": id},
-    {"name": "lvalue", "symbols": [(lexer.has("atsign") ? {type: "atsign"} : atsign), "lvalue_inner"], "postprocess": 
+    {"name": "lvalue", "symbols": ["atref", "lvalue_inner"], "postprocess": 
         function(d) {
             return ExtendedCompound(d, {...d[1], is_reference: true});
         }
@@ -1175,9 +1174,12 @@ var grammar = {
     {"name": "unary_operator", "symbols": [(lexer.has("op_binary_sum") ? {type: "op_binary_sum"} : op_binary_sum)], "postprocess": id},
     {"name": "unary_operator", "symbols": [(lexer.has("op_unary") ? {type: "op_unary"} : op_unary)], "postprocess": id},
     {"name": "unary_operator", "symbols": [(lexer.has("postfix_operator") ? {type: "postfix_operator"} : postfix_operator)], "postprocess": id},
+    {"name": "atref", "symbols": ["_", (lexer.has("atsign") ? {type: "atsign"} : atsign)], "postprocess": 
+        (d) => { return ExtendedCompound(d, Identifier(d[1])); }
+        },
     {"name": "typename$ebnf$1", "symbols": ["const_qualifier"], "postprocess": id},
     {"name": "typename$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "typename$ebnf$2", "symbols": [(lexer.has("atsign") ? {type: "atsign"} : atsign)], "postprocess": id},
+    {"name": "typename$ebnf$2", "symbols": ["atref"], "postprocess": id},
     {"name": "typename$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "typename$ebnf$3", "symbols": ["ref_qualifiers"], "postprocess": id},
     {"name": "typename$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
@@ -1189,7 +1191,7 @@ var grammar = {
             is_reference: d[2] != null,
         });}
         },
-    {"name": "non_const_typename$ebnf$1", "symbols": [(lexer.has("atsign") ? {type: "atsign"} : atsign)], "postprocess": id},
+    {"name": "non_const_typename$ebnf$1", "symbols": ["atref"], "postprocess": id},
     {"name": "non_const_typename$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "non_const_typename$ebnf$2", "symbols": ["ref_qualifiers"], "postprocess": id},
     {"name": "non_const_typename$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
@@ -1332,7 +1334,7 @@ var grammar = {
     {"name": "typename_identifier$ebnf$2", "symbols": []},
     {"name": "typename_identifier$ebnf$2$subexpression$1", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), "_", (lexer.has("ns") ? {type: "ns"} : ns), "_"]},
     {"name": "typename_identifier$ebnf$2", "symbols": ["typename_identifier$ebnf$2", "typename_identifier$ebnf$2$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "typename_identifier$ebnf$3", "symbols": [(lexer.has("atsign") ? {type: "atsign"} : atsign)], "postprocess": id},
+    {"name": "typename_identifier$ebnf$3", "symbols": ["atref"], "postprocess": id},
     {"name": "typename_identifier$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "typename_identifier", "symbols": ["typename_identifier$ebnf$1", "typename_identifier$ebnf$2", (lexer.has("identifier") ? {type: "identifier"} : identifier), "typename_identifier$ebnf$3"], "postprocess": 
         function (d) { return {...CompoundLiteral(n.Typename, d, null), is_reference: d[3]}; }
@@ -1573,6 +1575,7 @@ var grammar = {
     {"name": "setting_var_decl", "symbols": [(lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), {"literal":"Setting"}, "_", "setting_std_optional_kwargs", "_", (lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": function(d) { return Compound(d, n.SettingDeclaration,[d[3]]); }},
     {"name": "setting_var_decl", "symbols": [(lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), {"literal":"Setting"}, "_", "setting_std_optional_kwargs", "_", "setting_type_kwargs", "_", (lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5]]); }},
     {"name": "setting_var_decl", "symbols": [(lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), {"literal":"Setting"}, "_", "setting_std_optional_kwargs", "_", "setting_type_kwargs", "_", "setting_std_optional_kwargs", "_", (lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5], d[7]]); }},
+    {"name": "setting_var_decl", "symbols": [(lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), {"literal":"Setting"}, "_", (lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": function(d) { return Compound(d, n.SettingDeclaration, []); }},
     {"name": "setting_std_optional_kwarg$subexpression$1", "symbols": [{"literal":"hidden"}]},
     {"name": "setting_std_optional_kwarg", "symbols": ["setting_std_optional_kwarg$subexpression$1"]},
     {"name": "setting_std_optional_kwarg$subexpression$2$subexpression$1", "symbols": [{"literal":"name"}]},
@@ -1605,6 +1608,8 @@ var grammar = {
     {"name": "setting_type_int_uint_float$subexpression$1$subexpression$1", "symbols": [{"literal":"max"}]},
     {"name": "setting_type_int_uint_float$subexpression$1$subexpression$2", "symbols": [(lexer.has("dqstring") ? {type: "dqstring"} : dqstring)]},
     {"name": "setting_type_int_uint_float$subexpression$1$subexpression$2", "symbols": [(lexer.has("sqstring") ? {type: "sqstring"} : sqstring)]},
+    {"name": "setting_type_int_uint_float$subexpression$1$subexpression$2", "symbols": [(lexer.has("number") ? {type: "number"} : number)]},
+    {"name": "setting_type_int_uint_float$subexpression$1$subexpression$2", "symbols": [(lexer.has("number") ? {type: "number"} : number), (lexer.has("dot") ? {type: "dot"} : dot), (lexer.has("number") ? {type: "number"} : number)]},
     {"name": "setting_type_int_uint_float$subexpression$1", "symbols": ["setting_type_int_uint_float$subexpression$1$subexpression$1", (lexer.has("op_assignment") ? {type: "op_assignment"} : op_assignment), "setting_type_int_uint_float$subexpression$1$subexpression$2"]},
     {"name": "setting_type_int_uint_float", "symbols": ["setting_type_int_uint_float$subexpression$1"], "postprocess": MkSettingKwarg},
     {"name": "setting_type_kwargs", "symbols": ["setting_type_vec234"], "postprocess": id},
@@ -1625,6 +1630,8 @@ var grammar = {
     {"name": "setting_type_string$subexpression$1", "symbols": [{"literal":"password"}]},
     {"name": "setting_type_string$subexpression$1$subexpression$1", "symbols": [(lexer.has("dqstring") ? {type: "dqstring"} : dqstring)]},
     {"name": "setting_type_string$subexpression$1$subexpression$1", "symbols": [(lexer.has("sqstring") ? {type: "sqstring"} : sqstring)]},
+    {"name": "setting_type_string$subexpression$1$subexpression$1", "symbols": [(lexer.has("number") ? {type: "number"} : number)]},
+    {"name": "setting_type_string$subexpression$1$subexpression$1", "symbols": [(lexer.has("number") ? {type: "number"} : number), (lexer.has("dot") ? {type: "dot"} : dot), (lexer.has("number") ? {type: "number"} : number)]},
     {"name": "setting_type_string$subexpression$1", "symbols": [{"literal":"max"}, (lexer.has("op_assignment") ? {type: "op_assignment"} : op_assignment), "setting_type_string$subexpression$1$subexpression$1"]},
     {"name": "setting_type_string", "symbols": ["setting_type_string$subexpression$1"], "postprocess": MkSettingKwarg},
     {"name": "setting_tab_decl", "symbols": [(lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), "_", {"literal":"SettingsTab"}, "_", "settings_tab_kwargs", "_", (lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": 

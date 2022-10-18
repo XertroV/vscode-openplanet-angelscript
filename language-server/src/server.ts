@@ -992,13 +992,17 @@ connection.onRequest("angelscript/provideInlineValues", (...params: any[]) : any
     let dirtyDiagnostics = false;
 
     if (scriptSettings.openplanetNextLocation != settings.openplanetNextLocation
-      || diagnosticSettings.markUnreadVariablesAsUnused != settings.helper.markUnreadVariablesAsUnused) {
+      || diagnosticSettings.markUnreadVariablesAsUnused != settings.helper.markUnreadVariablesAsUnused
+      || diagnosticSettings.squiggleUnparsableStatements != settings.parser.squiggleUnparsableStatements) {
         dirtyDiagnostics = true;
     }
     scriptSettings.openplanetNextLocation = settings.openplanetNextLocation;
     scriptSettings.openplanetNextPluginsLocation = settings.openplanetNextPluginsLocation;
     scriptSettings.enableDebugOutput = settings.parser.enableDebugOutput;
     scriptSettings.crashOnParseError = settings.parser.crashOnParseError;
+    diagnosticSettings.squiggleUnparsableStatements != settings.parser.squiggleUnparsableStatements;
+
+    diagnosticSettings.markUnreadVariablesAsUnused != settings.helper.markUnreadVariablesAsUnused;
 
     if (dirtyDiagnostics)
         DirtyAllDiagnostics();

@@ -12,6 +12,9 @@ todo:
 * openplanet core constructors
 * ~~ inline function scopes in global ns
 * `value` variable in setters
+* numbers like `-3.865678972395145e-05`
+* some methods/props not added, e.g.: `FRGroundContactMaterial` `visState.Left` `visState.Up`
+* constructors from openplanet not suggested
 
 package: `vsce package`
 
@@ -20,6 +23,8 @@ install from cli: `code --install-extension openplanet-angelscript-X.Y.Z.vsix`
 changelog:
 
 - 0.1.6
+  - add openplanet constructors
+  - squiggly line for unparsable statements
   - named functions can be used as arguments e.g., for `startnew`
   - basic `get{} set{}` support (note: parses as incomplete variable decl, then some scopes. not ideal but works.)
   - prelim support for multiple inline functions in one expression.

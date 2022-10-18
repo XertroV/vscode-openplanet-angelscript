@@ -36,6 +36,12 @@
                     "default": "",
                     "description": "Location of Trackmania/Openplanet folder (Reload required on change). typically `C:\\Program Files (x86)\\Ubisoft\\Ubisoft Game Launcher\\games\\Trackmania\\Openplanet\\Plugins\\`. On WSL: `/mnt/c/Program Files (x86)/Ubisoft/Ubisoft Game Launcher/games/Trackmania/Openplanet/Plugins/`"
                 },
+                "OpenplanetAngelscript.parser.squiggleUnparsableStatements": {
+                    "type": "boolean",
+                    "order": 10,
+                    "default": true,
+                    "description": "Whether to show a red squiggle under unparsable statements"
+                },
                 "OpenplanetAngelscript.parser.enableDebugOutput": {
                     "type": "boolean",
                     "order": 11,

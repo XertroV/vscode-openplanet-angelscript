@@ -72,6 +72,7 @@ export function ConvertNadeoType(ty: string, tyDeets: any, docsNS: string): Core
             let isEnum = "e" in mDeets;
             let isFunc = !isEnum && typeof(mDeets.t) == "number";
             let isProp = !isEnum && typeof(mDeets.t) == "string";
+            if (key == "FRGroundContactMaterial") console.log("seen FRGroundContactMaterial")
 
             if (isEnum) {
                 //console.log(JSON.stringify({key, mDeets}, null, 2))
@@ -79,17 +80,20 @@ export function ConvertNadeoType(ty: string, tyDeets: any, docsNS: string): Core
                     ret.enums.push(ConvertNadeoTypeEnum(key, mDeets, ty, docsNS));
                     knownEnums.add(mDeets.e.n)
                 }
-                addToProps(ConvertNadeoTypeProp(key, mDeets));
+                let _prop = ConvertNadeoTypeProp(key, mDeets);
+                addToProps(_prop);
+                if (key == "FRGroundContactMaterial")
+                    console.log(`added FRGroundContactMaterial enum then prop. Prop: ${JSON.stringify(_prop)}`)
             }
             else if (isFunc)
                 addToMethods(ConvertNadeoTypeMethod(key, mDeets));
             else if (isProp)
                 addToProps(ConvertNadeoTypeProp(key, mDeets))
+            else {
+                console.warn(`Skipping ${ty}.${key}!`)
+            }
         }
     }
-    // addSubTypes(ty, tyDeets, ret); // no nadeo types are templates
-    // 2022-10-09: todo: also add methods and props recursively...
-    // 2022-10-16: not sure this todo is requred anymore?
 
     // add enums -- these seem bugged compared to when converted from elsewhere
     if (tyDeets.e) { // enums defined under type
@@ -156,9 +160,9 @@ export function ConvertNadeoTypeEnum(propName: string, deets: any, parentClass: 
     // let namePreValue: string = deets['e']['n'];
     // if (name != namePreValue) console.warn(`Unexpected nonequal: ${JSON.stringify([name, namePreValue])}`);
     // ^^ all good now
-    let ns = "";
+    let ns: string = "";
     if (!name.includes("::")) {
-        ns = parentClass;
+        // ns = parentClass;
     //     let err = `Nadeo enum name does not include :: ! name: ${name}`;
     //     throw err;
     // }
