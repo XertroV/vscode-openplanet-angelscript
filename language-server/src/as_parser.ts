@@ -46,17 +46,35 @@ export interface ASSettings
     openplanetNextPluginsLocation: string,
     enableDebugOutput: boolean,
     crashOnParseError: boolean,
+    getOpNextDir(): string,
+    getOpNextPluginsDir(): string,
 };
 
 let ScriptSettings : ASSettings = {
     automaticImports: true,
     floatIsFloat64: false,
     useAngelscriptHaze: false,
-    openplanetNextLocation: path.join(os.homedir(), 'OpenplanetNext'),
+    openplanetNextLocation: GetDefaultOpenplanetNextDir(),
     openplanetNextPluginsLocation: GetDefaultOpenplanetPluginsDir(),
     enableDebugOutput: false,
     crashOnParseError: false,
+    getOpNextDir() {
+        return this.openplanetNextLocation.length >= 0
+            ? this.openplanetNextLocation
+            : GetDefaultOpenplanetNextDir()
+    },
+    getOpNextPluginsDir() {
+        return this.openplanetNextPluginsLocation.length >= 0
+            ? this.openplanetNextPluginsLocation
+            : GetDefaultOpenplanetPluginsDir()
+    },
 };
+
+function GetDefaultOpenplanetNextDir(): string {
+    let defaultDir = path.join(os.homedir(), 'OpenplanetNext')
+    if (fs.existsSync(defaultDir)) return defaultDir;
+    return "";
+}
 
 function GetDefaultOpenplanetPluginsDir(): string {
     let winDefault = `C:\\Program Files (x86)\\Ubisoft\\Ubisoft Game Launcher\\games\\Trackmania\\Openplanet\\Plugins\\`;

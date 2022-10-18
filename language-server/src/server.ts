@@ -81,7 +81,7 @@ let JsonLoaded_Core = false;
 let JsonLoaded_Next = false;
 
 function LoadOpenplanetJson() {
-    const opDir = scriptfiles.GetScriptSettings().openplanetNextLocation;
+    const opDir = scriptfiles.GetScriptSettings().getOpNextDir();
     // const opHeader = path.join(opDir, 'Openplanet.h');
     const opCoreJson = path.join(opDir, 'OpenplanetCore.json');
     const opNextJson = path.join(opDir, 'OpenplanetNext.json');
@@ -250,8 +250,8 @@ function LoadOpenplanetInfoToml(file: string) {
 
 function LoadOpenplanetDependencies(deps: string[]) {
     // todo: filter on dependencies to avoid importing everything, unless deps is empty, or mb just include everything anyway
-    let opRoot = scriptfiles.GetScriptSettings().openplanetNextLocation;
-    let opPlugins = scriptfiles.GetScriptSettings().openplanetNextPluginsLocation;
+    let opRoot = scriptfiles.GetScriptSettings().getOpNextDir();
+    let opPlugins = scriptfiles.GetScriptSettings().getOpNextPluginsDir();
     let opPluginsDir = path.join(opRoot, "Plugins");
     console.log(JSON.stringify({opRoot, opPluginsDir}))
 
