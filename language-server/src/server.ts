@@ -264,7 +264,6 @@ function LoadOpenplanetDependencies(deps: string[]) {
         while (dir.endsWith("/")) {
             dir = dir.slice(0, -1);
         }
-        console.log(dir);
         let parts = dir.split('/');
         let pluginName = parts[parts.length - 1];
         if (allowedDeps.has(pluginName) && !foundDeps.has(pluginName)) {
