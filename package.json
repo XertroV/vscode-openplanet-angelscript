@@ -199,7 +199,7 @@
                 "language": "angelscript"
             }
         ],
-        "debuggers": [
+        "debuggers_disabled": [
             {
                 "type": "angelscript",
                 "label": "Angelscript Debug",
@@ -265,6 +265,10 @@
             {
                 "command": "angelscript.paren",
                 "title": "Angelscript Parenthesis Completion"
+            },
+            {
+                "command": "angelscript.reloadInfoToml",
+                "title": "Angelscript: Reload info.toml & dependencies"
             }
         ],
         "menus": {

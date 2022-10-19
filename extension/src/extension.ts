@@ -168,6 +168,12 @@ export function activate(context: ExtensionContext) {
 	});
 	context.subscriptions.push(quickOpenImport);
 
+    // goes in server.js instead
+    // let reloadInfoToml = vscode.commands.registerCommand('angelscript.reloadInfoToml', () => {
+    // })
+    // context.subscriptions.push(reloadInfoToml);
+
+
 	let completionParen = vscode.commands.registerCommand('angelscript.paren', () =>
     {
 		let activeEditor = vscode.window.activeTextEditor;

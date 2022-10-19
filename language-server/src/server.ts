@@ -123,13 +123,12 @@ load_openplanet();
 
 let shouldSendDiagnosticRelatedInformation: boolean = false;
 let RootUris : string[] = [];
+let Roots : string[] = [];
 
 // After the server has started the client sends an initialize request. The server receives
 // in the passed params the rootPath of the workspace plus the client capabilities.
 connection.onInitialize((_params): InitializeResult => {
     shouldSendDiagnosticRelatedInformation = _params.capabilities && _params.capabilities.textDocument && _params.capabilities.textDocument.publishDiagnostics && _params.capabilities.textDocument.publishDiagnostics.relatedInformation;
-
-    let Roots: string[] = [];
 
     if (_params.workspaceFolders == null) {
         Roots.push(_params.rootPath);
@@ -173,17 +172,7 @@ connection.onInitialize((_params): InitializeResult => {
         });
 
         // Read info.toml
-        glob(path.join(RootPath+"/**/info.toml"), null, function(err: any, files: string[]) {
-            console.dir(files);
-            if (err || files.length == 0)
-                connection.sendNotification(
-                    ShowMessageNotification.type,
-                    { message: "Could not find `info.toml`! Please reload extensions after you add it if you need imports.",
-                    type: MessageType.Warning
-                    });
-            else
-                LoadOpenplanetInfoToml(files[0]);
-        })
+        LoadOpenplanetInfoToml(RootPath+"/info.toml");
     }
 
     return {
@@ -217,7 +206,7 @@ connection.onInitialize((_params): InitializeResult => {
             },
             executeCommandProvider: {
                 // commands: ["angelscript.openAssets"],
-                commands: [],
+                commands: ["angelscript.reloadInfoToml"],
             },
             codeActionProvider: {
                 resolveProvider: true,
@@ -242,19 +231,37 @@ connection.onInitialize((_params): InitializeResult => {
 
 function LoadOpenplanetInfoToml(file: string) {
     fs.readFile(file, 'utf-8', (err, data) => {
-        let info = toml.parse(data);
+        if (err)
+            return connection.sendNotification(
+                ShowMessageNotification.type,
+                { message: "Could not find info.toml! Please use the `Reload info.toml` command after you add it if you need imports. I looked for it at `" + file + "`",
+                type: MessageType.Warning
+                });
+        let info: any;
+        try {
+            info = toml.parse(data);
+        } catch (err) {
+            return connection.sendNotification(
+                ShowMessageNotification.type,
+                { message: "Could not read info.toml! Please use the `Reload info.toml` command after you fix syntax etc if you need imports. I looked for it at `" + file + "`",
+                type: MessageType.Warning
+                });
+        }
         let deps: string[] = [];
-        if (info.script) deps = [...(info.script.dependencies || []), ...(info.script.optional_dependencies || [])];
+        if (info.script) deps = [...(info?.script?.dependencies || []), ...(info?.script?.optional_dependencies || [])];
         LoadOpenplanetDependencies(deps);
     })
 }
 
+// let LoadedDependencies = new Map<string, scriptfiles.ASModule[]>();
+
 function LoadOpenplanetDependencies(deps: string[]) {
-    // todo: filter on dependencies to avoid importing everything, unless deps is empty, or mb just include everything anyway
+    if (deps.length == 0) return;
+
     let opRoot = scriptfiles.GetScriptSettings().getOpNextDir();
     let opPlugins = scriptfiles.GetScriptSettings().getOpNextPluginsDir();
-    let opPluginsDir = path.join(opRoot, "Plugins");
-    console.log(JSON.stringify({opRoot, opPluginsDir}))
+    let opUserPluginsDir = path.join(opRoot, "Plugins");
+    console.log(JSON.stringify({opPlugins, opUserPluginsDir}))
 
     let depDirsToCheck: string[] = [];
     let allowedDeps = new Set<string>(deps);
@@ -274,14 +281,16 @@ function LoadOpenplanetDependencies(deps: string[]) {
 
     // plugins as directories
     // these have precedence over .op files
-    glob.sync(path.join(opPluginsDir, "*/")).forEach(AddDepencyIfUnmet);
     glob.sync(path.join(opPlugins, "*/")).forEach(AddDepencyIfUnmet);
+    glob.sync(path.join(opUserPluginsDir, "*/")).forEach(AddDepencyIfUnmet);
 
     // plugins as .op files
-    let files = glob.sync(opPluginsDir+"/*.op");
+    let files = glob.sync(opUserPluginsDir+"/*.op");
     files.forEach(pluginFile => {
         // extract to a tmp dir
         let pluginFileName = path.basename(pluginFile, ".op");
+        if (!allowedDeps.has(pluginFileName) || foundDeps.has(pluginFileName)) // don't need it or already have it
+            return;
         let tmpDir = path.join(os.tmpdir(), "vscode-op-as", pluginFileName);
         let tmpDir_ = path.join(tmpDir, " ").trimEnd();
         // console.info(`Clearing tmp directory: ${tmpDir}`);
@@ -736,6 +745,12 @@ connection.onCodeLensResolve(function (lens : CodeLens) : CodeLens{
 
 connection.onExecuteCommand(function (params : ExecuteCommandParams)
 {
+    if (params.command == "angelscript.reloadInfoToml") {
+        for (let RootPath of Roots) {
+            LoadOpenplanetInfoToml(RootPath+"/info.toml");
+        }
+    }
+
     // if (params.command == "angelscript.openAssets")
     // {
     //     if (params.arguments && params.arguments[0])
@@ -931,6 +946,7 @@ connection.onRequest("angelscript/provideInlineValues", (...params: any[]) : any
     // The content of a text document did change in VSCode.
     // params.uri uniquely identifies the document.
     // params.contentChanges describe the content changes to the document.
+    console.log(JSON.stringify(params))
     if (params.contentChanges.length == 0)
         return;
 

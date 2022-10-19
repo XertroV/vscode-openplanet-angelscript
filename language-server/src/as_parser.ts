@@ -59,12 +59,12 @@ let ScriptSettings : ASSettings = {
     enableDebugOutput: false,
     crashOnParseError: false,
     getOpNextDir() {
-        return this.openplanetNextLocation.length >= 0
+        return this.openplanetNextLocation?.length > 0
             ? this.openplanetNextLocation
             : GetDefaultOpenplanetNextDir()
     },
     getOpNextPluginsDir() {
-        return this.openplanetNextPluginsLocation.length >= 0
+        return this.openplanetNextPluginsLocation?.length > 0
             ? this.openplanetNextPluginsLocation
             : GetDefaultOpenplanetPluginsDir()
     },
@@ -73,6 +73,7 @@ let ScriptSettings : ASSettings = {
 function GetDefaultOpenplanetNextDir(): string {
     let defaultDir = path.join(os.homedir(), 'OpenplanetNext')
     if (fs.existsSync(defaultDir)) return defaultDir;
+    console.log(`Could not find default OpenplanetNext directory: ${defaultDir}`)
     return "";
 }
 
@@ -81,6 +82,7 @@ function GetDefaultOpenplanetPluginsDir(): string {
     let wslDefault = `/mnt/c/Program Files (x86)/Ubisoft/Ubisoft Game Launcher/games/Trackmania/Openplanet/Plugins/`;
     if (fs.existsSync(winDefault)) return winDefault;
     if (fs.existsSync(wslDefault)) return wslDefault;
+    console.log(`Could not find default OpenplanetNext Plugins directory: ${winDefault}`)
     return "";
 }
 

@@ -3,18 +3,16 @@ todo:
 * `array<A::B>`, or `namespace A { auto x = {B()}; class B {} }` accessing x from outside A
   * types don't resolve right
 * ~~ funcdefs
-* function casting via funcdefs
+* ~~ function casting via funcdefs
 * ~~ function handles & function types in general
-* some constructors not added to scope
+* ?? some constructors not added to scope
 * `auto landmarks = cp.Arena.MapLandmarks;` should be detected as `MwFastBuffer<CGameScriptMapLandmark@>`
 * `linkedPositions.InsertLast(cast<array<vec3>>(lcps[lpKeys[i]]))` -- seems like `cast<array<vec3>>` doesn't parse -- note that `cast<vec3[]>` works fine.
-* 1/2 class properties using get/set `class C { bool IsBlah { get { return true; } set { this.x = value; }}}`
-* openplanet core constructors
+* ~~ 1/2 class properties using get/set `class C { bool IsBlah { get { return true; } set { this.x = value; }}}`
+* ~~ openplanet core constructors
 * ~~ inline function scopes in global ns
-* `value` variable in setters
 * numbers like `-3.865678972395145e-05`
 * some methods/props not added, e.g.: `FRGroundContactMaterial` `visState.Left` `visState.Up`
-* constructors from openplanet not suggested
 
 package: `vsce package`
 
@@ -27,7 +25,7 @@ changelog:
   - add openplanet constructors
   - squiggly line for unparsable statements
   - named functions can be used as arguments e.g., for `startnew`
-  - basic `get{} set{}` support (note: parses as incomplete variable decl, then some scopes. not ideal but works.)
+  - basic `get{} set{}` support
   - prelim support for multiple inline functions in one expression.
   - inline function scopes (+ appear in global namespace)
 - 0.1.5
