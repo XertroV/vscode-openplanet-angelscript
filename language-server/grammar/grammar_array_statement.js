@@ -1188,7 +1188,7 @@ var grammar = {
             ...d[1],
             const_qualifier: d[0],
             ref_qualifier: d[3],
-            is_reference: d[2] != null,
+            is_reference: d[2],
         });}
         },
     {"name": "non_const_typename$ebnf$1", "symbols": ["atref"], "postprocess": id},
@@ -1200,7 +1200,7 @@ var grammar = {
             ...d[0],
             const_qualifier: null,
             ref_qualifier: d[2],
-            is_reference: d[1] != null,
+            is_reference: d[1],
         });}
         },
     {"name": "unqualified_typename", "symbols": ["typename_identifier"], "postprocess": 
@@ -1337,7 +1337,7 @@ var grammar = {
     {"name": "typename_identifier$ebnf$3", "symbols": ["atref"], "postprocess": id},
     {"name": "typename_identifier$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "typename_identifier", "symbols": ["typename_identifier$ebnf$1", "typename_identifier$ebnf$2", (lexer.has("identifier") ? {type: "identifier"} : identifier), "typename_identifier$ebnf$3"], "postprocess": 
-        function (d) { return {...CompoundLiteral(n.Typename, d, null), is_reference: d[3]}; }
+        function (d) { return {...CompoundLiteral(n.Typename, d.slice(0, 3), null), is_reference: d[3]}; }
         },
     {"name": "const_qualifier", "symbols": [(lexer.has("const_token") ? {type: "const_token"} : const_token), "_"], "postprocess": 
         function (d) { return Identifier(d[0]); }
