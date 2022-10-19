@@ -114,6 +114,7 @@ export function UpdateScriptModuleDiagnostics(asmodule : scriptfiles.ASModule, i
 function AddScopeDiagnostics(scope : scriptfiles.ASScope, diagnostics : Array<Diagnostic>)
 {
     // if the file is open, show unparsable statements.
+    // todo: setting doesn't work still?
     if (scope.module.isOpened && GetDiagnosticSettings().squiggleUnparsableStatements) {
         for (let statement of scope.statements) {
             if (statement?.parseError) {

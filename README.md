@@ -21,6 +21,9 @@ install from cli: `code --install-extension openplanet-angelscript-X.Y.Z.vsix`
 
 changelog:
 
+- 0.1.7
+  - sldkfj
+  - ~~squiggle setting works now
 - 0.1.6
   - fix parsing errors with `<` and `>` and operator precedence + type detection
   - added `Reload info.toml` command
