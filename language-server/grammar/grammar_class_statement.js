@@ -983,14 +983,14 @@ var grammar = {
     {"name": "expr_postfix", "symbols": ["expr_leaf", "expr_postfix$ebnf$1"], "postprocess": 
         function (d) { return d[0]; }
         },
+    {"name": "expr_leaf", "symbols": ["lvalue"], "postprocess": id},
+    {"name": "expr_leaf", "symbols": ["constant"], "postprocess": id},
     {"name": "expr_leaf", "symbols": ["unary_operator"], "postprocess": 
         function (d) { return {
             ...Compound(d, n.UnaryOperation, []),
             operator: Operator(d[0]),
         };}
         },
-    {"name": "expr_leaf", "symbols": ["lvalue"], "postprocess": id},
-    {"name": "expr_leaf", "symbols": ["constant"], "postprocess": id},
     {"name": "lvalue", "symbols": ["lvalue_inner"], "postprocess": id},
     {"name": "lvalue", "symbols": ["atref", "lvalue_inner"], "postprocess": 
         function(d) {
@@ -1027,7 +1027,7 @@ var grammar = {
     {"name": "lvalue_inner", "symbols": ["template_typename", "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "argumentlist", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
         function (d) { return Compound(d, n.ConstructorCall, [d[0], d[3]]); }
         },
-    {"name": "expression", "symbols": [(lexer.has("cast_token") ? {type: "cast_token"} : cast_token), "_", {"literal":"<"}, "_", "typename", "_", {"literal":">"}, "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "optional_expression", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
+    {"name": "lvalue_inner", "symbols": [(lexer.has("cast_token") ? {type: "cast_token"} : cast_token), "_", {"literal":"<"}, "_", "typename", "_", {"literal":">"}, "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "optional_expression", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
         function (d) { return Compound(d, n.CastOperation, [d[4], d[9]]); }
         },
     {"name": "expression$ebnf$1$subexpression$1", "symbols": ["_", {"literal":"<"}]},
@@ -1276,7 +1276,8 @@ var grammar = {
             };
         }
         },
-    {"name": "template_typename", "symbols": ["typename_identifier", "_", {"literal":"<"}, "_", "template_subtypes_unterminated", "_", (lexer.has("double_gt") ? {type: "double_gt"} : double_gt)], "postprocess": 
+    {"name": "template_typename$subexpression$1", "symbols": [(lexer.has("gt") ? {type: "gt"} : gt), (lexer.has("gt") ? {type: "gt"} : gt)]},
+    {"name": "template_typename", "symbols": ["typename_identifier", "_", {"literal":"<"}, "_", "template_subtypes_unterminated", "_", "template_typename$subexpression$1"], "postprocess": 
         function (d) {
             let typename = d[0].value+"<";
             for (let i = 0; i < d[4].length; ++i)
