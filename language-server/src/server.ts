@@ -74,6 +74,7 @@ let UnrealTypesTimedOut = false;
 function load_openplanet() {
     LoadOpenplanetJson();
     typedb.AddOpenplanetIcons();
+    typedb.AddOpenplanetFuncdefs();
     typedb.AddPrimitiveTypes(false);
 }
 

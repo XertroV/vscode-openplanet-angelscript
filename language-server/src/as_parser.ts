@@ -2491,7 +2491,7 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
             break;
             case node_types.FuncdefDefinition: {
                 let funcdef = statement.ast.children[0];
-                console.warn(`funcdef: ${funcdef.name.value}`)
+                // console.warn(`funcdef: ${funcdef.name.value}`)
                 let dbfunc = AddDBMethod(scope, funcdef.name.value);
                 if (funcdef.documentation)
                     dbfunc.documentation = typedb.FormatDocumentationComment(funcdef.documentation);
@@ -2508,7 +2508,8 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
                 let namespace = scope.getNamespace();
 
                 scope.module.globalSymbols.push(dbfunc);
-                namespace.addSymbol(dbfunc);
+                namespace.addSymbol(dbfunc.getFuncType());
+                namespace.addSymbol(dbfunc.asFuncDefApplier());
             }
             break;
             case node_types.ImportFunctionStatement:
@@ -6361,6 +6362,7 @@ function CheckIfInlineArray(scope: ASScope, cur_element: ASElement, cur_offset: 
     // first char always "{"
     if (scope.module.content[cur_offset] != "{") throw "FirstCharShouldBeLeftBrace";
     if (scope.scopetype == ASScopeType.Enum) return false;  // probs doesn't do anything, but wont hurt
+    if (scope.scopetype == ASScopeType.Class) return false;
     if (cur_element instanceof ASStatement) {
         // if in a function call `tostring({'asdf'})` we'll get a parse error => no .ast on the prior element (cur_element)
         // otherwise it's part of a variable decl `string[] test = {};`

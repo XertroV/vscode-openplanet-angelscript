@@ -164,10 +164,10 @@ export function Complete(asmodule: scriptfiles.ASModule, position: Position): Ar
     let offset = asmodule.getOffset(position);
     let context = GenerateCompletionContext(asmodule, offset - 1);
 
-    // if (context.scope.getNamespace().isRootNamespace()) {
-    //     console.warn(`root namespace completions`)
-    //     AddOpenplanetCallbackCompletions(context, completions);
-    // }
+    if (context.scope.getNamespace().isRootNamespace() && context.scope.scopetype == scriptfiles.ASScopeType.Global) {
+        console.warn(`root namespace completions`)
+        AddOpenplanetCallbackCompletions(context, completions);
+    }
 
     // No completions when in ignored code (comments, strings, etc)
     if (context.isIgnoredCode)
@@ -996,7 +996,7 @@ function AddCompletionsFromKeywords(context : CompletionContext, completions : A
             AddCompletionsFromKeywordList(context, [
                 "void",
             ], completions);
-            AddOpenplanetCallbackCompletions(context, completions);
+            // AddOpenplanetCallbackCompletions(context, completions);
         }
     }
 
@@ -1187,8 +1187,8 @@ export function AddCompletionsFromType(context : CompletionContext, curtype : ty
                 return;
             props.add(prop.name);
 
-            // let docPrefix = prop.accessSpecifier ? prop.accessSpecifier.name + " " : "";
-            // console.warn(`Adding documentation to compl for: ${curtype.name}.${prop.name}`);
+            let docPrefix = prop.accessSpecifier ? prop.accessSpecifier.name + " " : "";
+            console.warn(`Adding documentation to compl for: ${curtype.name}.${prop.name}`);
 
             let compl = <CompletionItem>{
                     label: prop.name,
@@ -1199,7 +1199,7 @@ export function AddCompletionsFromType(context : CompletionContext, curtype : ty
                     },
                     commitCharacters: [".", ";", ","],
                     filterText: GetSymbolFilterText(context, prop),
-                    // documentation: {kind: MarkupKind.Markdown, value: prop.documentation + "\n\n" + MkAsSnippet(`${docPrefix}${prop.typename} ${prop.name}`)},
+                    documentation: {kind: MarkupKind.Markdown, value: prop.documentation + "\n\n" + MkAsSnippet(`${docPrefix}${prop.typename} ${prop.name}`)},
                     // detail: prop.documentation + "\n\n" + MkAsSnippet(`${docPrefix}${prop.typename} ${prop.name}`),
             };
 
@@ -1570,6 +1570,10 @@ export function AddCompletionsFromType(context : CompletionContext, curtype : ty
                             commitCharacters: commitChars,
                             filterText: GetSymbolFilterText(context, dbtype),
                             sortText: Sort.Typename,
+                            documentation: <MarkupContent>{
+                                kind: 'markdown',
+                                value: dbtype.documentation,
+                            },
                     };
 
                     if (context.maybeTypename && context.typenameExpected && context.typenameExpected == dbtype.name)

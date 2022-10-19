@@ -1,6 +1,7 @@
 import { getAccPrefix, setAccPrefix } from "./as_parser";
 import { ConvertNadeoType, CoreMethod } from "./convert_nadeo";
 import { IconNames } from "./icons";
+import { MkAsSnippet } from "./parsed_completion";
 import { TypeCounter } from "./util/typecounter";
 
 export enum DBAllowSymbol
@@ -544,10 +545,20 @@ export class DBMethod implements DBSymbol
             funcType.delegateReturn = this.returnType;
             funcType.isDelegate = true;
             funcType.delegateSource = this;
+            funcType.documentation = FormatDocumentationComment(MkAsSnippet(this.format()));
             this.funcType = funcType;
             // AddTypeToDatabase(this.namespace, funcType);
         }
         return this.funcType;
+    }
+
+    private funcDefApplier?: DBMethod;
+    asFuncDefApplier(): DBSymbol {
+        if (!this.funcDefApplier) {
+            this.funcDefApplier = new DBMethod;
+            this.funcDefApplier.fromJSON({name: this.name, returntypedecl: this.name + "@", args: [{name: "func", typedecl: "Function@"}]});
+        }
+        return this.funcDefApplier;
     }
 };
 
@@ -1823,17 +1834,17 @@ let NextTypeId = 1;
 export function CleanTypeName(typename : string) : string
 {
     if (typename.startsWith("const "))
-        typename = typename.substring(6);
+        typename = typename.trim().substring(6);
     if (typename.endsWith("&"))
-        typename = typename.substring(0, typename.length-1);
+        typename = typename.trim().substring(0, typename.length-1);
     else if (typename.endsWith("&out"))
-        typename = typename.substring(0, typename.length-4);
+        typename = typename.trim().substring(0, typename.length-4);
     else if (typename.endsWith("&in"))
-        typename = typename.substring(0, typename.length-3);
+        typename = typename.trim().substring(0, typename.length-3);
     else if (typename.endsWith("&inout"))
-        typename = typename.substring(0, typename.length-6);
+        typename = typename.trim().substring(0, typename.length-6);
     else if (typename.endsWith("@"))
-        typename = typename.substring(0, typename.length-1);
+        typename = typename.trim().substring(0, typename.length-1);
     return typename;
 }
 
@@ -2392,7 +2403,7 @@ export function AddOpenplanetFunction(jData: any) {
     ns.addSymbol(func);
 }
 
-export function ConvertOpenplanetConstructorsToMethods(name: string, ns: string, behaviors: any): DBMethod[] {
+export function ConvertOpenplanetConstructorsToMethods(name: string, ns: string, desc: string, behaviors: any): DBMethod[] {
     let methods: DBMethod[] = [];
     if (!ns) ns = "";
     if (!behaviors || !name) return methods;
@@ -2403,6 +2414,7 @@ export function ConvertOpenplanetConstructorsToMethods(name: string, ns: string,
             constructor.fromJSON({
                 ...behavior.func,
                 name,
+                desc,
                 returntypedecl: bTy === 3 ? (behavior.func.returntypedecl) : name, //  as string).replace(`${ns}::`, ''
             })
             methods.push(constructor);
@@ -2423,7 +2435,7 @@ export function AddOpenplanetClass(jData: any, kind: "classes" | "enums") {
         jData['subtypes'] = ["T"];
     }
 
-    let constructors = ConvertOpenplanetConstructorsToMethods(jData['name'], jData.ns, jData.behaviors);
+    let constructors = ConvertOpenplanetConstructorsToMethods(jData['name'], jData.ns, jData.desc || "", jData.behaviors);
 
     let type = new DBType(kind);
     type.fromJSON(jData);
@@ -2510,6 +2522,37 @@ export function AddOpenplanetIcons() {
         let ns = isKenney ? iconsKenneyNs : iconsNs;
         ns.addSymbol(prop);
     });
+}
+
+export function AddOpenplanetFuncdefs() {
+    let funcdefs = [
+        {
+            name: "CoroutineFunc",
+            returntypedecl: "void",
+            args: []
+        },
+        {
+            name: "CoroutineFuncUserdata",
+            returntypedecl: "void",
+            args: [{name: "userdata", typedecl: "ref@"}]
+        },
+        {
+            name: "ProcIntercept",
+            returntypedecl: "bool",
+            args: [{name: "stack", typedecl: "CMwStack &in"}]
+        },
+        {
+            name: "ProcInterceptEx",
+            returntypedecl: "bool",
+            args: [{name: "stack", typedecl: "CMwStack &in"}, {name: "nod", typedecl: "CMwNod@"}]
+        },
+    ]
+    funcdefs.forEach(fd => {
+        let method = new DBMethod;
+        method.fromJSON(fd);
+        RootNamespace.addSymbol(method.getFuncType());
+        RootNamespace.addSymbol(method.asFuncDefApplier());
+    })
 }
 
 export function FinishTypesFromUnreal()

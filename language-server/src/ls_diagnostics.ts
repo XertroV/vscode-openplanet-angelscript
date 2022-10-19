@@ -116,7 +116,7 @@ function AddScopeDiagnostics(scope : scriptfiles.ASScope, diagnostics : Array<Di
     // if the file is open, show unparsable statements.
     if (scope.module.isOpened) {
         for (let statement of scope.statements) {
-            if (statement.parseError) {
+            if (statement?.parseError) {
                 diagnostics.push(<Diagnostic> {
                     severity: DiagnosticSeverity.Error,
                     tags: [],
