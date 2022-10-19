@@ -1,16 +1,19 @@
-string[] testArray = tostring({name, ''+cpCount, ''+lastCpTime, ''+spawnStatus, ''+raceRank, ''+taRank, ''+bestTime});
-// namespace Test {
-//     bool g_test = false;
+// string[] testArray = tostring({name, ''+cpCount, ''+lastCpTime, ''+spawnStatus, ''+raceRank, ''+taRank, ''+bestTime});
+// // namespace Test {
+// //     bool g_test = false;
 
-//     void Main() {
-//     auto app = GetApp();
-//     }
+// //     void Main() {
+// //     auto app = GetApp();
+// //     }
 
-//     string name = "anme";
+// //     string name = "anme";
 
+// // }
+
+// enum SpawnStatus {NotSpawned,Spawning,Spawned}
+
+// void Main() {
 // }
 
-enum SpawnStatus {NotSpawned,Spawning,Spawned}
-
-void Main() {
-}
+[Setting hidden name="test"]
+dictionary pluginToRaceData

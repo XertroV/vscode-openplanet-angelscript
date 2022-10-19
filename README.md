@@ -23,6 +23,7 @@ install from cli: `code --install-extension openplanet-angelscript-X.Y.Z.vsix`
 changelog:
 
 - 0.1.6
+  - fix settings declarations and improve support
   - add openplanet constructors
   - squiggly line for unparsable statements
   - named functions can be used as arguments e.g., for `startnew`

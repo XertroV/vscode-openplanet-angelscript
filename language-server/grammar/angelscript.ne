@@ -84,8 +84,8 @@ const lexer = moo.compile({
             template_basetype: ["array", "MwSArray", "MwFastArray", "MwFastBuffer", "MwNodPool", "MwRefBuffer"],
         })
     },
-    number: /-?[0-9]+/,
-    floatNumber: /-?[0-9]+\.[0-9]+/,
+    number: /[0-9]+/,
+    // floatNumber: /[0-9]+\.[0-9]+/, // %number %dot %number
 });
 
 // A compound node containing multiple child nodes
@@ -432,6 +432,7 @@ global_declaration -> function_decl {% id %}
 global_declaration -> (settings_decl _):? var_decl {%
     function (d) { /* console.log(d); */ return d[1]; }
 %}
+global_declaration -> settings_decl {% id %} # e.g., an unfinished settings declaration
 global_declaration -> typename {%
     function (d) { return {
         ...Compound(d, n.VariableDecl, null),
@@ -1491,10 +1492,11 @@ scuffed_template_statement -> %template_basetype _ "<" _ typename {%
     }
 %}
 
-settings_decl -> setting_var_decl {% id %}
-settings_decl -> setting_tab_decl {% id %}
+settings_decl -> _ setting_var_decl {% d => d[1] %}
+settings_decl -> _ setting_tab_decl {% d => d[1] %}
 
-setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration,[d[3]]); } %}
+setting_var_decl -> %lsqbracket "Setting" _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, []); } %}
+setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, [d[3]]); } %}
 setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ setting_type_kwargs _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5]]); } %}
 setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ setting_type_kwargs _ setting_std_optional_kwargs _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5], d[7]]); } %}
 setting_var_decl -> %lsqbracket "Setting" _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, []); } %}
@@ -1514,7 +1516,7 @@ setting_std_optional_kwargs -> (setting_std_optional_kwarg _):* setting_std_opti
 
 # int, uint, float
 setting_type_kwargs -> (setting_type_int_uint_float _):* setting_type_int_uint_float {% d => FromMultiple(d[1], d[0], p => p[0]) %}
-setting_type_int_uint_float -> ("drag" | ("min" | "max") %op_assignment (%dqstring | %sqstring | %number | %number %dot %number)) {% MkSettingKwarg %}
+setting_type_int_uint_float -> ("drag" | ("min" | "max") %op_assignment (%dqstring | %sqstring | %op_binary_sum:? %number | %op_binary_sum:? floatNumber)) {% MkSettingKwarg %}
 # vec2,vec3,vec4
 setting_type_kwargs -> setting_type_vec234 {% id %}
 setting_type_vec234 -> ("drag") {% MkSettingKwarg %}
@@ -1523,7 +1525,7 @@ setting_type_kwargs -> (setting_type_vec34 _):* setting_type_vec34 {% d => FromM
 setting_type_vec34 -> ("drag" | "color") {% MkSettingKwarg %}
 # string
 setting_type_kwargs -> (setting_type_string _):* setting_type_string {% d => FromMultiple(d[1], d[0], p => p[0]) %}
-setting_type_string -> ("multiline" | "password" | "max" %op_assignment (%dqstring | %sqstring | %number | %number %dot %number)) {% MkSettingKwarg %}
+setting_type_string -> ("multiline" | "password" | "max" %op_assignment (%dqstring | %sqstring | %op_binary_sum:? %number | %op_binary_sum:? floatNumber)) {% MkSettingKwarg %}
 
 setting_tab_decl -> %lsqbracket _ "SettingsTab" _ settings_tab_kwargs _ %rsqbracket {%
     function(d) { return Compound(d, n.SettingsTabDeclaration, d[4]); }
@@ -1541,3 +1543,7 @@ settings_tab_kwargs -> (settings_tab_kwarg _):* settings_tab_kwarg {%
     }
 %}
 settings_tab_kwarg -> ("icon" | "name") %op_assignment (%dqstring | %sqstring) {% MkSettingsTabKwarg %}
+
+floatNumber -> %number %dot %number
+floatNumber -> %number %dot
+floatNumber -> %dot %number

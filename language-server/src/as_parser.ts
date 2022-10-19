@@ -1581,7 +1581,7 @@ function ClearModule(module : ASModule)
 
         // Remove symbols from old globals
         for (let sym of module.globalSymbols)
-            sym.namespace.removeSymbol(sym);
+            sym.namespace?.removeSymbol(sym);
 
         // Remove types declared in this file
         for (let type of module.types)

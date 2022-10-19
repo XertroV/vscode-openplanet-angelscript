@@ -256,9 +256,30 @@ function LoadOpenplanetDependencies(deps: string[]) {
     let opPluginsDir = path.join(opRoot, "Plugins");
     console.log(JSON.stringify({opRoot, opPluginsDir}))
 
+    let depDirsToCheck: string[] = [];
+    let allowedDeps = new Set<string>(deps);
+    let foundDeps = new Set<string>();
+
+    function AddDepencyIfUnmet(dir: string) {
+        while (dir.endsWith("/")) {
+            dir = dir.slice(0, -1);
+        }
+        console.log(dir);
+        let parts = dir.split('/');
+        let pluginName = parts[parts.length - 1];
+        if (allowedDeps.has(pluginName) && !foundDeps.has(pluginName)) {
+            foundDeps.add(pluginName);
+            depDirsToCheck.push(dir);
+        }
+    }
+
+    // plugins as directories
+    // these have precedence over .op files
+    glob.sync(path.join(opPluginsDir, "*/")).forEach(AddDepencyIfUnmet);
+    glob.sync(path.join(opPlugins, "*/")).forEach(AddDepencyIfUnmet);
+
     // plugins as .op files
     let files = glob.sync(opPluginsDir+"/*.op");
-    let depDirsToCheck: string[] = [];
     files.forEach(pluginFile => {
         // extract to a tmp dir
         let pluginFileName = path.basename(pluginFile, ".op");
@@ -281,12 +302,8 @@ function LoadOpenplanetDependencies(deps: string[]) {
                 console.log(`removed old file while extracting .op: ${file}; (rp: ${relativePath}, zip path example: ${filesInArchive[0]})`);
             }
         })
-        depDirsToCheck.push(tmpDir_)
+        AddDepencyIfUnmet(tmpDir_)
     })
-
-    // plugins as directories
-    glob.sync(path.join(opPluginsDir, "*/")).forEach(f => depDirsToCheck.push(f));
-    glob.sync(path.join(opPlugins, "*/")).forEach(f => depDirsToCheck.push(f));
 
     // load dependency stuff
     console.log(`loading ${depDirsToCheck.length} plugins in directories`); // : ${JSON.stringify(depDirsToCheck)}
