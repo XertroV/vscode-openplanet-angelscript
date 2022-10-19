@@ -1162,7 +1162,7 @@ typename -> const_qualifier:? unqualified_typename atref:? ref_qualifiers:? {%
         ...d[1],
         const_qualifier: d[0],
         ref_qualifier: d[3],
-        is_reference: d[2] != null,
+        is_reference: d[2],
     });}
 %}
 non_const_typename -> unqualified_typename atref:? ref_qualifiers:? {%
@@ -1170,7 +1170,7 @@ non_const_typename -> unqualified_typename atref:? ref_qualifiers:? {%
         ...d[0],
         const_qualifier: null,
         ref_qualifier: d[2],
-        is_reference: d[1] != null,
+        is_reference: d[1],
     });}
 %}
 
@@ -1303,7 +1303,7 @@ typename_identifier -> %template_basetype {%
 %}
 
 typename_identifier -> (%ns _):? (%identifier _ %ns _ ):* %identifier atref:? {%
-    function (d) { return {...CompoundLiteral(n.Typename, d, null), is_reference: d[3]}; }
+    function (d) { return {...CompoundLiteral(n.Typename, d.slice(0, 3), null), is_reference: d[3]}; }
 %}
 
 const_qualifier -> %const_token _ {%
