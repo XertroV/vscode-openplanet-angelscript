@@ -6,8 +6,9 @@ todo:
 * ~~ function casting via funcdefs
 * ~~ function handles & function types in general
 * ?? some constructors not added to scope
-* `auto landmarks = cp.Arena.MapLandmarks;` should be detected as `MwFastBuffer<CGameScriptMapLandmark@>`
-* `linkedPositions.InsertLast(cast<array<vec3>>(lcps[lpKeys[i]]))` -- seems like `cast<array<vec3>>` doesn't parse -- note that `cast<vec3[]>` works fine.
+* ~~ `auto landmarks = cp.Arena.MapLandmarks;` should be detected as `MwFastBuffer<CGameScriptMapLandmark@>`
+* ~~`linkedPositions.InsertLast(cast<array<vec3>>(lcps[lpKeys[i]]))` -- seems like `cast<array<vec3>>` doesn't parse -- note that `cast<vec3[]>` works fine.
+  * ~~`>>` looks like the binary op
 * ~~ 1/2 class properties using get/set `class C { bool IsBlah { get { return true; } set { this.x = value; }}}`
 * ~~ openplanet core constructors
 * ~~ inline function scopes in global ns
@@ -21,6 +22,8 @@ install from cli: `code --install-extension openplanet-angelscript-X.Y.Z.vsix`
 changelog:
 
 - 0.1.6
+  - fix parsing errors with `<` and `>` and operator precedence + type detection
+  - added `Reload info.toml` command
   - fix settings declarations and improve support
   - add openplanet constructors
   - squiggly line for unparsable statements

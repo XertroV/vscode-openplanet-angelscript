@@ -21,11 +21,14 @@ const lexer = moo.compile({
     comma: ",",
     atsign: "@",
     postfix_operator: ["++", "--"],
-    compound_assignment: ["+=", "-=", "/=", "*=", "~=", "^=", "|=", "&=", "%="],
+    compound_assignment: ["+=", "-=", "/=", "*=", "**=", "~=", "^=", "|=", "&=", "%=", "<<=", ">>=", ">>>="],
     op_binary_logic: ['&&', '||'],
     op_binary_sum: ['+', '-'],
-    op_binary_product: ['*', '/', '%'],
-    op_binary_compare: ["==", "!=", "<=", ">=", ">>", "<", "<<" ,">", ">>", "is ", "!is "], // add spaces around `is` to avoid detecting `a isb` as `a is b`
+    op_binary_product: ['*', '/', '%', '**'],
+    // note: removed `>>` from op_binary_compare; causes bug with cast<array<X>>
+    op_binary_compare: ["==", "!=", "<=", ">=", "is ", "!is "], // add spaces around `is` to avoid detecting `a isb` as `a is b`
+    lt: "<",
+    gt: ">",
     op_binary_bitwise: ["|", "&", "^"],
     op_assignment: "=",
     op_unary: ["!", "~"],
@@ -840,6 +843,7 @@ macro_value -> ("-" _):? const_number {%
     }
 %}
 
+# expression -> lvalue {% id %}
 expression -> expr_ternary {% id %}
 expression -> expr_array {% id %}
 expression -> expr_inline_function {% id %}
@@ -847,9 +851,6 @@ expression -> expr_inline_function {% id %}
 expr_array -> %lbrace argumentlist _ %rbrace {%
     function(d) { return Compound(d, n.ArrayInline, d[1] ? [d[1]] : []); }
 %}
-# expr_array -> %lbrace _ %rbrace {%
-#     function(d) { return Compound(d, n.ArrayInline, []); }
-# %}
 
 expr_ternary -> expr_binary_logic _ %ternary _ expr_ternary _ %colon _ expr_ternary {%
     function (d) { return Compound(d, n.TernaryOperation, [d[0], d[4], d[8]]); }
@@ -862,17 +863,34 @@ expr_binary_logic -> expr_binary_logic _ %op_binary_logic (_ expr_binary_bitwise
         operator: Operator(d[2]),
     };}
 %}
-expr_binary_logic -> expr_binary_bitwise {% id %}
+expr_binary_logic ->  expr_binary_ushr {% id %}
 
-expr_binary_bitwise -> expr_binary_bitwise _ %op_binary_bitwise (_ expr_binary_compare):? {%
-    function (d) { return {
+expr_binary_ushr -> expr_binary_ushr _ (%gt %gt %gt) (_ expr_binary_bitwise) {%
+    function (d) { console.log('shr: ' + JSON.stringify(d[2])); return {
+        ...Compound(d, n.BinaryOperation, [d[0], d[3] ? d[3][1] : null]),
+        operator: Operator(CompoundLiteral('', d[2])),
+    };}
+%}
+
+expr_binary_ushr -> expr_binary_bitwise {% id %}
+
+op_binary_bitwise -> (%op_binary_bitwise | %gt %gt | %lt %lt) {%
+    function(d) {
+        return CompoundLiteral('', d);
+    }
+%}
+
+expr_binary_bitwise -> expr_binary_bitwise _ op_binary_bitwise (_ expr_binary_compare):? {%
+    function (d) { console.log(JSON.stringify(d[2])); return {
         ...Compound(d, n.BinaryOperation, [d[0], d[3] ? d[3][1] : null]),
         operator: Operator(d[2]),
     };}
 %}
 expr_binary_bitwise -> expr_binary_compare {% id %}
 
-expr_binary_compare -> expr_binary_compare _ %op_binary_compare (_ expr_binary_sum):? {%
+op_binary_compare -> (%op_binary_compare | "<" | ">") {% function (d) { return d[0][0]; } %}
+
+expr_binary_compare -> expr_binary_compare _ op_binary_compare (_ expr_binary_sum):? {%
     function (d) { return {
         ...Compound(d, n.BinaryOperation, [d[0], d[3] ? d[3][1] : null]),
         operator: Operator(d[2]),
@@ -1228,7 +1246,7 @@ template_typename -> typename_identifier _ "<" _ template_subtypes _ ">" {%
     }
 %}
 
-template_typename -> typename_identifier _ "<" _ template_subtypes_unterminated _ ">>" {%
+template_typename -> typename_identifier _ "<" _ template_subtypes_unterminated _ (%gt %gt) {%
     function (d) {
         let typename = d[0].value+"<";
         for (let i = 0; i < d[4].length; ++i)

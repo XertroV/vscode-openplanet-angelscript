@@ -3242,8 +3242,12 @@ export function ResolveTypeFromExpression(scope : ASScope, node : any) : typedb.
         // X * Y
         case node_types.BinaryOperation:
         {
-            if (!node.operator)
+            // some operators, like `>>` and `<<` don't get passed through
+            if (!node.operator) {
+                // console.log(`no node.operator: ${JSON.stringify(node)}`)
                 return null;
+            }
+            // console.log(JSON.stringify(node));
 
             let left_type = ResolveTypeFromExpression(scope, node.children[0]);
             let right_type = ResolveTypeFromExpression(scope, node.children[1]);
@@ -3355,10 +3359,10 @@ function getBinaryOperatorOverloadMethod(operator : any) : string
     {
         case "+": return "opAdd";
         case "-": return "opSub";
+        case "**": return "opPow";
         case "*": return "opMul";
         case "/": return "opDiv";
         case "%": return "opMod";
-        case "**": return "opPow";
         case "&": return "opAnd";
         case "|": return "opOr";
         case "^": return "opXor";
@@ -3368,7 +3372,9 @@ function getBinaryOperatorOverloadMethod(operator : any) : string
         case "==": return "BOOLEAN";
         case "!=": return "BOOLEAN";
         case "is": return "BOOLEAN";
+        case "is ": return "BOOLEAN";
         case "!is": return "BOOLEAN";
+        case "!is ": return "BOOLEAN";
         case "<": return "BOOLEAN";
         case ">": return "BOOLEAN";
         case ">=": return "BOOLEAN";

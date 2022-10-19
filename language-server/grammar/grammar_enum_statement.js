@@ -25,11 +25,14 @@ const lexer = moo.compile({
     comma: ",",
     atsign: "@",
     postfix_operator: ["++", "--"],
-    compound_assignment: ["+=", "-=", "/=", "*=", "~=", "^=", "|=", "&=", "%="],
+    compound_assignment: ["+=", "-=", "/=", "*=", "**=", "~=", "^=", "|=", "&=", "%=", "<<=", ">>=", ">>>="],
     op_binary_logic: ['&&', '||'],
     op_binary_sum: ['+', '-'],
-    op_binary_product: ['*', '/', '%'],
-    op_binary_compare: ["==", "!=", "<=", ">=", ">>", "<", "<<" ,">", ">>", "is ", "!is "], // add spaces around `is` to avoid detecting `a isb` as `a is b`
+    op_binary_product: ['*', '/', '%', '**'],
+    // note: removed `>>` from op_binary_compare; causes bug with cast<array<X>>
+    op_binary_compare: ["==", "!=", "<=", ">=", "is ", "!is "], // add spaces around `is` to avoid detecting `a isb` as `a is b`
+    lt: "<",
+    gt: ">",
     op_binary_bitwise: ["|", "&", "^"],
     op_assignment: "=",
     op_unary: ["!", "~"],
@@ -900,21 +903,42 @@ var grammar = {
             operator: Operator(d[2]),
         };}
         },
-    {"name": "expr_binary_logic", "symbols": ["expr_binary_bitwise"], "postprocess": id},
+    {"name": "expr_binary_logic", "symbols": ["expr_binary_ushr"], "postprocess": id},
+    {"name": "expr_binary_ushr$subexpression$1", "symbols": [(lexer.has("gt") ? {type: "gt"} : gt), (lexer.has("gt") ? {type: "gt"} : gt), (lexer.has("gt") ? {type: "gt"} : gt)]},
+    {"name": "expr_binary_ushr$subexpression$2", "symbols": ["_", "expr_binary_bitwise"]},
+    {"name": "expr_binary_ushr", "symbols": ["expr_binary_ushr", "_", "expr_binary_ushr$subexpression$1", "expr_binary_ushr$subexpression$2"], "postprocess": 
+        function (d) { console.log('shr: ' + JSON.stringify(d[2])); return {
+            ...Compound(d, n.BinaryOperation, [d[0], d[3] ? d[3][1] : null]),
+            operator: Operator(CompoundLiteral('', d[2])),
+        };}
+        },
+    {"name": "expr_binary_ushr", "symbols": ["expr_binary_bitwise"], "postprocess": id},
+    {"name": "op_binary_bitwise$subexpression$1", "symbols": [(lexer.has("op_binary_bitwise") ? {type: "op_binary_bitwise"} : op_binary_bitwise)]},
+    {"name": "op_binary_bitwise$subexpression$1", "symbols": [(lexer.has("gt") ? {type: "gt"} : gt), (lexer.has("gt") ? {type: "gt"} : gt)]},
+    {"name": "op_binary_bitwise$subexpression$1", "symbols": [(lexer.has("lt") ? {type: "lt"} : lt), (lexer.has("lt") ? {type: "lt"} : lt)]},
+    {"name": "op_binary_bitwise", "symbols": ["op_binary_bitwise$subexpression$1"], "postprocess": 
+        function(d) {
+            return CompoundLiteral('', d);
+        }
+        },
     {"name": "expr_binary_bitwise$ebnf$1$subexpression$1", "symbols": ["_", "expr_binary_compare"]},
     {"name": "expr_binary_bitwise$ebnf$1", "symbols": ["expr_binary_bitwise$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "expr_binary_bitwise$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "expr_binary_bitwise", "symbols": ["expr_binary_bitwise", "_", (lexer.has("op_binary_bitwise") ? {type: "op_binary_bitwise"} : op_binary_bitwise), "expr_binary_bitwise$ebnf$1"], "postprocess": 
-        function (d) { return {
+    {"name": "expr_binary_bitwise", "symbols": ["expr_binary_bitwise", "_", "op_binary_bitwise", "expr_binary_bitwise$ebnf$1"], "postprocess": 
+        function (d) { console.log(JSON.stringify(d[2])); return {
             ...Compound(d, n.BinaryOperation, [d[0], d[3] ? d[3][1] : null]),
             operator: Operator(d[2]),
         };}
         },
     {"name": "expr_binary_bitwise", "symbols": ["expr_binary_compare"], "postprocess": id},
+    {"name": "op_binary_compare$subexpression$1", "symbols": [(lexer.has("op_binary_compare") ? {type: "op_binary_compare"} : op_binary_compare)]},
+    {"name": "op_binary_compare$subexpression$1", "symbols": [{"literal":"<"}]},
+    {"name": "op_binary_compare$subexpression$1", "symbols": [{"literal":">"}]},
+    {"name": "op_binary_compare", "symbols": ["op_binary_compare$subexpression$1"], "postprocess": function (d) { return d[0][0]; }},
     {"name": "expr_binary_compare$ebnf$1$subexpression$1", "symbols": ["_", "expr_binary_sum"]},
     {"name": "expr_binary_compare$ebnf$1", "symbols": ["expr_binary_compare$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "expr_binary_compare$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "expr_binary_compare", "symbols": ["expr_binary_compare", "_", (lexer.has("op_binary_compare") ? {type: "op_binary_compare"} : op_binary_compare), "expr_binary_compare$ebnf$1"], "postprocess": 
+    {"name": "expr_binary_compare", "symbols": ["expr_binary_compare", "_", "op_binary_compare", "expr_binary_compare$ebnf$1"], "postprocess": 
         function (d) { return {
             ...Compound(d, n.BinaryOperation, [d[0], d[3] ? d[3][1] : null]),
             operator: Operator(d[2]),
@@ -959,14 +983,14 @@ var grammar = {
     {"name": "expr_postfix", "symbols": ["expr_leaf", "expr_postfix$ebnf$1"], "postprocess": 
         function (d) { return d[0]; }
         },
-    {"name": "expr_leaf", "symbols": ["lvalue"], "postprocess": id},
-    {"name": "expr_leaf", "symbols": ["constant"], "postprocess": id},
     {"name": "expr_leaf", "symbols": ["unary_operator"], "postprocess": 
         function (d) { return {
             ...Compound(d, n.UnaryOperation, []),
             operator: Operator(d[0]),
         };}
         },
+    {"name": "expr_leaf", "symbols": ["lvalue"], "postprocess": id},
+    {"name": "expr_leaf", "symbols": ["constant"], "postprocess": id},
     {"name": "lvalue", "symbols": ["lvalue_inner"], "postprocess": id},
     {"name": "lvalue", "symbols": ["atref", "lvalue_inner"], "postprocess": 
         function(d) {
@@ -1003,7 +1027,7 @@ var grammar = {
     {"name": "lvalue_inner", "symbols": ["template_typename", "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "argumentlist", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
         function (d) { return Compound(d, n.ConstructorCall, [d[0], d[3]]); }
         },
-    {"name": "lvalue_inner", "symbols": [(lexer.has("cast_token") ? {type: "cast_token"} : cast_token), "_", {"literal":"<"}, "_", "typename", "_", {"literal":">"}, "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "optional_expression", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
+    {"name": "expression", "symbols": [(lexer.has("cast_token") ? {type: "cast_token"} : cast_token), "_", {"literal":"<"}, "_", "typename", "_", {"literal":">"}, "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "optional_expression", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
         function (d) { return Compound(d, n.CastOperation, [d[4], d[9]]); }
         },
     {"name": "expression$ebnf$1$subexpression$1", "symbols": ["_", {"literal":"<"}]},
@@ -1252,7 +1276,7 @@ var grammar = {
             };
         }
         },
-    {"name": "template_typename", "symbols": ["typename_identifier", "_", {"literal":"<"}, "_", "template_subtypes_unterminated", "_", {"literal":">>"}], "postprocess": 
+    {"name": "template_typename", "symbols": ["typename_identifier", "_", {"literal":"<"}, "_", "template_subtypes_unterminated", "_", (lexer.has("double_gt") ? {type: "double_gt"} : double_gt)], "postprocess": 
         function (d) {
             let typename = d[0].value+"<";
             for (let i = 0; i < d[4].length; ++i)
