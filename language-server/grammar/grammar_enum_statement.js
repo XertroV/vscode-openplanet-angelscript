@@ -430,9 +430,16 @@ var grammar = {
     {"name": "global_declaration$ebnf$1", "symbols": ["global_declaration$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "global_declaration$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "global_declaration", "symbols": ["global_declaration$ebnf$1", "var_decl"], "postprocess": 
-        function (d) { /* console.log(d); */ return d[1]; }
+        function (d) { /* console.log(d); */ return {
+            ...d[1], setting: d[0] ? d[0][0] : null
+        }; }
         },
-    {"name": "global_declaration", "symbols": ["settings_decl"], "postprocess": id},
+    {"name": "global_declaration", "symbols": ["settings_decl"], "postprocess": 
+        d => ({
+            ...Compound(d, n.VariableDecl, null),
+            setting: d[0],
+        })
+        },
     {"name": "global_declaration", "symbols": ["typename"], "postprocess": 
         function (d) { return {
             ...Compound(d, n.VariableDecl, null),
@@ -505,6 +512,7 @@ var grammar = {
             return ExtendedCompound(d, {
                 ...d[2],
                 access: d[1] ? d[1][0] : null,
+                setting: d[0],
             });
         }
         },
