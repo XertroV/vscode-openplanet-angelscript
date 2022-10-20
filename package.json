@@ -28,13 +28,13 @@
                     "type": "string",
                     "order": 0,
                     "default": "",
-                    "description": "Location of OpenplanetNext folder; typically %userprofile%\\OpenplanetNext\\. On linux: `$HOME/OpenplanetNext/`"
+                    "markdownDescription": "Location of OpenplanetNext folder (Reload required on change).\n\nTypically `%userprofile%\\OpenplanetNext\\`. \n\nOn WSL: `$HOME/OpenplanetNext/`"
                 },
                 "OpenplanetAngelscript.openplanetNextPluginsLocation": {
                     "type": "string",
                     "order": 1,
                     "default": "",
-                    "description": "Location of Trackmania/Openplanet folder (Reload required on change). typically `C:\\Program Files (x86)\\Ubisoft\\Ubisoft Game Launcher\\games\\Trackmania\\Openplanet\\Plugins\\`. On WSL: `/mnt/c/Program Files (x86)/Ubisoft/Ubisoft Game Launcher/games/Trackmania/Openplanet/Plugins/`"
+                    "markdownDescription": "Location of `Trackmania\\Openplanet\\Plugins` folder (Reload required on change).\n\nTypically `C:\\Program Files (x86)\\Ubisoft\\Ubisoft Game Launcher\\games\\Trackmania\\Openplanet\\Plugins\\`.\n\nOn WSL: `/mnt/c/Program Files (x86)/Ubisoft/Ubisoft Game Launcher/games/Trackmania/Openplanet/Plugins/`"
                 },
                 "OpenplanetAngelscript.parser.squiggleUnparsableStatements": {
                     "type": "boolean",

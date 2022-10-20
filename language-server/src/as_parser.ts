@@ -74,7 +74,7 @@ function GetDefaultOpenplanetNextDir(): string {
     let defaultDir = path.join(os.homedir(), 'OpenplanetNext')
     if (fs.existsSync(defaultDir)) return defaultDir;
     console.log(`Could not find default OpenplanetNext directory: ${defaultDir}`)
-    return "";
+    return defaultDir;
 }
 
 function GetDefaultOpenplanetPluginsDir(): string {
@@ -82,8 +82,8 @@ function GetDefaultOpenplanetPluginsDir(): string {
     let wslDefault = `/mnt/c/Program Files (x86)/Ubisoft/Ubisoft Game Launcher/games/Trackmania/Openplanet/Plugins/`;
     if (fs.existsSync(winDefault)) return winDefault;
     if (fs.existsSync(wslDefault)) return wslDefault;
-    console.log(`Could not find default OpenplanetNext Plugins directory: ${winDefault}`)
-    return "";
+    console.log(`Could not find default Openplanet Plugins directory: ${winDefault}`)
+    return os.platform() == "win32" ? winDefault : wslDefault;
 }
 
 let PreParsedIdentifiersInModules = new Map<string, Set<ASModule>>();

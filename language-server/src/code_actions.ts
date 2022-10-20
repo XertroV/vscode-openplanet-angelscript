@@ -837,10 +837,11 @@ function AddAutoActions(context : CodeActionContext)
             continue;
 
         let realTypename = dbtype.getQualifiedTypenameInNamespace(context.scope.getNamespace());
+        realTypename += dbtype.isPrimitive ? "" : "@";
 
         context.actions.push(<CodeAction> {
             kind: CodeActionKind.QuickFix,
-            title: "Change auto to "+dbtype.getDisplayName(),
+            title: "Change auto to "+dbtype.getDisplayName() + (dbtype.isPrimitive ? "" : "@"),
             source: "angelscript",
             data: {
                 uri: context.module.uri,

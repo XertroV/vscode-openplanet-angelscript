@@ -164,9 +164,8 @@ export function Complete(asmodule: scriptfiles.ASModule, position: Position): Ar
     let offset = asmodule.getOffset(position);
     let context = GenerateCompletionContext(asmodule, offset - 1);
 
-    if (context.scope.getNamespace().isRootNamespace() && context.scope.scopetype == scriptfiles.ASScopeType.Global
-        && context.typenameExpected) {
-        console.warn(`root namespace completions`)
+    // this needs some refining, but not sure what to check
+    if (context.scope.getNamespace().isRootNamespace() && context.scope.scopetype == scriptfiles.ASScopeType.Global) {
         AddOpenplanetCallbackCompletions(context, completions);
     }
 
@@ -1200,7 +1199,7 @@ export function AddCompletionsFromType(context : CompletionContext, curtype : ty
                     },
                     commitCharacters: [".", ";", ","],
                     filterText: GetSymbolFilterText(context, prop),
-                    documentation: {kind: MarkupKind.Markdown, value: prop.documentation + "\n\n" + MkAsSnippet(`${docPrefix}${prop.typename} ${prop.name}`)},
+                    documentation: {kind: MarkupKind.Markdown, value: (prop.documentation || "") + "\n\n" + MkAsSnippet(`${docPrefix}${prop.typename} ${prop.name}`)},
                     // detail: prop.documentation + "\n\n" + MkAsSnippet(`${docPrefix}${prop.typename} ${prop.name}`),
             };
 
@@ -1439,6 +1438,7 @@ export function AddCompletionsFromType(context : CompletionContext, curtype : ty
             if (dbtype.isTemplateInstantiation)
                 return;
 
+
             let kind : CompletionItemKind = CompletionItemKind.Class;
             if (dbtype.isEnum)
             {
@@ -1480,7 +1480,7 @@ export function AddCompletionsFromType(context : CompletionContext, curtype : ty
                                     label: enumstr,
                                     kind: CompletionItemKind.EnumMember,
                                     data: ["enum", dbtype.name, enumvalue.name],
-                                    detail: enumvalue.documentation,
+                                    detail: enumvalue.documentation || "",
                             };
 
                             let isMaxValue = enumvalue.name.includes("MAX");
@@ -1564,6 +1564,8 @@ export function AddCompletionsFromType(context : CompletionContext, curtype : ty
                     let commitChars : Array<string> = [];
                     GetTypenameCommitChars(context, dbtype.name, commitChars);
 
+                    // console.warn(`Adding compl for: ${curtype.name}::${dbtype.name}; ${commitChars.join("")}`);
+
                     let complItem = <CompletionItem> {
                             label: dbtype.name,
                             kind: kind,
@@ -1573,7 +1575,7 @@ export function AddCompletionsFromType(context : CompletionContext, curtype : ty
                             sortText: Sort.Typename,
                             documentation: <MarkupContent>{
                                 kind: 'markdown',
-                                value: dbtype.documentation,
+                                value: dbtype.documentation || "",
                             },
                     };
 
@@ -1589,6 +1591,7 @@ export function AddCompletionsFromType(context : CompletionContext, curtype : ty
                         complItem.insertText = ":"+complItem.label;
 
                     completions.push(complItem);
+                    // console.warn(`Pushed completion item: ${JSON.stringify(complItem)}`)
                 }
             }
         }
@@ -4083,7 +4086,7 @@ export function AddOpenplanetCallbackCompletions(context: CompletionContext, com
             sortText: Sort.Typename,
             insertText: `/** ${func.documentation}\n*/\n` + (func.suggestionDecl || func.getSignature()) + " ",
             documentation: {kind: MarkupKind.Markdown, value: func.documentation + "\n\n" + MkAsSnippet(func.suggestionDecl || func.getSignature())},
-            // detail: func.documentation,
+            // detail: func.documentation || "",
         };
 
         compl.labelDetails = <CompletionItemLabelDetails>

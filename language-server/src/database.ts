@@ -2446,6 +2446,11 @@ export function AddOpenplanetClass(jData: any, kind: "classes" | "enums") {
     let type = new DBType(kind);
     type.fromJSON(jData);
 
+    let isVecIsh = ["vec", "int", "iso", "nat", "mat"].includes(type.name.substring(0, 3)) && type.name.length == 4;
+    isVecIsh ||= type.name == "quat";
+    let isArrayIsh = type.name == "array<T>" || type.name == "MwFastBuffer<T>";
+    if (isVecIsh || isArrayIsh) type.isPrimitive = true; // don't autosuggest @ references for types
+
     let ns = RootNamespace;
     if (type.ns) {
         ns = LookupNamespace(ns, type.ns);

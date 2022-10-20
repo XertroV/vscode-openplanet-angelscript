@@ -261,6 +261,23 @@ function LoadOpenplanetDependencies(deps: string[]) {
 
     let opRoot = scriptfiles.GetScriptSettings().getOpNextDir();
     let opPlugins = scriptfiles.GetScriptSettings().getOpNextPluginsDir();
+
+    if (!(opRoot?.length > 0 && opPlugins?.length > 0)) {
+        let foundOpRoot = opRoot?.length > 0;
+        let foundOpPlugins = opPlugins?.length > 0;
+        let missing = [...(foundOpRoot ? [] : ["OpenplanetNext"]),
+                       ...(foundOpPlugins ? [] : ["Trackmania\\Openplanet"])];
+        let msg = (missing.length > 1 ? "directories" : "directory") + ": " + missing.join(",");
+        let shortMsg = `Could not find ${msg}. Please set the manually in extension settings.`;
+        let longMsg = `${shortMsg}\n\nI looked in these places:\n- ${opRoot}\n- ${opPlugins}`;
+        console.warn(longMsg);
+        connection.sendNotification(
+            ShowMessageNotification.type,
+            { message: `${shortMsg} See Output > Angelscript Language Server for more details.`,
+            type: MessageType.Warning
+        });
+    }
+
     let opUserPluginsDir = path.join(opRoot, "Plugins");
     console.log(JSON.stringify({opPlugins, opUserPluginsDir}))
 
@@ -268,7 +285,7 @@ function LoadOpenplanetDependencies(deps: string[]) {
     let allowedDeps = new Set<string>(deps);
     let foundDeps = new Set<string>();
 
-    function AddDepencyIfUnmet(dir: string) {
+    function AddDependencyIfUnmet(dir: string) {
         while (dir.endsWith("/")) {
             dir = dir.slice(0, -1);
         }
@@ -282,8 +299,8 @@ function LoadOpenplanetDependencies(deps: string[]) {
 
     // plugins as directories
     // these have precedence over .op files
-    glob.sync(path.join(opPlugins, "*/")).forEach(AddDepencyIfUnmet);
-    glob.sync(path.join(opUserPluginsDir, "*/")).forEach(AddDepencyIfUnmet);
+    glob.sync(path.join(opPlugins, "*/")).forEach(AddDependencyIfUnmet);
+    glob.sync(path.join(opUserPluginsDir, "*/")).forEach(AddDependencyIfUnmet);
 
     // plugins as .op files
     let files = glob.sync(opUserPluginsDir+"/*.op");
@@ -311,7 +328,7 @@ function LoadOpenplanetDependencies(deps: string[]) {
                 console.log(`removed old file while extracting .op: ${file}; (rp: ${relativePath}, zip path example: ${filesInArchive[0]})`);
             }
         })
-        AddDepencyIfUnmet(tmpDir_)
+        AddDependencyIfUnmet(tmpDir_)
     })
 
     // load dependency stuff

@@ -1,19 +1,9 @@
 todo:
 
-* `array<A::B>`, or `namespace A { auto x = {B()}; class B {} }` accessing x from outside A
+* (check, is this still an issue?) `array<A::B>`, or `namespace A { auto x = {B()}; class B {} }` accessing x from outside A
   * types don't resolve right
-* ~~ funcdefs
-* ~~ function casting via funcdefs
-* ~~ function handles & function types in general
-* ~~ some constructors not added to scope
-* ~~ `auto landmarks = cp.Arena.MapLandmarks;` should be detected as `MwFastBuffer<CGameScriptMapLandmark@>`
-* ~~`linkedPositions.InsertLast(cast<array<vec3>>(lcps[lpKeys[i]]))` -- seems like `cast<array<vec3>>` doesn't parse -- note that `cast<vec3[]>` works fine.
-  * ~~`>>` looks like the binary op
-* ~~ 1/2 class properties using get/set `class C { bool IsBlah { get { return true; } set { this.x = value; }}}`
-* ~~ openplanet core constructors
-* ~~ inline function scopes in global ns
-* ~~ numbers like `-3.865678972395145e-05`
-* ~~ some methods/props not added, e.g.: `FRGroundContactMaterial` `visState.Left` `visState.Up`
+  * seems limited to when constructors don't exist, mb? (nah, auto still doesn't resolve right)
+* preprocessor support for `TMNEXT | MP4 | TURBO` -- will mean that we don't have to avoid that one VehicleState file
 
 package: `vsce package`
 
@@ -22,13 +12,11 @@ install from cli: `code --install-extension openplanet-angelscript-X.Y.Z.vsix`
 changelog:
 
 - 0.1.7
-  - sldkfj
-  - ~~squiggle setting works now
   - fix missing props on OpNext.json class (was just CSceneVehicleVisState -- was due to VehicleState/StateWrappers.as)
   - exponential notation for floats
   - nicer squiggle (doesn't include surrounding whitespace)
-  - refine completion suggestions for openplanet callbacks
   - add file decorations for files with parse errors
+  - error notification when required json files aren't found
 - 0.1.6
   - fix parsing errors with `<` and `>` and operator precedence + type detection
   - added `Reload info.toml` command
@@ -77,14 +65,14 @@ changelog:
 
 # old readme
 
-Language Server and Debug Adapter for use with the UnrealEngine-Angelscript plugin from https://angelscript.hazelight.se
+Language Server for [Openplanet](https://openplanet.dev) flavored angelscript.
+
+Currently only TMNEXT types are supported, but adding types for MP4 and TURBO is possible.
 
 ## Getting Started
-After building or downloading the Unreal Editor version with Angelscript
-enabled from the github page linked above, start the editor and use visual
-studio code to open the 'Script' folder created in your project directory.
-Your 'Script' folder must be set as the root/opened folder for the extension to
-function.
+
+This plugin should autodetect your OpenplanetNext folder and the Trackmania\Openplanet game folder, too.
+If this doesn't work, then
 
 ## Features
 ### Editor Connection

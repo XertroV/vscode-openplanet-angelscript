@@ -125,7 +125,7 @@ function AddScopeDiagnostics(scope : scriptfiles.ASScope, diagnostics : Array<Di
                     severity: DiagnosticSeverity.Error,
                     tags: [],
                     range: scope.module.getRange(so, eo),
-                    message: `Unable to parse: \n${MkAsSnippet(statement.content_trimmed)}`,
+                    message: `Unable to parse: \n\n${statement.content_trimmed}\n`,
                     source: "angelscript"
                 });
             }
