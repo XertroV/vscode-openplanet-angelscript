@@ -677,9 +677,8 @@ export class DBType implements DBSymbol
                 func.fromJSON(method);
                 this.addSymbol(func);
             });
-            input.behaviors.forEach((behaviour: any) => {
-
-            })
+            // input.behaviors.forEach((behavior: any) => {
+            // })
         } else {
             for(let v in input.values) {
                 let val = new DBProperty();
@@ -1561,21 +1560,27 @@ export class DBNamespace
         }
     }
 
-    removeSymbol(symbol : DBSymbol)
+    removeSymbol(symbol : DBSymbol, modulename?: string)
     {
+        let removedAny = false;
         {
             let syms = this.symbols.get(symbol.name);
             if (syms)
             {
                 if (syms == symbol)
                 {
-                    this.symbols.delete(symbol.name);
+                    if (symbol.declaredModule == modulename) {
+                        removedAny = true;
+                        this.symbols.delete(symbol.name);
+                    }
                 }
                 else if (syms instanceof Array)
                 {
                     let index = syms.indexOf(symbol);
-                    if (index != -1)
+                    if (index != -1) {
+                        removedAny = true;
                         syms.splice(index, 1);
+                    }
                 }
             }
         }
@@ -1591,6 +1596,7 @@ export class DBNamespace
                     prefixSyms.splice(index, 1);
             }
         }
+        return removedAny;
     }
 
     addChildNamespace(childNS : DBNamespace)
@@ -2638,13 +2644,14 @@ export function AddOpenplanetTypeToDatabase(namespace : DBNamespace, dbtype : DB
     AddTypeToDatabase(namespace, dbtype);
 }
 
-export function RemoveTypeFromDatabase(dbtype : DBType)
+export function RemoveTypeFromDatabase(dbtype : DBType, modulename?: string)
 {
     if (!dbtype.namespace)
         return;
 
-    dbtype.namespace.removeSymbol(dbtype);
+    let didRemoveFromNS = dbtype.namespace.removeSymbol(dbtype, modulename);
     dbtype.namespace = null;
+    // console.trace(`RemoveTypeFromDatabase: ${dbtype.getDisplayName()} -- removed? ${didRemoveFromNS}`)
 
     TypesById.delete(dbtype.typeid);
 

@@ -739,8 +739,14 @@ function GetHoverForLocalVariable(scope : scriptfiles.ASScope, asvar : scriptfil
     let hover = "";
     if(asvar.documentation)
         hover += FormatHoverDocumentation(asvar.documentation);
+    else {
+        let dbtype = typedb.LookupType(scope.dbnamespace, asvar.typename);
+        if (dbtype) {
+            hover += FormatHoverDocumentation(dbtype.documentation);
+        }
+    }
 
-    hover += "```angelscript_snippet\n"+asvar.typename+" "+asvar.name+"\n```";
+    hover += parsedcompletion.MkAsSnippet(asvar.typename+" "+asvar.name);
     return <Hover> {contents: <MarkupContent> {
         kind: "markdown",
         value: hover,

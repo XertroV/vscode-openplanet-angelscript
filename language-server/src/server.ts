@@ -352,7 +352,8 @@ function FilesToLoadForDependency(pluginDir: string): string[] {
     }
     if (!info?.script) return;
     let filesToLoad: string[] = [...(info.script.exports || []), ...(info.script.shared_exports || [])];
-    return filesToLoad.map(f => path.join(pluginDir, f));
+    // filter out VehicleState/StateWrappers.as as it interferes with definition from OpenplanetNext.json
+    return filesToLoad.filter(v => v != "StateWrappers.as").map(f => path.join(pluginDir, f));
 }
 
 function LoadDependencyModule(file: string): scriptfiles.ASModule {

@@ -72,18 +72,14 @@ export function ConvertNadeoType(ty: string, tyDeets: any, docsNS: string): Core
             let isEnum = "e" in mDeets;
             let isFunc = !isEnum && typeof(mDeets.t) == "number";
             let isProp = !isEnum && typeof(mDeets.t) == "string";
-            if (key == "FRGroundContactMaterial") console.log("seen FRGroundContactMaterial")
 
             if (isEnum) {
                 //console.log(JSON.stringify({key, mDeets}, null, 2))
                 if (!knownEnums.has(mDeets.e.n)) {
-                    ret.enums.push(ConvertNadeoTypeEnum(key, mDeets, ty, docsNS));
+                    ret.enums.push(...ConvertNadeoTypeEnum(key, mDeets, ty, docsNS));
                     knownEnums.add(mDeets.e.n)
                 }
-                let _prop = ConvertNadeoTypeProp(key, mDeets);
-                addToProps(_prop);
-                if (key == "FRGroundContactMaterial")
-                    console.log(`added FRGroundContactMaterial enum then prop. Prop: ${JSON.stringify(_prop)}`)
+                addToProps(ConvertNadeoTypeProp(key, mDeets));
             }
             else if (isFunc)
                 addToMethods(ConvertNadeoTypeMethod(key, mDeets));
@@ -98,8 +94,8 @@ export function ConvertNadeoType(ty: string, tyDeets: any, docsNS: string): Core
     // add enums -- these seem bugged compared to when converted from elsewhere
     if (tyDeets.e) { // enums defined under type
         for (let e of tyDeets.e) {
-            if (!knownEnums.has(e.n) && ty != "NSysCfgVision_SCptInGame_Global") {
-                ret.enums.push(ConvertNadeoTypeEnum(e.n, {e, t: `${ty}::${e.n}`}, ret.name, docsNS))
+            if (!knownEnums.has(e.n)) {
+                ret.enums.push(...ConvertNadeoTypeEnum(e.n, {e, t: `${ty}::${e.n}`}, ret.name, docsNS))
                 knownEnums.add(e.n);
             }
         }
@@ -155,27 +151,24 @@ export function ConvertNadeoTypeProp(name: string, deets: any): CoreProperty {
 
 export function ConvertNadeoTypeBehaviour(name: string, deets: any) {} // this is constructor destructor stuff, which I don't think we ever need
 
-export function ConvertNadeoTypeEnum(propName: string, deets: any, parentClass: string, docsNS: string): CoreEnum {
+export function ConvertNadeoTypeEnum(propName: string, deets: any, parentClass: string, docsNS: string): CoreEnum[] {
     let name = deets['t'];
-    // let namePreValue: string = deets['e']['n'];
-    // if (name != namePreValue) console.warn(`Unexpected nonequal: ${JSON.stringify([name, namePreValue])}`);
-    // ^^ all good now
+    let nameNoNS: string = deets['e']['n']; // this is the type name but without the namespace
     let ns: string = "";
-    if (!name.includes("::")) {
-        // ns = parentClass;
-    //     let err = `Nadeo enum name does not include :: ! name: ${name}`;
-    //     throw err;
-    // }
-        // console.log(`Set enum namespace: to ${ns} :: ${name}`)
+    let ret: CoreEnum[] = [];
+    if (!name.startsWith(parentClass)) {
+        // if '::' isn't part of the enum name, we'll return 2 enums. One in global NS and one in class NS
+        ret.push(...ConvertNadeoTypeEnum(propName, {...deets, t: `${parentClass}::${name}`}, parentClass, docsNS))
     } else {
         let parts = name.split("::");
         name = parts[parts.length - 1];
         ns = parts.slice(0, parts.length - 1).join("::");
-        // console.log(`Converting enum namespace: \n From: ${deets.t} to ${ns} :: ${name}`)
     }
-    let desc = `Docs: <https://next.openplanet.dev/${docsNS}/${parentClass}#${name}>`; //${parentClass}.${propName} at
+    let desc = `Docs: <https://next.openplanet.dev/${docsNS}/${parentClass}#${name}>`;
     let v: string[] = deets['e']['v'];
     let values: Record<string, number> = {};
     v.forEach((s, i) => values[s] = i)
-    return {name, ns, desc, values, isEnum: true}
+    ret.push({name, ns, desc, values, isEnum: true});
+    // if (parentClass == "CSceneVehicleVisState") console.log(JSON.stringify(ret))
+    return ret;
 }

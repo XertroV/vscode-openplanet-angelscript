@@ -1602,11 +1602,11 @@ function ClearModule(module : ASModule)
 
         // Remove symbols from old globals
         for (let sym of module.globalSymbols)
-            sym.namespace?.removeSymbol(sym);
+            sym.namespace?.removeSymbol(sym, module.modulename);
 
         // Remove types declared in this file
         for (let type of module.types)
-            typedb.RemoveTypeFromDatabase(type);
+            typedb.RemoveTypeFromDatabase(type, module.modulename);
     }
 
     module.loaded = false;
@@ -2909,7 +2909,7 @@ function AddTypenameSymbol(scope : ASScope, statement : ASStatement, node : any,
 {
     if (!node)
         return null;
-    if (node?.name?.value == "get" || node?.name?.value == "set") console.trace(`get set here`)
+    // if (node?.name?.value == "get" || node?.name?.value == "set") console.trace(`get set here`)
     if (node.basetype)
     {
         let baseSymbol : ASSemanticSymbol = null;
@@ -2985,7 +2985,6 @@ function AddTypenameSymbol(scope : ASScope, statement : ASStatement, node : any,
                 // Add a symbol for the actual typename
                 {
 
-                    // if (node.name.value == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 1 _ProcessAllEventsFor`)
                     let symbol = new ASSemanticSymbol;
                     symbol.start = node.name.start + statement.start_offset + prevNamespaceIndex;
                     symbol.end = node.name.end + statement.start_offset;
@@ -2997,7 +2996,6 @@ function AddTypenameSymbol(scope : ASScope, statement : ASStatement, node : any,
             }
             else
             {
-                // if (node.name.value == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 2 _ProcessAllEventsFor`)
                 let addSymbol = AddIdentifierSymbol(scope, statement, node.name, ASSymbolType.Typename, null, node.name.value);
 
                 if (exists instanceof typedb.DBType)
@@ -4283,7 +4281,6 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                         scope.module.markDependencyType(shadowedType);
                         addedSymbol.symbol_name = shadowedType.name;
                         addedSymbol.type = ASSymbolType.Typename;
-                        // if (addedSymbol.symbol_name == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 3 _ProcessAllEventsFor`)
                     }
                     else if (namespace)
                     {
@@ -4295,7 +4292,6 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                         scope.module.markDependencyType(parentType);
                         addedSymbol.symbol_name = parentType.name;
                         addedSymbol.type = ASSymbolType.Typename;
-                        // if (addedSymbol.symbol_name == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 4 _ProcessAllEventsFor`)
                     }
                 }
 
@@ -4387,7 +4383,6 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                                 scope.module.markDependencyType(shadowedType);
                                 addedSymbol.symbol_name = shadowedType.name;
                                 addedSymbol.type = ASSymbolType.Typename;
-                                // if (addedSymbol.symbol_name == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 5 _ProcessAllEventsFor`)
                             }
                             else
                             {
@@ -4401,7 +4396,6 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                             if (enumType && enumType.isEnum)
                             {
                                 AddIdentifierSymbol(scope, statement, identifierNodes[i], ASSymbolType.Typename, null, enumType.name);
-                                // if (enumType.name == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 6 _ProcessAllEventsFor`)
 
                                 let enumValueNode = identifierNodes[i+1];
                                 if (enumValueNode)
@@ -4458,7 +4452,6 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                 {
                     left_type = refType;
                     let addedSymbol = AddIdentifierSymbol(scope, statement, node.children[0], ASSymbolType.Typename, null, refType.name);
-                    // if (refType.name == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 7 _ProcessAllEventsFor`)
                     if (refType.declaredModule && !ScriptSettings.automaticImports && !scope.module.isModuleImported(refType.declaredModule))
                         addedSymbol.isUnimported = true;
                     scope.module.markDependencyType(refType);
@@ -4476,7 +4469,6 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                     left_type = refType;
 
                     let addedSymbol = AddIdentifierSymbol(scope, statement, node.children[0], ASSymbolType.Typename, null, refType.name);
-                    // if (refType.name == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 8 _ProcessAllEventsFor`)
                     if (refType.declaredModule && !ScriptSettings.automaticImports && !scope.module.isModuleImported(refType.declaredModule))
                         addedSymbol.isUnimported = true;
 
@@ -4719,7 +4711,6 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                 {
                     insideType = null;
                     symType = ASSymbolType.Typename;
-                    // if (node.name.value == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 9 _ProcessAllEventsFor`)
                 }
 
                 AddIdentifierSymbol(scope, statement, node.name, symType, insideType, node.name.value);
@@ -4753,7 +4744,6 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                     start: node.name.start + 1,
                     end: node.name.end,
                 }, ASSymbolType.Typename, null, node.name.value.substr(1));
-                // if (node.name.value == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 10 _ProcessAllEventsFor`)
             }
         }
         break;
@@ -4990,7 +4980,6 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
                     if (specType)
                     {
                         AddIdentifierSymbol(scope, statement, cls.className, ASSymbolType.Typename, null, cls.className.value);
-                        // if (cls.className.value == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 11 _ProcessAllEventsFor`)
                     }
                     else
                     {
@@ -5099,7 +5088,6 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
         {
             // Add the typename of the class itself
             AddIdentifierSymbol(scope, statement, node.name, ASSymbolType.Typename, null, node.name.value);
-            // if (node.name.value == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 12 _ProcessAllEventsFor`)
 
             // If we specified a super type, add the symbol for that too
             if (node.superclass)
@@ -5367,7 +5355,6 @@ function DetectIdentifierSymbols(scope : ASScope, statement : ASStatement, node 
         if (symType)
         {
             let addedSymbol = AddIdentifierSymbol(scope, statement, node, ASSymbolType.Typename, null, symType.name);
-            // if (symType.name == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 13 _ProcessAllEventsFor`)
             if (symType.declaredModule && !ScriptSettings.automaticImports && !scope.module.isModuleImported(symType.declaredModule))
                 addedSymbol.isUnimported = true;
 
@@ -5448,7 +5435,6 @@ function DetectSymbolFromNamespacedIdentifier(scope : ASScope, statement : ASSta
     {
         nsSymbol.type = ASSymbolType.Typename;
         nsSymbol.symbol_name = refType.name;
-        // if (refType.name == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 14 _ProcessAllEventsFor`)
     }
     else
     {
@@ -5840,7 +5826,6 @@ function DetectSymbolsInNamespace(scope : ASScope, statement : ASStatement, name
         if (usedSymbol instanceof typedb.DBType)
         {
             let identifierSym = AddIdentifierSymbol(scope, statement, node, ASSymbolType.Typename, null, usedSymbol.name);
-            // if (usedSymbol.name == "_ProcessAllEventsFor") console.trace(`TYPENAME SET 15 _ProcessAllEventsFor`)
             if (!ScriptSettings.automaticImports && usedSymbol.declaredModule && !scope.module.isModuleImported(usedSymbol.declaredModule))
                 identifierSym.isUnimported = true;
 
