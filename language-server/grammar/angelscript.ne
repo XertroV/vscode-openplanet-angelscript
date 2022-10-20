@@ -432,9 +432,17 @@ global_statement -> %import_token _ function_decl _ "from" _ (%dqstring | %sqstr
 
 global_declaration -> function_decl {% id %}
 global_declaration -> (settings_decl _):? var_decl {%
-    function (d) { /* console.log(d); */ return d[1]; }
+    function (d) { /* console.log(d); */ return {
+        ...d[1], setting: d[0] ? d[0][0] : null
+    }; }
 %}
-global_declaration -> settings_decl {% id %} # e.g., an unfinished settings declaration
+# e.g., an unfinished settings declaration
+global_declaration -> settings_decl {%
+    d => ({
+        ...Compound(d, n.VariableDecl, null),
+        setting: d[0],
+    })
+%}
 global_declaration -> typename {%
     function (d) { return {
         ...Compound(d, n.VariableDecl, null),
@@ -500,6 +508,7 @@ class_declaration -> (settings_decl _):? (access_specifier _):? var_decl {%
         return ExtendedCompound(d, {
             ...d[2],
             access: d[1] ? d[1][0] : null,
+            setting: d[0],
         });
     }
 %}
