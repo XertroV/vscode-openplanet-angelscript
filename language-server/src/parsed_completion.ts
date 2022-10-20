@@ -164,7 +164,8 @@ export function Complete(asmodule: scriptfiles.ASModule, position: Position): Ar
     let offset = asmodule.getOffset(position);
     let context = GenerateCompletionContext(asmodule, offset - 1);
 
-    if (context.scope.getNamespace().isRootNamespace() && context.scope.scopetype == scriptfiles.ASScopeType.Global) {
+    if (context.scope.getNamespace().isRootNamespace() && context.scope.scopetype == scriptfiles.ASScopeType.Global
+        && context.typenameExpected) {
         console.warn(`root namespace completions`)
         AddOpenplanetCallbackCompletions(context, completions);
     }

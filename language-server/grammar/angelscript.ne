@@ -865,7 +865,7 @@ expr_binary_logic -> expr_binary_logic _ %op_binary_logic (_ expr_binary_bitwise
 expr_binary_logic ->  expr_binary_ushr {% id %}
 
 expr_binary_ushr -> expr_binary_ushr _ (%gt %gt %gt) (_ expr_binary_bitwise) {%
-    function (d) { console.log('shr: ' + JSON.stringify(d[2])); return {
+    function (d) { return {
         ...Compound(d, n.BinaryOperation, [d[0], d[3] ? d[3][1] : null]),
         operator: Operator(CompoundLiteral('', d[2])),
     };}
@@ -880,7 +880,7 @@ op_binary_bitwise -> (%op_binary_bitwise | %gt %gt | %lt %lt) {%
 %}
 
 expr_binary_bitwise -> expr_binary_bitwise _ op_binary_bitwise (_ expr_binary_compare):? {%
-    function (d) { console.log(JSON.stringify(d[2])); return {
+    function (d) { return {
         ...Compound(d, n.BinaryOperation, [d[0], d[3] ? d[3][1] : null]),
         operator: Operator(d[2]),
     };}

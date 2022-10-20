@@ -10,7 +10,7 @@ import { workspace, ExtensionContext, TextDocument, Range, InlayHint } from 'vsc
 import { LanguageClient, LanguageClientOptions, ServerOptions, Definition, TransportKind, Diagnostic, RequestType, ExecuteCommandRequest, ExecuteCommandParams, ExecuteCommandRegistrationOptions, TextDocumentPositionParams, ImplementationRequest, TypeDefinitionRequest, TextDocumentItem } from 'vscode-languageclient/node';
 
 import * as vscode from 'vscode';
-import { WorkspaceFolder, DebugConfiguration, ProviderResult, CancellationToken } from 'vscode';
+import { WorkspaceFolder, DebugConfiguration, ProviderResult, CancellationToken, FileDecorationProvider, FileDecoration } from 'vscode';
 import { ASDebugSession } from './debug';
 import * as Net from 'net';
 import { ClientRequest } from 'http';
@@ -20,6 +20,7 @@ const EMBED_DEBUG_ADAPTER = true;
 
 const GetModuleForSymbolRequest: RequestType<TextDocumentPositionParams, string, void> = new RequestType<TextDocumentPositionParams, string, void>('angelscript/getModuleForSymbol');
 const ProvideInlineValuesRequest: RequestType<TextDocumentPositionParams, any[], void> = new RequestType<TextDocumentPositionParams, any[], void>('angelscript/provideInlineValues');
+const ProvideFileDecorationRequest: RequestType<string, FileDecoration, void> = new RequestType<string, FileDecoration, void>('angelscript/provideFileDecoration');
 
 export function activate(context: ExtensionContext) {
 
@@ -55,6 +56,9 @@ export function activate(context: ExtensionContext) {
 	const provider = new ASConfigurationProvider();
 	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('angelscript', provider));
 	context.subscriptions.push(provider);
+
+    const fdProvider = new ASFileDecorationProvider(client);
+    context.subscriptions.push(vscode.window.registerFileDecorationProvider(fdProvider));
 
     let inlineValuesProvider = new ASInlineValuesProvider();
     inlineValuesProvider.languageClient = client;
@@ -357,3 +361,12 @@ class ASInlineValuesProvider implements vscode.InlineValuesProvider
         );
     }
 };
+
+class ASFileDecorationProvider implements vscode.FileDecorationProvider {
+    constructor(public client: LanguageClient) {}
+
+    onDidChangeFileDecorations?: vscode.Event<vscode.Uri | vscode.Uri[]>;
+    provideFileDecoration(uri: vscode.Uri, token: vscode.CancellationToken): vscode.ProviderResult<vscode.FileDecoration> {
+        return this.client.sendRequest(ProvideFileDecorationRequest, uri.toString());
+    }
+}

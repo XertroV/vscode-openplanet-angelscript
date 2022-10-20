@@ -53,6 +53,7 @@ import { NotificationType } from 'vscode-languageclient';
 import * as glob from 'glob';
 import * as AdmZip from 'adm-zip';
 import { _DEBUG } from './as_parser';
+import { FileDecoration } from 'vscode';
 
 // Create a connection for the server. The connection uses Node's IPC as a transport
 let connection: Connection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
@@ -943,11 +944,17 @@ connection.onRequest("angelscript/provideInlineValues", (...params: any[]) : any
     return inlinevalues.ProvideInlineValues(asmodule, pos.position);
 });
 
+connection.onRequest("angelscript/provideFileDecoration", (...params: any[]): any => {
+    let uri: string = params[0];
+    let asmodule = GetAndParseModule(uri);
+    if (!asmodule || !asmodule.resolved) return null;
+    return scriptdiagnostics.ProvideFileDecoration(asmodule);
+});
+
  connection.onDidChangeTextDocument((params) => {
     // The content of a text document did change in VSCode.
     // params.uri uniquely identifies the document.
     // params.contentChanges describe the content changes to the document.
-    console.log(JSON.stringify(params))
     if (params.contentChanges.length == 0)
         return;
 

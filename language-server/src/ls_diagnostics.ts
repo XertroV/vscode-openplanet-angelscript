@@ -1,6 +1,8 @@
 import { Diagnostic, DiagnosticSeverity, DiagnosticTag, Position } from 'vscode-languageserver/node';
 import * as typedb from './database';
 import * as scriptfiles from './as_parser';
+import { MkAsSnippet } from './parsed_completion';
+import { FileDecoration, ThemeColor } from 'vscode';
 
 let node_types = require("../grammar/node_types.js");
 
@@ -123,7 +125,7 @@ function AddScopeDiagnostics(scope : scriptfiles.ASScope, diagnostics : Array<Di
                     severity: DiagnosticSeverity.Error,
                     tags: [],
                     range: scope.module.getRange(so, eo),
-                    message: `Unable to parse: \`${statement.content_trimmed}\``,
+                    message: `Unable to parse: \n${MkAsSnippet(statement.content_trimmed)}`,
                     source: "angelscript"
                 });
             }
@@ -784,4 +786,31 @@ function AddScopeNamingConventionDiagnostics(scope : scriptfiles.ASScope, diagno
 
     for (let subscope of scope.scopes)
         AddScopeNamingConventionDiagnostics(subscope, diagnostics);
+}
+
+
+export function ProvideFileDecoration(module: scriptfiles.ASModule): void | FileDecoration {
+    if (!module || !module.resolved) return null;
+    let errCount = CountParseErrorsInScope(module.rootscope);
+    if (errCount == 0) return null;
+    return <FileDecoration>{
+        badge: `${errCount} E`,
+        tooltip: "Parse Error",
+        color: <ThemeColor>{id: 'list.errorForeground'}
+    };
+}
+
+export function CountParseErrorsInScope(scope: scriptfiles.ASScope): number {
+    let errCount = 0;
+    for (let s of scope.statements) {
+        if (s.parseError) {
+            errCount++;
+        }
+    }
+
+    for (let ss of scope.scopes) {
+        errCount += CountParseErrorsInScope(ss);
+    }
+
+    return errCount;
 }

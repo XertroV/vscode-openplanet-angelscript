@@ -906,7 +906,7 @@ var grammar = {
     {"name": "expr_binary_ushr$subexpression$1", "symbols": [(lexer.has("gt") ? {type: "gt"} : gt), (lexer.has("gt") ? {type: "gt"} : gt), (lexer.has("gt") ? {type: "gt"} : gt)]},
     {"name": "expr_binary_ushr$subexpression$2", "symbols": ["_", "expr_binary_bitwise"]},
     {"name": "expr_binary_ushr", "symbols": ["expr_binary_ushr", "_", "expr_binary_ushr$subexpression$1", "expr_binary_ushr$subexpression$2"], "postprocess": 
-        function (d) { console.log('shr: ' + JSON.stringify(d[2])); return {
+        function (d) { return {
             ...Compound(d, n.BinaryOperation, [d[0], d[3] ? d[3][1] : null]),
             operator: Operator(CompoundLiteral('', d[2])),
         };}
@@ -924,7 +924,7 @@ var grammar = {
     {"name": "expr_binary_bitwise$ebnf$1", "symbols": ["expr_binary_bitwise$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "expr_binary_bitwise$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "expr_binary_bitwise", "symbols": ["expr_binary_bitwise", "_", "op_binary_bitwise", "expr_binary_bitwise$ebnf$1"], "postprocess": 
-        function (d) { console.log(JSON.stringify(d[2])); return {
+        function (d) { return {
             ...Compound(d, n.BinaryOperation, [d[0], d[3] ? d[3][1] : null]),
             operator: Operator(d[2]),
         };}

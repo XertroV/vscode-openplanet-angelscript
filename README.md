@@ -5,15 +5,15 @@ todo:
 * ~~ funcdefs
 * ~~ function casting via funcdefs
 * ~~ function handles & function types in general
-* ?? some constructors not added to scope
+* ~~ some constructors not added to scope
 * ~~ `auto landmarks = cp.Arena.MapLandmarks;` should be detected as `MwFastBuffer<CGameScriptMapLandmark@>`
 * ~~`linkedPositions.InsertLast(cast<array<vec3>>(lcps[lpKeys[i]]))` -- seems like `cast<array<vec3>>` doesn't parse -- note that `cast<vec3[]>` works fine.
   * ~~`>>` looks like the binary op
 * ~~ 1/2 class properties using get/set `class C { bool IsBlah { get { return true; } set { this.x = value; }}}`
 * ~~ openplanet core constructors
 * ~~ inline function scopes in global ns
-* numbers like `-3.865678972395145e-05`
-* some methods/props not added, e.g.: `FRGroundContactMaterial` `visState.Left` `visState.Up`
+* ~~ numbers like `-3.865678972395145e-05`
+* ~~ some methods/props not added, e.g.: `FRGroundContactMaterial` `visState.Left` `visState.Up`
 
 package: `vsce package`
 
@@ -24,6 +24,11 @@ changelog:
 - 0.1.7
   - sldkfj
   - ~~squiggle setting works now
+  - fix missing props on OpNext.json class (was just CSceneVehicleVisState -- was due to VehicleState/StateWrappers.as)
+  - exponential notation for floats
+  - nicer squiggle (doesn't include surrounding whitespace)
+  - refine completion suggestions for openplanet callbacks
+  - add file decorations for files with parse errors
 - 0.1.6
   - fix parsing errors with `<` and `>` and operator precedence + type detection
   - added `Reload info.toml` command
