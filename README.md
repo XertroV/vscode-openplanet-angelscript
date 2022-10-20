@@ -3,7 +3,10 @@ todo:
 * (check, is this still an issue?) `array<A::B>`, or `namespace A { auto x = {B()}; class B {} }` accessing x from outside A
   * types don't resolve right
   * seems limited to when constructors don't exist, mb? (nah, auto still doesn't resolve right)
+  * `ResolveAutos` in `as_parser.ts`?
 * preprocessor support for `TMNEXT | MP4 | TURBO` -- will mean that we don't have to avoid that one VehicleState file
+* better argument handling for settings
+* settings highlighting
 
 package: `vsce package`
 

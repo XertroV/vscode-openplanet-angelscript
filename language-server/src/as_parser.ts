@@ -3012,6 +3012,15 @@ function AddTypenameSymbol(scope : ASScope, statement : ASStatement, node : any,
     }
 }
 
+function AddSettingSymbols(scope : ASScope, statement : ASStatement, node : any, errorOnUnknown = true) : ASSemanticSymbol {
+    console.warn(`Settings node: ${JSON.stringify(node)}`);
+    // examples of `node`
+    // [{"type":"SettingDeclaration","start":4,"end":20,"children":[{"type":"SettingKwarg","start":13,"end":19,"children":[[[{"type":"identifier","value":"hidden","text":"hidden","offset":13,"lineBreaks":0,"line":1,"col":14}]]]}]},null]
+    //
+    return null;
+}
+
+
 function AddAccessSpecifierSymbol(scope : ASScope, statement : ASStatement, node : any, errorOnUnknown = true) : ASSemanticSymbol
 {
     if (!node)
@@ -4821,7 +4830,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
         // Type X;
         case node_types.VariableDecl:
         {
-            if (["get", "set"].includes(node?.typename?.value)) console.log(`got get set: ${node.typename.value}; ${JSON.stringify(node)}`)
+            if (node.setting) AddSettingSymbols(scope, statement, node.setting);
             // Add symbol for access specifier if we want
             if (node.access)
                 AddAccessSpecifierSymbol(scope, statement, node.access);
@@ -6408,11 +6417,16 @@ function CheckIfInlineArray(scope: ASScope, cur_element: ASElement, cur_offset: 
         let contentTrimmed = cur_element.content.replace("\r", " ").replace("\n", " ").trim();
         let matchesKeyword = (kw: string) =>
                 contentTrimmed.startsWith(`${kw} `)
+                || contentTrimmed.startsWith(`${kw}{`)
                 || cur_element.content.includes(` ${kw} `)
-                || cur_element.content.includes(`\n${kw} `);
+                || cur_element.content.includes(` ${kw}{`)
+                || cur_element.content.includes(`\n${kw} `)
+                || cur_element.content.includes(`\n${kw}{`);
         if (matchesKeyword("enum")) return false;
         if (matchesKeyword("class")) return false;
         if (matchesKeyword("namespace")) return false;
+        if (matchesKeyword("try")) return false;
+        if (matchesKeyword("catch")) return false;
         if (matchesKeyword("else")) return false;
         if (contentTrimmed.endsWith(")")) return false; // function definition; if () {}; while () {}; etc
         if (contentTrimmed.includes("enum")) // warn if our checks failed somehow, but could be false positive b/c of a lack of whitespace

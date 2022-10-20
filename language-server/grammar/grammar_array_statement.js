@@ -247,11 +247,26 @@ function Operator(token)
     return token.value;
 }
 
+function GetFirstValue(thing) {
+    return Array.isArray(thing) ? GetFirstValue(thing[0]) : thing;
+}
+
+function RemoveOuterArrays(thing) {
+    if (Array.isArray(thing) && thing.length == 1) {
+        return RemoveOuterArrays(thing[0]);
+    }
+    if (!Array.isArray(thing)) return [thing];
+    return thing;
+}
 
 function MkSettingKwarg(d, node_type = n.SettingKwarg) {
-    let hasArg = !!d[1];
+    let d_inner = RemoveOuterArrays(d);
+    let hasArg = !!d_inner[1];
+    console.log(JSON.stringify(d_inner))
+    let children = (hasArg ? [d_inner[0], d_inner[2]] : [d_inner[0]]).map(GetFirstValue);
+    console.log(JSON.stringify(children))
     return {
-        ...Compound(d, node_type, hasArg ? [d[0], d[2]] : [d[0]]),
+        ...Compound(d, node_type, children),
         hasArg
     };
 }
@@ -512,7 +527,7 @@ var grammar = {
             return ExtendedCompound(d, {
                 ...d[2],
                 access: d[1] ? d[1][0] : null,
-                setting: d[0],
+                setting: d[0] ? d[0][0] : null,
             });
         }
         },
@@ -1616,15 +1631,13 @@ var grammar = {
     {"name": "setting_var_decl", "symbols": [(lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), {"literal":"Setting"}, "_", "setting_std_optional_kwargs", "_", "setting_type_kwargs", "_", (lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5]]); }},
     {"name": "setting_var_decl", "symbols": [(lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), {"literal":"Setting"}, "_", "setting_std_optional_kwargs", "_", "setting_type_kwargs", "_", "setting_std_optional_kwargs", "_", (lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5], d[7]]); }},
     {"name": "setting_var_decl", "symbols": [(lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), {"literal":"Setting"}, "_", (lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": function(d) { return Compound(d, n.SettingDeclaration, []); }},
-    {"name": "setting_std_optional_kwarg$subexpression$1", "symbols": [{"literal":"hidden"}]},
-    {"name": "setting_std_optional_kwarg", "symbols": ["setting_std_optional_kwarg$subexpression$1"]},
-    {"name": "setting_std_optional_kwarg$subexpression$2$subexpression$1", "symbols": [{"literal":"name"}]},
-    {"name": "setting_std_optional_kwarg$subexpression$2$subexpression$1", "symbols": [{"literal":"category"}]},
-    {"name": "setting_std_optional_kwarg$subexpression$2$subexpression$1", "symbols": [{"literal":"description"}]},
-    {"name": "setting_std_optional_kwarg$subexpression$2$subexpression$2", "symbols": [(lexer.has("dqstring") ? {type: "dqstring"} : dqstring)]},
-    {"name": "setting_std_optional_kwarg$subexpression$2$subexpression$2", "symbols": [(lexer.has("sqstring") ? {type: "sqstring"} : sqstring)]},
-    {"name": "setting_std_optional_kwarg$subexpression$2", "symbols": ["setting_std_optional_kwarg$subexpression$2$subexpression$1", (lexer.has("op_assignment") ? {type: "op_assignment"} : op_assignment), "setting_std_optional_kwarg$subexpression$2$subexpression$2"]},
-    {"name": "setting_std_optional_kwarg", "symbols": ["setting_std_optional_kwarg$subexpression$2"], "postprocess": MkSettingKwarg},
+    {"name": "setting_std_optional_kwarg", "symbols": [{"literal":"hidden"}]},
+    {"name": "setting_std_optional_kwarg$subexpression$1", "symbols": [{"literal":"name"}]},
+    {"name": "setting_std_optional_kwarg$subexpression$1", "symbols": [{"literal":"category"}]},
+    {"name": "setting_std_optional_kwarg$subexpression$1", "symbols": [{"literal":"description"}]},
+    {"name": "setting_std_optional_kwarg$subexpression$2", "symbols": [(lexer.has("dqstring") ? {type: "dqstring"} : dqstring)]},
+    {"name": "setting_std_optional_kwarg$subexpression$2", "symbols": [(lexer.has("sqstring") ? {type: "sqstring"} : sqstring)]},
+    {"name": "setting_std_optional_kwarg", "symbols": ["setting_std_optional_kwarg$subexpression$1", (lexer.has("op_assignment") ? {type: "op_assignment"} : op_assignment), "setting_std_optional_kwarg$subexpression$2"], "postprocess": MkSettingKwarg},
     {"name": "setting_std_optional_kwargs$ebnf$1", "symbols": []},
     {"name": "setting_std_optional_kwargs$ebnf$1$subexpression$1", "symbols": ["setting_std_optional_kwarg", "_"]},
     {"name": "setting_std_optional_kwargs$ebnf$1", "symbols": ["setting_std_optional_kwargs$ebnf$1", "setting_std_optional_kwargs$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
@@ -1643,40 +1656,38 @@ var grammar = {
     {"name": "setting_type_kwargs$ebnf$1$subexpression$1", "symbols": ["setting_type_int_uint_float", "_"]},
     {"name": "setting_type_kwargs$ebnf$1", "symbols": ["setting_type_kwargs$ebnf$1", "setting_type_kwargs$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "setting_type_kwargs", "symbols": ["setting_type_kwargs$ebnf$1", "setting_type_int_uint_float"], "postprocess": d => FromMultiple(d[1], d[0], p => p[0])},
-    {"name": "setting_type_int_uint_float$subexpression$1", "symbols": [{"literal":"drag"}]},
-    {"name": "setting_type_int_uint_float$subexpression$1$subexpression$1", "symbols": [{"literal":"min"}]},
-    {"name": "setting_type_int_uint_float$subexpression$1$subexpression$1", "symbols": [{"literal":"max"}]},
-    {"name": "setting_type_int_uint_float$subexpression$1$subexpression$2", "symbols": [(lexer.has("dqstring") ? {type: "dqstring"} : dqstring)]},
-    {"name": "setting_type_int_uint_float$subexpression$1$subexpression$2", "symbols": [(lexer.has("sqstring") ? {type: "sqstring"} : sqstring)]},
-    {"name": "setting_type_int_uint_float$subexpression$1$subexpression$2$ebnf$1", "symbols": [(lexer.has("op_binary_sum") ? {type: "op_binary_sum"} : op_binary_sum)], "postprocess": id},
-    {"name": "setting_type_int_uint_float$subexpression$1$subexpression$2$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "setting_type_int_uint_float$subexpression$1$subexpression$2", "symbols": ["setting_type_int_uint_float$subexpression$1$subexpression$2$ebnf$1", "const_number"]},
-    {"name": "setting_type_int_uint_float$subexpression$1", "symbols": ["setting_type_int_uint_float$subexpression$1$subexpression$1", (lexer.has("op_assignment") ? {type: "op_assignment"} : op_assignment), "setting_type_int_uint_float$subexpression$1$subexpression$2"]},
-    {"name": "setting_type_int_uint_float", "symbols": ["setting_type_int_uint_float$subexpression$1"], "postprocess": MkSettingKwarg},
+    {"name": "setting_type_int_uint_float", "symbols": [{"literal":"drag"}]},
+    {"name": "setting_type_int_uint_float$subexpression$1", "symbols": [{"literal":"min"}]},
+    {"name": "setting_type_int_uint_float$subexpression$1", "symbols": [{"literal":"max"}]},
+    {"name": "setting_type_int_uint_float$subexpression$2", "symbols": [(lexer.has("dqstring") ? {type: "dqstring"} : dqstring)]},
+    {"name": "setting_type_int_uint_float$subexpression$2", "symbols": [(lexer.has("sqstring") ? {type: "sqstring"} : sqstring)]},
+    {"name": "setting_type_int_uint_float$subexpression$2$ebnf$1", "symbols": [(lexer.has("op_binary_sum") ? {type: "op_binary_sum"} : op_binary_sum)], "postprocess": id},
+    {"name": "setting_type_int_uint_float$subexpression$2$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "setting_type_int_uint_float$subexpression$2", "symbols": ["setting_type_int_uint_float$subexpression$2$ebnf$1", "const_number"]},
+    {"name": "setting_type_int_uint_float", "symbols": ["setting_type_int_uint_float$subexpression$1", (lexer.has("op_assignment") ? {type: "op_assignment"} : op_assignment), "setting_type_int_uint_float$subexpression$2"], "postprocess": MkSettingKwarg},
     {"name": "setting_type_kwargs", "symbols": ["setting_type_vec234"], "postprocess": id},
-    {"name": "setting_type_vec234$subexpression$1", "symbols": [{"literal":"drag"}]},
-    {"name": "setting_type_vec234", "symbols": ["setting_type_vec234$subexpression$1"], "postprocess": MkSettingKwarg},
+    {"name": "setting_type_vec234", "symbols": [{"literal":"drag"}], "postprocess": MkSettingKwarg},
     {"name": "setting_type_kwargs$ebnf$2", "symbols": []},
     {"name": "setting_type_kwargs$ebnf$2$subexpression$1", "symbols": ["setting_type_vec34", "_"]},
     {"name": "setting_type_kwargs$ebnf$2", "symbols": ["setting_type_kwargs$ebnf$2", "setting_type_kwargs$ebnf$2$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "setting_type_kwargs", "symbols": ["setting_type_kwargs$ebnf$2", "setting_type_vec34"], "postprocess": d => FromMultiple(d[1], d[0], p => p[0])},
-    {"name": "setting_type_vec34$subexpression$1", "symbols": [{"literal":"drag"}]},
-    {"name": "setting_type_vec34$subexpression$1", "symbols": [{"literal":"color"}]},
-    {"name": "setting_type_vec34", "symbols": ["setting_type_vec34$subexpression$1"], "postprocess": MkSettingKwarg},
+    {"name": "setting_type_vec34", "symbols": [{"literal":"drag"}]},
+    {"name": "setting_type_vec34", "symbols": [{"literal":"color"}], "postprocess": MkSettingKwarg},
     {"name": "setting_type_kwargs$ebnf$3", "symbols": []},
     {"name": "setting_type_kwargs$ebnf$3$subexpression$1", "symbols": ["setting_type_string", "_"]},
     {"name": "setting_type_kwargs$ebnf$3", "symbols": ["setting_type_kwargs$ebnf$3", "setting_type_kwargs$ebnf$3$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "setting_type_kwargs", "symbols": ["setting_type_kwargs$ebnf$3", "setting_type_string"], "postprocess": d => FromMultiple(d[1], d[0], p => p[0])},
-    {"name": "setting_type_string$subexpression$1", "symbols": [{"literal":"multiline"}]},
-    {"name": "setting_type_string$subexpression$1", "symbols": [{"literal":"password"}]},
-    {"name": "setting_type_string$subexpression$1$subexpression$1", "symbols": [(lexer.has("dqstring") ? {type: "dqstring"} : dqstring)]},
-    {"name": "setting_type_string$subexpression$1$subexpression$1", "symbols": [(lexer.has("sqstring") ? {type: "sqstring"} : sqstring)]},
-    {"name": "setting_type_string$subexpression$1$subexpression$1$ebnf$1", "symbols": [(lexer.has("op_binary_sum") ? {type: "op_binary_sum"} : op_binary_sum)], "postprocess": id},
-    {"name": "setting_type_string$subexpression$1$subexpression$1$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "setting_type_string$subexpression$1$subexpression$1", "symbols": ["setting_type_string$subexpression$1$subexpression$1$ebnf$1", "const_number"]},
-    {"name": "setting_type_string$subexpression$1", "symbols": [{"literal":"max"}, (lexer.has("op_assignment") ? {type: "op_assignment"} : op_assignment), "setting_type_string$subexpression$1$subexpression$1"]},
-    {"name": "setting_type_string", "symbols": ["setting_type_string$subexpression$1"], "postprocess": MkSettingKwarg},
-    {"name": "setting_tab_decl", "symbols": [(lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), "_", {"literal":"SettingsTab"}, "_", "settings_tab_kwargs", "_", (lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": 
+    {"name": "setting_type_string", "symbols": [{"literal":"multiline"}]},
+    {"name": "setting_type_string", "symbols": [{"literal":"password"}]},
+    {"name": "setting_type_string$subexpression$1", "symbols": [(lexer.has("dqstring") ? {type: "dqstring"} : dqstring)]},
+    {"name": "setting_type_string$subexpression$1", "symbols": [(lexer.has("sqstring") ? {type: "sqstring"} : sqstring)]},
+    {"name": "setting_type_string$subexpression$1$ebnf$1", "symbols": [(lexer.has("op_binary_sum") ? {type: "op_binary_sum"} : op_binary_sum)], "postprocess": id},
+    {"name": "setting_type_string$subexpression$1$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "setting_type_string$subexpression$1", "symbols": ["setting_type_string$subexpression$1$ebnf$1", "const_number"]},
+    {"name": "setting_type_string", "symbols": [{"literal":"max"}, (lexer.has("op_assignment") ? {type: "op_assignment"} : op_assignment), "setting_type_string$subexpression$1"], "postprocess": MkSettingKwarg},
+    {"name": "setting_tab_decl$ebnf$1", "symbols": ["settings_tab_kwargs"], "postprocess": id},
+    {"name": "setting_tab_decl$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "setting_tab_decl", "symbols": [(lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), "_", {"literal":"SettingsTab"}, "_", "setting_tab_decl$ebnf$1", "_", (lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": 
         function(d) { return Compound(d, n.SettingsTabDeclaration, d[4]); }
         },
     {"name": "settings_tab_kwargs$ebnf$1", "symbols": []},

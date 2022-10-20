@@ -243,11 +243,27 @@ function Operator(token)
     return token.value;
 }
 
+function GetFirstValue(thing) {
+    return Array.isArray(thing) ? GetFirstValue(thing[0]) : thing;
+}
+
+// todo: shouldn't need this if it's coded better
+function RemoveOuterArrays(thing) {
+    if (Array.isArray(thing) && thing.length == 1) {
+        return RemoveOuterArrays(thing[0]);
+    }
+    if (!Array.isArray(thing)) return [thing];
+    return thing;
+}
 
 function MkSettingKwarg(d, node_type = n.SettingKwarg) {
-    let hasArg = !!d[1];
+    let d_inner = RemoveOuterArrays(d);
+    let hasArg = !!d_inner[1];
+    console.log(JSON.stringify(d_inner))
+    let children = (hasArg ? [d_inner[0], d_inner[2]] : [d_inner[0]]).map(GetFirstValue);
+    console.log(JSON.stringify(children))
     return {
-        ...Compound(d, node_type, hasArg ? [d[0], d[2]] : [d[0]]),
+        ...Compound(d, node_type, children),
         hasArg
     };
 }
@@ -503,12 +519,13 @@ global_declaration -> %namespace_token _ namespace_definition_name {%
     }; }
 %}
 
+# should settings_decl be here?
 class_declaration -> (settings_decl _):? (access_specifier _):? var_decl {%
     function (d) {
         return ExtendedCompound(d, {
             ...d[2],
             access: d[1] ? d[1][0] : null,
-            setting: d[0],
+            setting: d[0] ? d[0][0] : null,
         });
     }
 %}
@@ -1535,7 +1552,7 @@ setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ settin
 setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ setting_type_kwargs _ setting_std_optional_kwargs _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5], d[7]]); } %}
 setting_var_decl -> %lsqbracket "Setting" _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, []); } %}
 
-setting_std_optional_kwarg -> ("hidden") | (("name" | "category" | "description") %op_assignment (%dqstring | %sqstring)) {% MkSettingKwarg %}
+setting_std_optional_kwarg -> "hidden" | ("name" | "category" | "description") %op_assignment (%dqstring | %sqstring) {% MkSettingKwarg %}
 setting_std_optional_kwargs -> (setting_std_optional_kwarg _):* setting_std_optional_kwarg {%
     (d) => {
         let result = [d[1]];
@@ -1550,18 +1567,18 @@ setting_std_optional_kwargs -> (setting_std_optional_kwarg _):* setting_std_opti
 
 # int, uint, float
 setting_type_kwargs -> (setting_type_int_uint_float _):* setting_type_int_uint_float {% d => FromMultiple(d[1], d[0], p => p[0]) %}
-setting_type_int_uint_float -> ("drag" | ("min" | "max") %op_assignment (%dqstring | %sqstring | %op_binary_sum:? const_number)) {% MkSettingKwarg %}
+setting_type_int_uint_float -> "drag" | ("min" | "max") %op_assignment (%dqstring | %sqstring | %op_binary_sum:? const_number) {% MkSettingKwarg %}
 # vec2,vec3,vec4
 setting_type_kwargs -> setting_type_vec234 {% id %}
-setting_type_vec234 -> ("drag") {% MkSettingKwarg %}
+setting_type_vec234 -> "drag" {% MkSettingKwarg %}
 # vec34
 setting_type_kwargs -> (setting_type_vec34 _):* setting_type_vec34 {% d => FromMultiple(d[1], d[0], p => p[0]) %}
-setting_type_vec34 -> ("drag" | "color") {% MkSettingKwarg %}
+setting_type_vec34 -> "drag" | "color" {% MkSettingKwarg %}
 # string
 setting_type_kwargs -> (setting_type_string _):* setting_type_string {% d => FromMultiple(d[1], d[0], p => p[0]) %}
-setting_type_string -> ("multiline" | "password" | "max" %op_assignment (%dqstring | %sqstring | %op_binary_sum:? const_number)) {% MkSettingKwarg %}
+setting_type_string -> "multiline" | "password" | "max" %op_assignment (%dqstring | %sqstring | %op_binary_sum:? const_number) {% MkSettingKwarg %}
 
-setting_tab_decl -> %lsqbracket _ "SettingsTab" _ settings_tab_kwargs _ %rsqbracket {%
+setting_tab_decl -> %lsqbracket _ "SettingsTab" _ settings_tab_kwargs:? _ %rsqbracket {%
     function(d) { return Compound(d, n.SettingsTabDeclaration, d[4]); }
 %}
 
