@@ -88,7 +88,6 @@ const lexer = moo.compile({
         })
     },
     number: /[0-9]+/,
-    // floatNumber: /[0-9]+\.[0-9]+/, // %number %dot %number
 });
 
 // A compound node containing multiple child nodes
@@ -1114,6 +1113,14 @@ const_number -> %octal_number {%
     function(d) { return Literal(n.ConstOctalInteger, d[0]); }
 %}
 
+const_number -> %number "." %number "e" "-" %number {%
+    function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
+%}
+
+const_number -> %number "." %number "e" %number {%
+    function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
+%}
+
 const_number -> %number "." %number "f" {%
     function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
 %}
@@ -1534,7 +1541,7 @@ setting_std_optional_kwargs -> (setting_std_optional_kwarg _):* setting_std_opti
 
 # int, uint, float
 setting_type_kwargs -> (setting_type_int_uint_float _):* setting_type_int_uint_float {% d => FromMultiple(d[1], d[0], p => p[0]) %}
-setting_type_int_uint_float -> ("drag" | ("min" | "max") %op_assignment (%dqstring | %sqstring | %op_binary_sum:? %number | %op_binary_sum:? floatNumber)) {% MkSettingKwarg %}
+setting_type_int_uint_float -> ("drag" | ("min" | "max") %op_assignment (%dqstring | %sqstring | %op_binary_sum:? const_number)) {% MkSettingKwarg %}
 # vec2,vec3,vec4
 setting_type_kwargs -> setting_type_vec234 {% id %}
 setting_type_vec234 -> ("drag") {% MkSettingKwarg %}
@@ -1543,7 +1550,7 @@ setting_type_kwargs -> (setting_type_vec34 _):* setting_type_vec34 {% d => FromM
 setting_type_vec34 -> ("drag" | "color") {% MkSettingKwarg %}
 # string
 setting_type_kwargs -> (setting_type_string _):* setting_type_string {% d => FromMultiple(d[1], d[0], p => p[0]) %}
-setting_type_string -> ("multiline" | "password" | "max" %op_assignment (%dqstring | %sqstring | %op_binary_sum:? %number | %op_binary_sum:? floatNumber)) {% MkSettingKwarg %}
+setting_type_string -> ("multiline" | "password" | "max" %op_assignment (%dqstring | %sqstring | %op_binary_sum:? const_number)) {% MkSettingKwarg %}
 
 setting_tab_decl -> %lsqbracket _ "SettingsTab" _ settings_tab_kwargs _ %rsqbracket {%
     function(d) { return Compound(d, n.SettingsTabDeclaration, d[4]); }
@@ -1562,6 +1569,7 @@ settings_tab_kwargs -> (settings_tab_kwarg _):* settings_tab_kwarg {%
 %}
 settings_tab_kwarg -> ("icon" | "name") %op_assignment (%dqstring | %sqstring) {% MkSettingsTabKwarg %}
 
-floatNumber -> %number %dot %number
-floatNumber -> %number %dot
-floatNumber -> %dot %number
+# floatNumber -> %number %dot %number "e" %op_unary:? %number
+# floatNumber -> %number %dot %number
+# floatNumber -> %number %dot
+# floatNumber -> %dot %number
