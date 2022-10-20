@@ -118,11 +118,12 @@ function AddScopeDiagnostics(scope : scriptfiles.ASScope, diagnostics : Array<Di
     if (scope.module.isOpened && GetDiagnosticSettings().squiggleUnparsableStatements) {
         for (let statement of scope.statements) {
             if (statement?.parseError) {
+                let [so, eo] = statement.getContentOnlyOffsetRange();
                 diagnostics.push(<Diagnostic> {
                     severity: DiagnosticSeverity.Error,
                     tags: [],
-                    range: scope.module.getRange(statement.start_offset, statement.end_offset),
-                    message: `Unable to parse: \`${statement.content}\``,
+                    range: scope.module.getRange(so, eo),
+                    message: `Unable to parse: \`${statement.content_trimmed}\``,
                     source: "angelscript"
                 });
             }

@@ -763,6 +763,24 @@ export class ASStatement extends ASElement
     parsedType : ASScopeType = ASScopeType.Code;
 
     generatedTypes : boolean = false;
+
+    content_start_offset: number = -1;
+    content_end_offset: number = -1;
+    private _content_trimmed: string;
+    public get content_trimmed(): string {
+        if (!this._content_trimmed) this.getContentOnlyOffsetRange();
+        return this._content_trimmed;
+    }
+    getContentOnlyOffsetRange() {
+        if (this.content_start_offset < 0 && this.content_end_offset < 0) {
+            let start_ws = this.content.length - this.content.trimStart().length;
+            let end_ws = this.content.length - this.content.trimEnd().length;
+            this.content_start_offset = this.start_offset + start_ws;
+            this.content_end_offset = this.end_offset - end_ws;
+            this._content_trimmed = this.content.trim();
+        }
+        return [this.content_start_offset, this.content_end_offset]
+    }
 };
 
 // export class ASSetting extends ASElement
