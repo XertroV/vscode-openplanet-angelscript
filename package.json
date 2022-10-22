@@ -2,7 +2,7 @@
     "name": "openplanet-angelscript",
     "displayName": "Openplanet Angelscript",
     "description": "Language Server and Debug Adapter for use with the Openplanet Angelscript",
-    "version": "0.1.7-pre",
+    "version": "0.2.0",
     "homepage": "https://github.com/xertrov/vscode-openplanet-angelscript",
     "publisher": "XertroV",
     "engines": {
@@ -56,7 +56,13 @@
                     "type": "boolean",
                     "order": 12,
                     "default": false,
-                    "dependencies": {"enableDebugOutput": {"oneOf": [true]}},
+                    "dependencies": {
+                        "enableDebugOutput": {
+                            "oneOf": [
+                                true
+                            ]
+                        }
+                    },
                     "description": "Whether to crash on a parsing error (a reload will be required)"
                 },
                 "OpenplanetAngelscript.helper.insertParenthesisOnFunctionCompletion": {
