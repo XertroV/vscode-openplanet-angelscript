@@ -27,8 +27,8 @@ If you have issues ping @XertroV on the Openplanet discord.
 
 ## Changelog
 
-- 0.2.1, 0.2.2
-  - update readme for vscode marketplace
+- 0.2.1 - 0.2.3
+  - update readme for vscode marketplace & other publish related things.
 - 0.2.0
   - prep for publication, e.g., icons
   - debug snippet: print all props
