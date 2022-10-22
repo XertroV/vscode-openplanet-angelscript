@@ -18,6 +18,7 @@ install from cli: `code --install-extension openplanet-angelscript-X.Y.Z.vsix`
 changelog:
 
 - 0.1.7
+  - debug snippet: print all props
   - fix missing props on OpNext.json class (was just CSceneVehicleVisState -- was due to VehicleState/StateWrappers.as)
   - exponential notation for floats
   - nicer squiggle (doesn't include surrounding whitespace)

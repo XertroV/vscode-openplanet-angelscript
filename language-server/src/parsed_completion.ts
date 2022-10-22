@@ -1168,6 +1168,9 @@ export function AddCompletionsFromLocalVariables(context : CompletionContext, sc
 
 export function AddCompletionsFromType(context : CompletionContext, curtype : typedb.DBType | typedb.DBNamespace, completions : Array<CompletionItem>, showEvents : boolean = true)
 {
+    let allProps: typedb.DBProperty[] = [];
+    context.completingSymbol
+    context.priorExpression
     let scopeType = context.scope ? context.scope.getParentType() : null;
     let props = new Set<string>();
 
@@ -1177,6 +1180,8 @@ export function AddCompletionsFromType(context : CompletionContext, curtype : ty
     {
         if (symbol instanceof typedb.DBProperty)
         {
+            allProps.push(symbol);
+
             if (!CanCompleteSymbol(context, symbol))
                 return;
 
@@ -1596,6 +1601,18 @@ export function AddCompletionsFromType(context : CompletionContext, curtype : ty
             }
         }
     });
+
+    // list all properties
+    let debugListLines = allProps.map(p => `print("${context.priorType?.name}.${p.name}: " + tostring(tmp.${p.name}));`);
+
+    let debugListCompl = <CompletionItem>{
+        label: curtype.name + ": [Debug] print all properties",
+        kind: CompletionItemKind.Snippet,
+        // labelDetails: <CompletionItemLabelDetails>{description:},
+        sortText: Sort.Snippet,
+        insertText: ` /*todo -- assign this to new variable*/;\nauto tmp = /*todo the above*/;\n${debugListLines.join('\n')}`,
+    }
+    completions.push(debugListCompl);
 
     // Complete child namespaces
     if (curtype instanceof typedb.DBNamespace)
