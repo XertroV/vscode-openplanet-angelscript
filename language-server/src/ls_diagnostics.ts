@@ -803,7 +803,7 @@ export function ProvideFileDecoration(module: scriptfiles.ASModule): void | File
 export function CountParseErrorsInScope(scope: scriptfiles.ASScope): number {
     let errCount = 0;
     for (let s of scope.statements) {
-        if (s.parseError) {
+        if (s && s?.parseError) {
             errCount++;
         }
     }

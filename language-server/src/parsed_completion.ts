@@ -1,7 +1,7 @@
 import {
     CompletionItem, CompletionItemKind, Position, MarkupContent, MarkupKind,
     SignatureHelp, SignatureInformation, ParameterInformation, Range, TextEdit,
-    CompletionItemLabelDetails, Command, WorkspaceEdit
+    CompletionItemLabelDetails, Command, WorkspaceEdit, InsertReplaceEdit
 } from 'vscode-languageserver/node';
 import * as typedb from './database';
 import * as scriptfiles from './as_parser';
@@ -247,7 +247,7 @@ export function Complete(asmodule: scriptfiles.ASModule, position: Position): Ar
     for (let dbtype of searchTypes)
     {
         let showEvents = !context.scope || context.scope.scopetype != scriptfiles.ASScopeType.Class || !insideType;
-        AddCompletionsFromType(context, dbtype, completions, showEvents);
+        AddCompletionsFromType(context, dbtype, completions, showEvents, position);
         // note: this is where functions from other namespaces and stuff get populated
     }
 
@@ -1166,7 +1166,7 @@ export function AddCompletionsFromLocalVariables(context : CompletionContext, sc
     }
 }
 
-export function AddCompletionsFromType(context : CompletionContext, curtype : typedb.DBType | typedb.DBNamespace, completions : Array<CompletionItem>, showEvents : boolean = true)
+export function AddCompletionsFromType(context : CompletionContext, curtype : typedb.DBType | typedb.DBNamespace, completions : Array<CompletionItem>, showEvents : boolean = true, position?: Position)
 {
     let allProps: typedb.DBProperty[] = [];
     context.completingSymbol
@@ -1193,7 +1193,6 @@ export function AddCompletionsFromType(context : CompletionContext, curtype : ty
             props.add(prop.name);
 
             let docPrefix = prop.accessSpecifier ? prop.accessSpecifier.name + " " : "";
-            console.warn(`Adding documentation to compl for: ${curtype.name}.${prop.name}`);
 
             let compl = <CompletionItem>{
                     label: prop.name,
@@ -1602,17 +1601,25 @@ export function AddCompletionsFromType(context : CompletionContext, curtype : ty
         }
     });
 
-    // list all properties
-    let debugListLines = allProps.map(p => `print("${context.priorType?.name}.${p.name}: " + tostring(tmp.${p.name}));`);
+    if (allProps.length > 0) {
+        // list all properties
+        let debugListLines = allProps.map(p => `print("${context.priorType?.name}.${p.name}: " + tostring(tmp.${p.name}));${p.documentation ? ' /* ' + p.documentation + ' */' : ''}`);
+        let wsIndent = GetWhitespaceIndentAt(context, position);
+        let commentCurrentLine = TextEdit.insert(Position.create(position.line, wsIndent.length), '// ');
+        let baseExpr = GetExpressionForAccessingObjInstance(context)
 
-    let debugListCompl = <CompletionItem>{
-        label: curtype.name + ": [Debug] print all properties",
-        kind: CompletionItemKind.Snippet,
-        // labelDetails: <CompletionItemLabelDetails>{description:},
-        sortText: Sort.Snippet,
-        insertText: ` /*todo -- assign this to new variable*/;\nauto tmp = /*todo the above*/;\n${debugListLines.join('\n')}`,
+        let debugListCompl = <CompletionItem>{
+            label: curtype.name + ": [Debug] print all properties",
+            kind: CompletionItemKind.Snippet,
+            sortText: Sort.Snippet,
+            insertText: ` /*todo -- check variable declaration below.*/;\nauto tmp = ${baseExpr};\n${debugListLines.join('\n')}`,
+            additionalTextEdits: [commentCurrentLine]
+        }
+
+        completions.push(debugListCompl);
     }
-    completions.push(debugListCompl);
+
+
 
     // Complete child namespaces
     if (curtype instanceof typedb.DBNamespace)
@@ -4394,4 +4401,51 @@ export function GetExpectedTypeAtOffset(asmodule : scriptfiles.ASModule, offset 
 
     let context = GenerateCompletionContext(asmodule, offset);
     return context.expectedType;
+}
+
+
+export function GetWhitespaceIndentAt(context: CompletionContext, position: Position): string {
+    let curLineText = context.scope.module.textDocument.getText(
+        Range.create(
+            Position.create(position.line, 0),
+            Position.create(position.line+1, 0)
+        )
+    );
+
+    let currentIndent = "";
+    for (let char of curLineText)
+    {
+        if (char == ' ' || char == '\t')
+            currentIndent += char;
+        else
+            break;
+    }
+    return currentIndent;
+}
+
+/** if the user is typing `auto x = obj.` then this should return `obj`.
+ * eg2: `GetApp().Network.debu` -> `GetApp().Network`
+ */
+export function GetExpressionForAccessingObjInstance(context: CompletionContext): string {
+    if (!context.baseStatement) return null;
+    let n = scriptfiles.node_types;
+    let bs = context.baseStatement;
+    let removeFromEnd = context.completingNode?.value || "";
+    let ret: string;
+
+    switch (bs?.ast?.type) {
+        case n.Identifier:
+        case n.MemberAccess: {
+            ret = bs.content.trim();
+            break;
+        }
+        default: {
+            console.log(`unknown node type for getting expression of the object being accessed: bs.content: ${bs.content}`);
+        }
+    }
+
+    if (!ret) {
+        ret = bs.content_trimmed;
+    }
+    return ret.replace(new RegExp(`\.${removeFromEnd}$`), '');
 }
