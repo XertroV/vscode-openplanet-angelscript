@@ -68,6 +68,11 @@ changelog:
   - initial support, openplanet types (no game enums) and inheritance
 
 
+# deployment notes
+
+- tokens from <https://dev.azure.com/vscode-openplanet/_usersSettings/tokens>
+
+
 ------
 
 # old readme

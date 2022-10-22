@@ -3018,9 +3018,20 @@ function AddTypenameSymbol(scope : ASScope, statement : ASStatement, node : any,
 function AddSettingSymbols(scope : ASScope, statement : ASStatement, node : any, errorOnUnknown = true) : ASSemanticSymbol {
     // todo
     // console.warn(`Settings node: ${JSON.stringify(node)}`);
+    // console.dir(node)
     // examples of `node`
-    // [{"type":"SettingDeclaration","start":4,"end":20,"children":[{"type":"SettingKwarg","start":13,"end":19,"children":[[[{"type":"identifier","value":"hidden","text":"hidden","offset":13,"lineBreaks":0,"line":1,"col":14}]]]}]},null]
-    //
+    // [{"type":"SettingDeclaration","start":4,"end":20,"children":[{"type":"SettingKwarg","start":13,"end":19,"children":[{"type":"identifier","value":"hidden","text":"hidden","offset":13,"lineBreaks":0,"line":1,"col":14}]}]},null]
+
+    // not really sure of what symbol stuff to add / do. (like, what would be useful)
+    // todo: come back later
+    switch (node.type) {
+        case node_types.SettingDeclaration: {
+
+        } break;
+        case node_types.SettingsTab: {
+
+        } break;
+    }
     return null;
 }
 

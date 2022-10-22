@@ -1620,7 +1620,6 @@ export function AddCompletionsFromType(context : CompletionContext, curtype : ty
     }
 
 
-
     // Complete child namespaces
     if (curtype instanceof typedb.DBNamespace)
     {

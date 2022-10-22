@@ -1570,6 +1570,7 @@ scuffed_template_statement -> %template_basetype _ "<" _ typename {%
 settings_decl -> _ setting_var_decl {% d => d[1] %}
 settings_decl -> _ setting_tab_decl {% d => d[1] %}
 
+# todo: setting_var-decl doesn't keep the "setting" token, but i guess it's always the first 7 letters anyway after the `[`.
 setting_var_decl -> %lsqbracket "Setting" _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, []); } %}
 setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, [d[3]]); } %}
 setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ setting_type_kwargs _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5]]); } %}

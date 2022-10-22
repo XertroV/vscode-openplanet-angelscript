@@ -3,16 +3,15 @@
     "displayName": "Openplanet Angelscript",
     "description": "Language Server and Debug Adapter for use with the Openplanet Angelscript",
     "version": "0.1.7-pre",
+    "homepage": "https://github.com/xertrov/vscode-openplanet-angelscript",
     "publisher": "XertroV",
     "engines": {
         "vscode": "^1.65.0"
     },
     "categories": [
-        "Programming Languages",
-        "Debuggers"
+        "Programming Languages"
     ],
     "activationEvents": [
-        "onDebug",
         "onLanguage:angelscript"
     ],
     "repository": {
@@ -20,6 +19,11 @@
         "url": "https://github.com/XertroV/vscode-openplanet-angelscript"
     },
     "main": "./extension/out/extension",
+    "icon": "resources/openplanet.png",
+    "galleryBanner": {
+        "color": "#1f2d3b",
+        "theme": "dark"
+    },
     "contributes": {
         "configuration": {
             "title": "Openplanet Angelscript",
@@ -164,8 +168,8 @@
                 ],
                 "configuration": "./extension/language-configuration.json",
                 "icon": {
-                    "dark": "./resources/file-icon-dark-theme.svg",
-                    "light": "./resources/file-icon-light-theme.svg"
+                    "dark": "resources/openplanet-bigger-white.png",
+                    "light": "resources/openplanet-bigger.png"
                 }
             },
             {
