@@ -761,6 +761,7 @@ export class ASStatement extends ASElement
     endsWithSemicolon : boolean = false;
     parseError : boolean = false;
     parsedType : ASScopeType = ASScopeType.Code;
+    parseThis?: string = null;
 
     generatedTypes : boolean = false;
 
@@ -2038,9 +2039,11 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
         parser_inline_function.restore(parser_inline_function_initial)
         let parseError = false;
         try {
+            console.log(`Parsing inline function def: ${inlineFuncDef}`);
             parser_inline_function.feed(inlineFuncDef);
         } catch (err) {
             parseError = true;
+            console.warn(`Failed to parse using parser_inline_function! ${err}`)
         }
 
         if (!parseError && parser_inline_function.results.length > 0) {
@@ -3013,7 +3016,8 @@ function AddTypenameSymbol(scope : ASScope, statement : ASStatement, node : any,
 }
 
 function AddSettingSymbols(scope : ASScope, statement : ASStatement, node : any, errorOnUnknown = true) : ASSemanticSymbol {
-    console.warn(`Settings node: ${JSON.stringify(node)}`);
+    // todo
+    // console.warn(`Settings node: ${JSON.stringify(node)}`);
     // examples of `node`
     // [{"type":"SettingDeclaration","start":4,"end":20,"children":[{"type":"SettingKwarg","start":13,"end":19,"children":[[[{"type":"identifier","value":"hidden","text":"hidden","offset":13,"lineBreaks":0,"line":1,"col":14}]]]}]},null]
     //
@@ -6054,10 +6058,6 @@ function ParseScopeIntoStatements(scope : ASScope)
     let cur_element : ASElement = null;
     function finishElement(element : ASElement)
     {
-        let this_el = element;
-        let prior_el = cur_element;
-        let prior_prior_el = cur_element?.previous;
-
         if (!scope.element_head)
             scope.element_head = element;
         element.previous = cur_element;
@@ -6121,6 +6121,23 @@ function ParseScopeIntoStatements(scope : ASScope)
             statement.rawIndex = scope.module.rawStatements.length;
             scope.module.rawStatements.push(statement);
             finishElement(statement);
+            // if (endsWithSemicolon && toExcludeFromCurrent.length > 0) {
+            //     let so = statement.start_offset;
+            //     let eo = statement.end_offset;
+            //     let newContent = statement.content;
+            //     // go through statements from last to first -- that way we don't need to worry about recalculating positions in content.
+            //     for (let subscope of toExcludeFromCurrent.reverse()) {
+            //         let sss = subscope.start_offset - so;
+            //         let len = subscope.end_offset - subscope.start_offset;
+            //         console.log(`sss: ${sss}, len: ${len}; nc: ${newContent}`)
+            //         // we want to remove the subscope content from the statement content
+            //         newContent = newContent.substring(0, sss-1) + " ".repeat(len + 2) + newContent.substring(sss + len + 1);
+            //         console.log(`nextNewContent: ${newContent}`);
+            //     }
+            //     statement.parseThis = newContent;
+            //     console.log(`statement.parseThis: ${statement.parseThis}`);
+            //     toExcludeFromCurrent = [];
+            // }
         }
 
         statement_start = cur_offset+1;
@@ -6143,6 +6160,11 @@ function ParseScopeIntoStatements(scope : ASScope)
                 subscope_to_add.swapWithNext = true;
             }
         }
+    }
+
+    let toExcludeFromCurrent: ASScope[] = [];
+    function excludeInnerScopeFromCurrentStatement(subscope: ASScope) {
+        toExcludeFromCurrent.push(subscope);
     }
 
     for (; cur_offset < scope.end_offset; ++cur_offset)
@@ -6275,6 +6297,7 @@ function ParseScopeIntoStatements(scope : ASScope)
                 if (!in_array) {
                     // for use later -- possible Inline Function Decl
                     let prev = cur_element;
+                    // might have multiple inline function decls in one parent statement
                     while (prev && !(prev instanceof ASStatement)) {
                         prev = prev.previous;
                     }
@@ -6294,17 +6317,18 @@ function ParseScopeIntoStatements(scope : ASScope)
                     if (prev instanceof ASStatement
                         && !prev.endsWithSemicolon
                         && !prev.parsed
-                        && prev.content?.includes('function(')
+                        && prev.content?.replace(' ', '').includes('function(')
                     ) {
+                        let contentNoWsFunc = prev.content.replace(/function\s*\(/, 'function(');
                         resumeStatement(subscope);
-                        subscope.hasArguments = 'function(' + prev.content.split('function(').slice(-1)[0];
+                        subscope.hasArguments = 'function(' + contentNoWsFunc.split('function(').slice(-1)[0].trimEnd();
                         subscope.moveToGlobalNamespace = true;
+                        // excludeInnerScopeFromCurrentStatement(subscope);
                         // console.log(`possible inline function: ${prev.content}`)
-                        // console.trace(JSON.stringify({...prev, previous: null, next: null}))
                         // 1000s later, what does prev look like
-                        // let forlater = prev.previous.next;
                         // setTimeout(() => {
-                        //     console.log(`prev now looks like: ${JSON.stringify({...forlater.next, previous: null, next: null})}`)
+                        //     console.warn(`subscope.hasArguments: ${JSON.stringify(subscope.hasArguments)} {\n${subscope.statements.map(s => s.content + ';').join('')}\n}`);
+                        //     console.log(`subscope.previous now looks like: ${JSON.stringify({...subscope.previous, previous: null, next: null})}`)
                         // }, 1000);
                     } else {
                         finishElement(subscope);
@@ -7094,6 +7118,7 @@ export function ParseStatement(scopetype : ASScopeType, statement : ASStatement,
             // Debugging for unparseable statements
             if (debug || GetScriptSettings().enableDebugOutput)
             {
+                console.trace("\n\n PARSE ERROR \n");
                 console.log(error);
                 console.log("Error Parsing Statement: ");
                 console.log(`content: ${statement.content}`);

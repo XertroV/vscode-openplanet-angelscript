@@ -251,6 +251,7 @@ function GetFirstValue(thing) {
     return Array.isArray(thing) ? GetFirstValue(thing[0]) : thing;
 }
 
+// todo: shouldn't need this if it's coded better
 function RemoveOuterArrays(thing) {
     if (Array.isArray(thing) && thing.length == 1) {
         return RemoveOuterArrays(thing[0]);
@@ -262,9 +263,9 @@ function RemoveOuterArrays(thing) {
 function MkSettingKwarg(d, node_type = n.SettingKwarg) {
     let d_inner = RemoveOuterArrays(d);
     let hasArg = !!d_inner[1];
-    console.log(JSON.stringify(d_inner))
+    // console.log(JSON.stringify(d_inner)) // todo: debug settings array structure stuff to avoid needing remove outer arrays
     let children = (hasArg ? [d_inner[0], d_inner[2]] : [d_inner[0]]).map(GetFirstValue);
-    console.log(JSON.stringify(children))
+    // console.log(JSON.stringify(children)) // todo: debug settings array structure stuff to avoid needing remove outer arrays
     return {
         ...Compound(d, node_type, children),
         hasArg
@@ -305,6 +306,9 @@ var grammar = {
         },
     {"name": "expression_or_assignment", "symbols": ["expression"], "postprocess": id},
     {"name": "expression_or_assignment", "symbols": ["assignment"], "postprocess": id},
+    {"name": "expression_or_assignment_or_var_decl", "symbols": ["expression_or_assignment"], "postprocess": id},
+    {"name": "expression_or_assignment_or_var_decl", "symbols": ["var_decl"], "postprocess": id},
+    {"name": "expression_or_assignment_or_var_decl", "symbols": ["statement"], "postprocess": id},
     {"name": "statement$ebnf$1$subexpression$1", "symbols": ["_", "expression_or_assignment"]},
     {"name": "statement$ebnf$1", "symbols": ["statement$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "statement$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
@@ -1145,12 +1149,9 @@ var grammar = {
     {"name": "argument", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), (lexer.has("WS") ? {type: "WS"} : WS), "expr_leaf"], "postprocess": 
         function (d) { return Compound(d, n.NamedArgument, [Identifier(d[0]), d[2]]); }
         },
-    {"name": "expr_inline_function$ebnf$1", "symbols": ["a_complete_scope"], "postprocess": id},
-    {"name": "expr_inline_function$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "expr_inline_function", "symbols": [(lexer.has("function_token") ? {type: "function_token"} : function_token), "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "_", "parameter_list", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen), "_", "expr_inline_function$ebnf$1"], "postprocess": 
+    {"name": "expr_inline_function", "symbols": [(lexer.has("function_token") ? {type: "function_token"} : function_token), "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "_", "parameter_list", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen), "a_complete_scope"], "postprocess": 
         function (d) {
             // console.trace(`got inline function: ${JSON.stringify(d)}`)
-        
             return {
                 ...Compound(d, n.InlineFunctionDecl, null),
                 //name: Identifier({...d[0], value: `__anon_func_inline`}), // Identifier(d[0]),
@@ -1162,10 +1163,31 @@ var grammar = {
             };
         }
         },
-    {"name": "a_complete_scope$ebnf$1", "symbols": []},
-    {"name": "a_complete_scope$ebnf$1$subexpression$1", "symbols": ["expression_or_assignment", (lexer.has("semicolon") ? {type: "semicolon"} : semicolon), "_"]},
-    {"name": "a_complete_scope$ebnf$1", "symbols": ["a_complete_scope$ebnf$1", "a_complete_scope$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "a_complete_scope", "symbols": [(lexer.has("lbrace") ? {type: "lbrace"} : lbrace), "_", "a_complete_scope$ebnf$1", "_", (lexer.has("rbrace") ? {type: "rbrace"} : rbrace)]},
+    {"name": "expr_inline_function", "symbols": [(lexer.has("function_token") ? {type: "function_token"} : function_token), "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "_", "parameter_list", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
+        function (d) {
+            // console.trace(`got inline function: ${JSON.stringify(d)}`)
+            return {
+                ...Compound(d, n.InlineFunctionDecl, null),
+                //name: Identifier({...d[0], value: `__anon_func_inline`}), // Identifier(d[0]),
+                name: null,
+                returntype: null,
+                parameters: d[4],
+                qualifiers: null,
+                inline_body: d[8] ? d[8] : null,
+            };
+        }
+        },
+    {"name": "a_complete_scope", "symbols": ["_", (lexer.has("lbrace") ? {type: "lbrace"} : lbrace), "_", (lexer.has("rbrace") ? {type: "rbrace"} : rbrace)], "postprocess": d => { return []; }},
+    {"name": "a_complete_scope$ebnf$1", "symbols": [(lexer.has("semicolon") ? {type: "semicolon"} : semicolon)], "postprocess": id},
+    {"name": "a_complete_scope$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "a_complete_scope$ebnf$2", "symbols": []},
+    {"name": "a_complete_scope$ebnf$2$subexpression$1", "symbols": ["_", (lexer.has("semicolon") ? {type: "semicolon"} : semicolon), "_", "expression_or_assignment_or_var_decl"]},
+    {"name": "a_complete_scope$ebnf$2", "symbols": ["a_complete_scope$ebnf$2", "a_complete_scope$ebnf$2$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "a_complete_scope$ebnf$3", "symbols": [(lexer.has("semicolon") ? {type: "semicolon"} : semicolon)], "postprocess": id},
+    {"name": "a_complete_scope$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "a_complete_scope", "symbols": ["_", (lexer.has("lbrace") ? {type: "lbrace"} : lbrace), "_", "a_complete_scope$ebnf$1", "_", "expression_or_assignment_or_var_decl", "a_complete_scope$ebnf$2", "_", "a_complete_scope$ebnf$3", "_", (lexer.has("rbrace") ? {type: "rbrace"} : rbrace)], "postprocess": 
+        d => { return []; }
+        },
     {"name": "const_number", "symbols": [(lexer.has("number") ? {type: "number"} : number)], "postprocess": 
         function(d) { return Literal(n.ConstInteger, d[0]); }
         },
@@ -1204,6 +1226,9 @@ var grammar = {
         },
     {"name": "constant", "symbols": [(lexer.has("dqstring") ? {type: "dqstring"} : dqstring)], "postprocess": 
         function(d) { return Literal(n.ConstString, d[0]); }
+        },
+    {"name": "constant", "symbols": [(lexer.has("dqstring") ? {type: "dqstring"} : dqstring), "_", (lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), "_", (lexer.has("number") ? {type: "number"} : number), "_", (lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": 
+        function(d) { return Literal(n.ConstInteger, d[0]); } // `"test"[2]` -> returns uint8
         },
     {"name": "constant", "symbols": [(lexer.has("trpstring") ? {type: "trpstring"} : trpstring)], "postprocess": 
         function(d) { return Literal(n.ConstString, d[0]); }

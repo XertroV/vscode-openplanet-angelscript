@@ -259,9 +259,9 @@ function RemoveOuterArrays(thing) {
 function MkSettingKwarg(d, node_type = n.SettingKwarg) {
     let d_inner = RemoveOuterArrays(d);
     let hasArg = !!d_inner[1];
-    console.log(JSON.stringify(d_inner))
+    // console.log(JSON.stringify(d_inner)) // todo: debug settings array structure stuff to avoid needing remove outer arrays
     let children = (hasArg ? [d_inner[0], d_inner[2]] : [d_inner[0]]).map(GetFirstValue);
-    console.log(JSON.stringify(children))
+    // console.log(JSON.stringify(children)) // todo: debug settings array structure stuff to avoid needing remove outer arrays
     return {
         ...Compound(d, node_type, children),
         hasArg
@@ -307,6 +307,10 @@ assignment -> lvalue _ %compound_assignment _ expression_or_assignment {%
 
 expression_or_assignment -> expression {% id %}
 expression_or_assignment -> assignment {% id %}
+
+expression_or_assignment_or_var_decl -> expression_or_assignment {% id %}
+expression_or_assignment_or_var_decl -> var_decl {% id %}
+expression_or_assignment_or_var_decl -> statement {% id %}
 
 statement -> %if_token _ %lparen (_ expression_or_assignment):? _ %rparen optional_statement {%
     function (d)
@@ -1105,10 +1109,23 @@ argument -> %identifier %WS expr_leaf {%
     function (d) { return Compound(d, n.NamedArgument, [Identifier(d[0]), d[2]]); }
 %}
 
-expr_inline_function -> %function_token _ %lparen _ parameter_list _ %rparen _ a_complete_scope:? {%
+expr_inline_function -> %function_token _ %lparen _ parameter_list _ %rparen a_complete_scope {%
     function (d) {
         // console.trace(`got inline function: ${JSON.stringify(d)}`)
-
+        return {
+            ...Compound(d, n.InlineFunctionDecl, null),
+            //name: Identifier({...d[0], value: `__anon_func_inline`}), // Identifier(d[0]),
+            name: null,
+            returntype: null,
+            parameters: d[4],
+            qualifiers: null,
+            inline_body: d[8] ? d[8] : null,
+        };
+    }
+%}
+expr_inline_function -> %function_token _ %lparen _ parameter_list _ %rparen {%
+    function (d) {
+        // console.trace(`got inline function: ${JSON.stringify(d)}`)
         return {
             ...Compound(d, n.InlineFunctionDecl, null),
             //name: Identifier({...d[0], value: `__anon_func_inline`}), // Identifier(d[0]),
@@ -1121,7 +1138,10 @@ expr_inline_function -> %function_token _ %lparen _ parameter_list _ %rparen _ a
     }
 %}
 
-a_complete_scope -> %lbrace _ (expression_or_assignment %semicolon _):* _ %rbrace
+a_complete_scope -> _ %lbrace _ %rbrace {% d => { return []; } %}
+a_complete_scope -> _ %lbrace _ %semicolon:? _ expression_or_assignment_or_var_decl (_ %semicolon _ expression_or_assignment_or_var_decl):* _ %semicolon:? _ %rbrace {%
+    d => { return []; }
+%}
 
 const_number -> %number {%
     function(d) { return Literal(n.ConstInteger, d[0]); }
@@ -1173,6 +1193,10 @@ const_number -> %number "." {%
 
 constant -> %dqstring {%
     function(d) { return Literal(n.ConstString, d[0]); }
+%}
+
+constant -> %dqstring _ %lsqbracket _ %number _ %rsqbracket {%
+    function(d) { return Literal(n.ConstInteger, d[0]); } // `"test"[2]` -> returns uint8
 %}
 
 constant -> %trpstring {%

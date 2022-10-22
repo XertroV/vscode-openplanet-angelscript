@@ -7,6 +7,9 @@ todo:
 * preprocessor support for `TMNEXT | MP4 | TURBO` -- will mean that we don't have to avoid that one VehicleState file
 * better argument handling for settings
 * settings highlighting
+* suggest likely casts for nadeo types
+* add list of superclasses (inherited by) to docs for classes
+* inside inline function definitions don't work right, but don't throw errors at least
 
 package: `vsce package`
 
