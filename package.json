@@ -19,7 +19,7 @@
         "url": "https://github.com/XertroV/vscode-openplanet-angelscript"
     },
     "main": "./extension/out/extension",
-    "icon": "resources/openplanet.png",
+    "icon": "resources/openplanet-bigger.png",
     "galleryBanner": {
         "color": "#1f2d3b",
         "theme": "dark"
