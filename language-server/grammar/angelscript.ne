@@ -1571,11 +1571,10 @@ settings_decl -> _ setting_var_decl {% d => d[1] %}
 settings_decl -> _ setting_tab_decl {% d => d[1] %}
 
 # todo: setting_var-decl doesn't keep the "setting" token, but i guess it's always the first 7 letters anyway after the `[`.
-setting_var_decl -> %lsqbracket "Setting" _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, []); } %}
-setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, [d[3]]); } %}
-setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ setting_type_kwargs _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5]]); } %}
-setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ setting_type_kwargs _ setting_std_optional_kwargs _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5], d[7]]); } %}
-setting_var_decl -> %lsqbracket "Setting" _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, []); } %}
+setting_var_decl -> %lsqbracket "Setting" _ %rsqbracket:? {% function(d) { return Compound(d, n.SettingDeclaration, []); } %}
+# setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ %rsqbracket:? {% function(d) { return Compound(d, n.SettingDeclaration, [d[3]]); } %}
+setting_var_decl -> %lsqbracket "Setting" _ setting_type_kwargs _ %rsqbracket:? {% function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5]]); } %}
+# setting_var_decl -> %lsqbracket "Setting" _ setting_type_kwargs _ setting_std_optional_kwargs _ %rsqbracket:? {% function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5], d[7]]); } %}
 
 setting_std_optional_kwarg -> "hidden" | ("name" | "category" | "description") %op_assignment (%dqstring | %sqstring) {% MkSettingKwarg %}
 setting_std_optional_kwargs -> (setting_std_optional_kwarg _):* setting_std_optional_kwarg {%
@@ -1591,16 +1590,16 @@ setting_std_optional_kwargs -> (setting_std_optional_kwarg _):* setting_std_opti
 %}
 
 # int, uint, float
-setting_type_kwargs -> (setting_type_int_uint_float _):* setting_type_int_uint_float {% d => FromMultiple(d[1], d[0], p => p[0]) %}
+setting_type_kwargs -> ((setting_type_int_uint_float | setting_std_optional_kwarg) _):* (setting_type_int_uint_float | setting_std_optional_kwarg) {% d => FromMultiple(d[1], d[0], p => p[0]) %}
 setting_type_int_uint_float -> "drag" | ("min" | "max") %op_assignment (%dqstring | %sqstring | %op_binary_sum:? const_number) {% MkSettingKwarg %}
 # vec2,vec3,vec4
-setting_type_kwargs -> setting_type_vec234 {% id %}
+setting_type_kwargs -> ((setting_type_vec234 | setting_std_optional_kwargs) _):* (setting_type_vec234 | setting_std_optional_kwargs) {% d => FromMultiple(d[1], d[0], p => p[0]) %}
 setting_type_vec234 -> "drag" {% MkSettingKwarg %}
 # vec34
-setting_type_kwargs -> (setting_type_vec34 _):* setting_type_vec34 {% d => FromMultiple(d[1], d[0], p => p[0]) %}
+setting_type_kwargs -> ((setting_type_vec34 | setting_std_optional_kwargs) _):* (setting_type_vec34 | setting_std_optional_kwargs) {% d => FromMultiple(d[1], d[0], p => p[0]) %}
 setting_type_vec34 -> "drag" | "color" {% MkSettingKwarg %}
 # string
-setting_type_kwargs -> (setting_type_string _):* setting_type_string {% d => FromMultiple(d[1], d[0], p => p[0]) %}
+setting_type_kwargs -> ((setting_type_string | setting_std_optional_kwargs) _):* (setting_type_string | setting_std_optional_kwargs) {% d => FromMultiple(d[1], d[0], p => p[0]) %}
 setting_type_string -> "multiline" | "password" | "max" %op_assignment (%dqstring | %sqstring | %op_binary_sum:? const_number) {% MkSettingKwarg %}
 
 setting_tab_decl -> %lsqbracket _ "SettingsTab" _ settings_tab_kwargs:? _ %rsqbracket {%
