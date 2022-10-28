@@ -102,7 +102,7 @@ export function SetInitialParseDone()
 export let node_types = require("../grammar/node_types.js");
 
 export let ASKeywords = [
-    "for", "if", "enum", "return", "continue", "break", "import", "class", "struct", "default",
+    "for", "if", "enum", "return", "continue", "break", "import", "class", "interface", "struct", "default",
     "void", "const", "else", "while", "case", "cast", "namespace",
     "true", "false", "this", "auto", "null", "shared", "funcdef", "function",
     "final", "property", "override", "mixin", "switch", "try", "catch", "get", "set",
@@ -6459,6 +6459,7 @@ function CheckIfInlineArray(scope: ASScope, cur_element: ASElement, cur_offset: 
                 || cur_element.content.includes(`\n${kw}{`);
         if (matchesKeyword("enum")) return false;
         if (matchesKeyword("class")) return false;
+        if (matchesKeyword("interface")) return false;
         if (matchesKeyword("namespace")) return false;
         if (matchesKeyword("try")) return false;
         if (matchesKeyword("catch")) return false;

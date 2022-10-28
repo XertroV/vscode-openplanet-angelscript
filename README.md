@@ -27,6 +27,10 @@ If you have issues ping @XertroV on the Openplanet discord.
 
 ## Changelog
 
+- 0.2.5 (inprog)
+  - improve settings parsing
+  - add interface keyword detection
+- 0.2.4: package.json description and typo
 - 0.2.1 - 0.2.3
   - update readme for vscode marketplace & other publish related things.
 - 0.2.0

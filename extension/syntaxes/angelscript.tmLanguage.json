@@ -4,7 +4,7 @@
     "patterns": [
         {
             "name": "keyword.declaration.angelscript",
-            "match": "\\b(class|struct|import|enum|namespace)\\b"
+            "match": "\\b(class|interface|struct|import|enum|namespace)\\b"
         },
         {
             "name": "keyword.statement.angelscript",
