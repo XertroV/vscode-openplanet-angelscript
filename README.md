@@ -27,7 +27,7 @@ If you have issues ping @XertroV on the Openplanet discord.
 
 ## Changelog
 
-- 0.2.5 (inprog)
+- 0.2.5
   - improve settings parsing
   - add interface keyword detection
 - 0.2.4: package.json description and typo

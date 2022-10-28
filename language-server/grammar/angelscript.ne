@@ -450,7 +450,11 @@ global_statement -> %import_token _ function_decl _ "from" _ (%dqstring | %sqstr
     }
 %}
 
-global_declaration -> function_decl {% id %}
+global_declaration -> (setting_tab_decl _):? function_decl {%
+    function (d) { return {
+        ...d[1], settingsTab: d[0] ? d[0][0] : null
+    }; }
+%}
 global_declaration -> (settings_decl _):? var_decl {%
     function (d) { /* console.log(d); */ return {
         ...d[1], setting: d[0] ? d[0][0] : null
@@ -1568,7 +1572,7 @@ scuffed_template_statement -> %template_basetype _ "<" _ typename {%
 %}
 
 settings_decl -> _ setting_var_decl {% d => d[1] %}
-settings_decl -> _ setting_tab_decl {% d => d[1] %}
+# settings_decl -> _ setting_tab_decl {% d => d[1] %} // setting_tab_decl only goes on functions
 
 # todo: setting_var-decl doesn't keep the "setting" token, but i guess it's always the first 7 letters anyway after the `[`.
 setting_var_decl -> %lsqbracket "Setting" _ %rsqbracket:? {% function(d) { return Compound(d, n.SettingDeclaration, []); } %}
