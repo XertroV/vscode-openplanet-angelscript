@@ -475,13 +475,14 @@ global_declaration -> typename {%
     }; }
 %}
 
-global_declaration -> (%shared_token _):? (%class_token | %interface_token) _ atref:? %identifier ( _ %colon):? (_ typename_identifier):? {%
+global_declaration -> ((%shared_token | %mixin_token) _):? (%class_token | %interface_token) _ atref:? %identifier ( _ %colon):? (_ typename_identifier):? {%
     function (d) { return {
         ...Compound(d, n.ClassDefinition, null),
         name: Identifier(d[4]),
         // superclass: d[6] ? Identifier(d[6][1]) : null,
         superclass: d[6] ? d[6][1] : null,
-        is_shared: !!d[0],
+        is_shared: (d[0] && d[0][0]) ? d[0][0].value == "shared" : false,
+        is_mixin: (d[0] && d[0][0]) ? d[0][0].value == "mixin" : false
     }}
 %}
 global_declaration -> (%shared_token _):? %enum_token _ %identifier {%

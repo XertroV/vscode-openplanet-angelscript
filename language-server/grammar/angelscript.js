@@ -473,7 +473,9 @@ var grammar = {
             typename: d[0],
         }; }
         },
-    {"name": "global_declaration$ebnf$3$subexpression$1", "symbols": [(lexer.has("shared_token") ? {type: "shared_token"} : shared_token), "_"]},
+    {"name": "global_declaration$ebnf$3$subexpression$1$subexpression$1", "symbols": [(lexer.has("shared_token") ? {type: "shared_token"} : shared_token)]},
+    {"name": "global_declaration$ebnf$3$subexpression$1$subexpression$1", "symbols": [(lexer.has("mixin_token") ? {type: "mixin_token"} : mixin_token)]},
+    {"name": "global_declaration$ebnf$3$subexpression$1", "symbols": ["global_declaration$ebnf$3$subexpression$1$subexpression$1", "_"]},
     {"name": "global_declaration$ebnf$3", "symbols": ["global_declaration$ebnf$3$subexpression$1"], "postprocess": id},
     {"name": "global_declaration$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "global_declaration$subexpression$1", "symbols": [(lexer.has("class_token") ? {type: "class_token"} : class_token)]},
@@ -492,7 +494,8 @@ var grammar = {
             name: Identifier(d[4]),
             // superclass: d[6] ? Identifier(d[6][1]) : null,
             superclass: d[6] ? d[6][1] : null,
-            is_shared: !!d[0],
+            is_shared: (d[0] && d[0][0]) ? d[0][0].value == "shared" : false,
+            is_mixin: (d[0] && d[0][0]) ? d[0][0].value == "mixin" : false
         }}
         },
     {"name": "global_declaration$ebnf$7$subexpression$1", "symbols": [(lexer.has("shared_token") ? {type: "shared_token"} : shared_token), "_"]},
