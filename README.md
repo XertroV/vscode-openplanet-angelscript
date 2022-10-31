@@ -25,6 +25,12 @@ To check if something's going wrong, look for logs in `Output > Angelscript Lang
 
 If you have issues ping @XertroV on the Openplanet discord.
 
+## todo:
+
+- check for redefinition of variables in same scope and squiggle
+- add functions for `uint(-1)` etc
+- insert type MwFastBuffer no `@`
+
 ## Changelog
 
 - 0.2.6 (inprog)
