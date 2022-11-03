@@ -33,8 +33,9 @@ If you have issues ping @XertroV on the Openplanet discord.
 
 ## Changelog
 
-- 0.2.6 (inprog)
+- 0.2.6
   - add mixin syntax support
+  - add functions for primitive conversions
 - 0.2.5
   - improve settings parsing
   - add interface keyword detection
