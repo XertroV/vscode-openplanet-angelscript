@@ -302,6 +302,10 @@ export class DBMethod implements DBSymbol
         return inst;
     }
 
+    /**
+     *
+     * @param input {name: string, returntypedecl?: string, args: <DBArg.fromJSON>[], decl?: string, desc?: string, ns?: string, const?: bool, (and others)}
+     */
     fromJSON(input : any)
     {
         this.name = input.name;
@@ -2357,6 +2361,14 @@ export function AddPrimitiveTypes(floatIsFloat64 : boolean)
         let dbtype = new DBType().initEmpty(primtype);
         dbtype.isPrimitive = true;
         AddOpenplanetTypeToDatabase(null, dbtype);
+        AddOpenplanetFunction({
+            name: primtype,
+            returntypedecl: primtype,
+            args: [{name: "value", typedecl: "?"}],
+            decl: `${primtype} ${primtype}(?)`,
+            desc: `Cast a primitive type to a ${primtype}`,
+            ns: ""
+        });
     }
 }
 
