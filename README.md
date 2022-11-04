@@ -31,12 +31,12 @@ If you have issues ping @XertroV on the Openplanet discord.
 - ✅ add functions for `uint(-1)` etc
 - ✅ insert type MwFastBuffer no `@`
 - annotation type add `@`
-- 'Change auto to X@' sometimes shows many many suggestions when it should show one (related to inline funciton decl or other scope issue?)
+- 'Change auto to X@' sometimes shows many many suggestions when it should show one (related to inline function decl or other scope issue?)
 
 ## Changelog
 
 - 0.2.7
-  - add cast suggestions, particularly helpful for nadeo types (try ctrl+. when your cursor is over `auto app = GetApp();`)
+  - add cast suggestions, particularly helpful for Nadeo types (try ctrl+. when your cursor is over `auto app = GetApp();`)
   - Improve constructor hover -- shows function decl now, rather than class info.
   - replacing auto with an `array<T>` or `MwFastBuffer<T>` won't add an `@` anymore
 - 0.2.6
