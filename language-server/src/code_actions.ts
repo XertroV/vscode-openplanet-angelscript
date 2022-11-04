@@ -855,7 +855,11 @@ function AddAutoActions(context : CodeActionContext)
 {
     if (!context.scope)
         return;
-    for (let i = context.first_symbol; i < context.last_symbol; ++i)
+
+        // limit the earliest symbol we check to avoid suggesting stuff too far away
+        let earliestSymbolToCheck = Math.max(context.first_symbol, context.last_symbol - 21);
+        // last symbol is probs the one we want, so go backwards
+    for (let i = context.last_symbol - 1; i >= earliestSymbolToCheck; i--)
     {
         let symbol = context.module.semanticSymbols[i];
         if (!symbol.isAuto)
@@ -871,9 +875,11 @@ function AddAutoActions(context : CodeActionContext)
             continue;
 
         let realTypename = dbtype.getQualifiedTypenameInNamespace(context.scope.getNamespace());
+        let noRefFor = ["string", "wstring"]
         let atSign = (dbtype.isPrimitive
             || dbtype.name.startsWith("array<")
-            || dbtype.name.startsWith("MwFastBuffer<")) ? "" : "@";
+            || dbtype.name.startsWith("MwFastBuffer<")
+            || noRefFor.includes(dbtype.name)) ? "" : "@";
         realTypename += atSign;
 
         context.actions.push(<CodeAction> {
@@ -897,6 +903,9 @@ function AddAutoActions(context : CodeActionContext)
                 },
             }
         });
+
+        // don't add more than one 'change auto' suggestion
+        break;
     }
 }
 
