@@ -36,6 +36,8 @@ If you have issues ping @XertroV on the Openplanet discord.
 
 ## Changelog
 
+- 0.2.9
+  - fix array parsing so inline type decls for anonymous arrays/dictionaries work (`dictionary d = {{'k', array<string> = {'a', 'b'}}};`)
 - 0.2.8
   - support `get const {}` syntax
   - fix settings for openplanet directories not working
