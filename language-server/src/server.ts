@@ -1080,9 +1080,6 @@ connection.onRequest("angelscript/provideFileDecoration", (...params: any[]): an
     if (dirtyDiagnostics)
         DirtyAllDiagnostics();
 
-    if (reloadOPJson)
-        LoadOpenplanetJson();
-
     let completionSettings = parsedcompletion.GetCompletionSettings();
     completionSettings.mathCompletionShortcuts = settings.helper.mathCompletionShortcuts;
     completionSettings.correctFloatLiteralsWhenExpectingDoublePrecision = settings.helper.correctFloatLiteralsWhenExpectingDoublePrecision;
@@ -1103,9 +1100,11 @@ connection.onRequest("angelscript/provideFileDecoration", (...params: any[]): an
     inlineValueSettings.showInlineValueForParameters = settings.inlineValues.showInlineValueForParameters;
     inlineValueSettings.showInlineValueForMemberAssignment = settings.inlineValues.showInlineValueForMemberAssignment;
 
-    load_openplanet();
-    for (let RootPath of Roots)
-        LoadOpenplanetInfoToml(RootPath+"/info.toml");
+    if (reloadOPJson) {
+        load_openplanet();
+        for (let RootPath of Roots)
+            LoadOpenplanetInfoToml(RootPath+"/info.toml");
+    }
  });
 
 function TryResolveInlayHints(asmodule : scriptfiles.ASModule, range : Range) : Array<inlayhints.ASInlayHint> | null

@@ -31,6 +31,7 @@ If you have issues ping @XertroV on the Openplanet discord.
 - annotation type add `@`
 - ✅ 'Change auto to X@' sometimes shows many many suggestions when it should show one (related to inline function decl or other scope issue?)
 - add suggestions for settings keyword args
+- fix/add `CoroutineFunc@` data types
 
 
 ## Changelog
