@@ -936,8 +936,8 @@ var grammar = {
     {"name": "expression", "symbols": ["expr_ternary"], "postprocess": id},
     {"name": "expression", "symbols": ["expr_array"], "postprocess": id},
     {"name": "expression", "symbols": ["expr_inline_function"], "postprocess": id},
-    {"name": "expr_array", "symbols": [(lexer.has("lbrace") ? {type: "lbrace"} : lbrace), "argumentlist", "_", (lexer.has("rbrace") ? {type: "rbrace"} : rbrace)], "postprocess": 
-        function(d) { return Compound(d, n.ArrayInline, d[1] ? [d[1]] : []); }
+    {"name": "expr_array", "symbols": [(lexer.has("lbrace") ? {type: "lbrace"} : lbrace), "_", "array_expr_list", "_", (lexer.has("rbrace") ? {type: "rbrace"} : rbrace)], "postprocess": 
+        function(d) { return Compound(d, n.ArrayInline, d[2] ? [d[2]] : []); }
         },
     {"name": "expr_ternary", "symbols": ["expr_binary_logic", "_", (lexer.has("ternary") ? {type: "ternary"} : ternary), "_", "expr_ternary", "_", (lexer.has("colon") ? {type: "colon"} : colon), "_", "expr_ternary"], "postprocess": 
         function (d) { return Compound(d, n.TernaryOperation, [d[0], d[4], d[8]]); }
@@ -1544,20 +1544,33 @@ var grammar = {
         }
         },
     {"name": "case_label", "symbols": ["namespace_access"], "postprocess": id},
-    {"name": "array_statement$ebnf$1", "symbols": []},
-    {"name": "array_statement$ebnf$1$subexpression$1", "symbols": ["_", (lexer.has("comma") ? {type: "comma"} : comma), "_", "expression"]},
-    {"name": "array_statement$ebnf$1", "symbols": ["array_statement$ebnf$1", "array_statement$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "array_statement", "symbols": ["expression", "array_statement$ebnf$1"], "postprocess": 
+    {"name": "array_statement$ebnf$1$subexpression$1", "symbols": ["typename", "_", {"literal":"="}, "_"]},
+    {"name": "array_statement$ebnf$1", "symbols": ["array_statement$ebnf$1$subexpression$1"], "postprocess": id},
+    {"name": "array_statement$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "array_statement$ebnf$2", "symbols": []},
+    {"name": "array_statement$ebnf$2$subexpression$1$ebnf$1$subexpression$1", "symbols": ["typename", "_", {"literal":"="}, "_"]},
+    {"name": "array_statement$ebnf$2$subexpression$1$ebnf$1", "symbols": ["array_statement$ebnf$2$subexpression$1$ebnf$1$subexpression$1"], "postprocess": id},
+    {"name": "array_statement$ebnf$2$subexpression$1$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "array_statement$ebnf$2$subexpression$1", "symbols": ["_", (lexer.has("comma") ? {type: "comma"} : comma), "_", "array_statement$ebnf$2$subexpression$1$ebnf$1", "expression"]},
+    {"name": "array_statement$ebnf$2", "symbols": ["array_statement$ebnf$2", "array_statement$ebnf$2$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "array_statement", "symbols": ["array_statement$ebnf$1", "expression", "array_statement$ebnf$2"], "postprocess": 
         function (d) {
-            let result = [d[0]];
-            if (d[1]) {
-                for (let sub of d[1]) {
-                    result.push(sub[3]);
+            let result = [d[1]];
+            if (d[2]) {
+                for (let sub of d[2]) {
+                    result.push(sub[4]);
                 }
             }
             return Compound(d, n.ArrayValueList, result);
         }
         },
+    {"name": "array_expr_list", "symbols": [], "postprocess": 
+        function(d) { return null; }
+        },
+    {"name": "array_expr_list", "symbols": ["_", (lexer.has("comma") ? {type: "comma"} : comma)], "postprocess": 
+        function(d) { return null; }
+        },
+    {"name": "array_expr_list", "symbols": ["array_statement"], "postprocess": id},
     {"name": "enum_statement$ebnf$1", "symbols": []},
     {"name": "enum_statement$ebnf$1$subexpression$1", "symbols": ["_", (lexer.has("comma") ? {type: "comma"} : comma), "enum_decl"]},
     {"name": "enum_statement$ebnf$1", "symbols": ["enum_statement$ebnf$1", "enum_statement$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},

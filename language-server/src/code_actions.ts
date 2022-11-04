@@ -642,7 +642,7 @@ function AddCastHelpers(context : CodeActionContext)
     if (!!leftType && rightType.inheritsFrom(leftType?.name))
         return;
 
-    console.log(`Cast to before leftType inheritsFrom: ${rightType.name}`);
+    // console.log(`Cast to before leftType inheritsFrom: ${rightType.name}`);
 
     // Cast needs to make sense
     if (leftType && !leftType.inheritsFrom(rightType.name))
