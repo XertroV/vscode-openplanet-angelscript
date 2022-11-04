@@ -892,8 +892,8 @@ expression -> expr_ternary {% id %}
 expression -> expr_array {% id %}
 expression -> expr_inline_function {% id %}
 
-expr_array -> %lbrace _ array_expr_list _ %rbrace {%
-    function(d) { return Compound(d, n.ArrayInline, d[2] ? [d[2]] : []); }
+expr_array -> (typename _ "=" _):? %lbrace _ array_expr_list _ %rbrace {%
+    function(d) { return Compound(d, n.ArrayInline, d[3] ? [d[3]] : []); }
 %}
 
 expr_ternary -> expr_binary_logic _ %ternary _ expr_ternary _ %colon _ expr_ternary {%
@@ -1481,12 +1481,13 @@ case_label -> ("-" _):? %number {%
 %}
 case_label -> namespace_access {% id %}
 
-array_statement -> (typename _ "=" _):? expression (_ %comma _ (typename _ "=" _):? expression):* {%
+# array_statement -> (typename _ "=" _):? expression (_ %comma _ (typename _ "=" _):? expression):* {%
+array_statement -> expression (_ %comma _ expression):* {%
     function (d) {
-        let result = [d[1]];
-        if (d[2]) {
-            for (let sub of d[2]) {
-                result.push(sub[4]);
+        let result = [d[0]];
+        if (d[1]) {
+            for (let sub of d[1]) {
+                result.push(sub[3]);
             }
         }
         return Compound(d, n.ArrayValueList, result);
