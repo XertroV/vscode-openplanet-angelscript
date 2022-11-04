@@ -36,7 +36,9 @@ If you have issues ping @XertroV on the Openplanet discord.
 ## Changelog
 
 - 0.2.8
-  - inprog: settings keyword suggestions
+  - support `get const {}` syntax
+  - fix settings for openplanet directories not working
+  - partial: settings keyword suggestions (triggers in places that it shouldn't)
   - fix too many 'Change auto to X' suggestions -- will only suggest one, now, and only within the prior 20 symbols.
 - 0.2.7
   - add cast suggestions, particularly helpful for Nadeo types (try ctrl+. when your cursor is over `auto app = GetApp();`)
