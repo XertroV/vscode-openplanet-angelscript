@@ -276,6 +276,11 @@ function MkSettingsTabKwarg(d) {
     return MkSettingKwarg(d, n.SettingsTabKwarg)
 }
 
+settingArgNames = ["name", "category", "description", "min", "max", "hidden", "drag", "color", "multiline", "password", "icon"];
+
+const tokenPartialSettingArg = {
+    test: x => !settingArgNames.every(n => !n.substring(0, n.length - 1).startsWith(x))
+};
 
 var grammar = {
     Lexer: lexer,
@@ -330,7 +335,10 @@ var grammar = {
     {"name": "statement", "symbols": [(lexer.has("else_token") ? {type: "else_token"} : else_token), "optional_statement"], "postprocess": 
         function (d) { return Compound(d, n.ElseStatement, [d[1]]); }
         },
-    {"name": "statement", "symbols": [(lexer.has("get_token") ? {type: "get_token"} : get_token), "_"], "postprocess": d => Compound(d, n.GetStatement, [])},
+    {"name": "statement$ebnf$2$subexpression$1", "symbols": [(lexer.has("const_token") ? {type: "const_token"} : const_token), "_"]},
+    {"name": "statement$ebnf$2", "symbols": ["statement$ebnf$2$subexpression$1"], "postprocess": id},
+    {"name": "statement$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "statement", "symbols": [(lexer.has("get_token") ? {type: "get_token"} : get_token), "_", "statement$ebnf$2"], "postprocess": d => Compound(d, n.GetStatement, [])},
     {"name": "statement", "symbols": [(lexer.has("set_token") ? {type: "set_token"} : set_token), "_"], "postprocess": d => Compound(d, n.SetStatement, [])},
     {"name": "statement", "symbols": [(lexer.has("try_token") ? {type: "try_token"} : try_token)], "postprocess": d => Compound(d, n.TryStatement, [])},
     {"name": "statement", "symbols": [(lexer.has("catch_token") ? {type: "catch_token"} : catch_token)], "postprocess": d => Compound(d, n.CatchStatement, [])},
@@ -370,16 +378,16 @@ var grammar = {
     {"name": "statement", "symbols": [(lexer.has("break_token") ? {type: "break_token"} : break_token)], "postprocess": 
         function (d) { return Literal(n.BreakStatement, d[0]); }
         },
-    {"name": "statement$ebnf$2$subexpression$1", "symbols": ["_", "for_declaration"]},
-    {"name": "statement$ebnf$2", "symbols": ["statement$ebnf$2$subexpression$1"], "postprocess": id},
-    {"name": "statement$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "statement$ebnf$3$subexpression$1$ebnf$1$subexpression$1", "symbols": ["_", (lexer.has("semicolon") ? {type: "semicolon"} : semicolon), "for_comma_expression_list"]},
-    {"name": "statement$ebnf$3$subexpression$1$ebnf$1", "symbols": ["statement$ebnf$3$subexpression$1$ebnf$1$subexpression$1"], "postprocess": id},
-    {"name": "statement$ebnf$3$subexpression$1$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "statement$ebnf$3$subexpression$1", "symbols": ["_", (lexer.has("semicolon") ? {type: "semicolon"} : semicolon), "optional_expression", "statement$ebnf$3$subexpression$1$ebnf$1"]},
+    {"name": "statement$ebnf$3$subexpression$1", "symbols": ["_", "for_declaration"]},
     {"name": "statement$ebnf$3", "symbols": ["statement$ebnf$3$subexpression$1"], "postprocess": id},
     {"name": "statement$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "statement", "symbols": [(lexer.has("for_token") ? {type: "for_token"} : for_token), "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "statement$ebnf$2", "statement$ebnf$3", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen), "optional_statement"], "postprocess": 
+    {"name": "statement$ebnf$4$subexpression$1$ebnf$1$subexpression$1", "symbols": ["_", (lexer.has("semicolon") ? {type: "semicolon"} : semicolon), "for_comma_expression_list"]},
+    {"name": "statement$ebnf$4$subexpression$1$ebnf$1", "symbols": ["statement$ebnf$4$subexpression$1$ebnf$1$subexpression$1"], "postprocess": id},
+    {"name": "statement$ebnf$4$subexpression$1$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "statement$ebnf$4$subexpression$1", "symbols": ["_", (lexer.has("semicolon") ? {type: "semicolon"} : semicolon), "optional_expression", "statement$ebnf$4$subexpression$1$ebnf$1"]},
+    {"name": "statement$ebnf$4", "symbols": ["statement$ebnf$4$subexpression$1"], "postprocess": id},
+    {"name": "statement$ebnf$4", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "statement", "symbols": [(lexer.has("for_token") ? {type: "for_token"} : for_token), "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "statement$ebnf$3", "statement$ebnf$4", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen), "optional_statement"], "postprocess": 
         function (d) {
             return Compound(d, n.ForLoop,
                 [d[3] ? d[3][1] : null,
@@ -458,6 +466,11 @@ var grammar = {
     {"name": "global_declaration", "symbols": ["global_declaration$ebnf$2", "var_decl"], "postprocess": 
         function (d) { /* console.log(d); */ return {
             ...d[1], setting: d[0] ? d[0][0] : null
+        }; }
+        },
+    {"name": "global_declaration", "symbols": ["settings_decl", "_"], "postprocess": 
+        function (d) { /* console.log(d); */ return {
+            ...Compound(d, n.VariableDecl, null), setting: d[0]
         }; }
         },
     {"name": "global_declaration", "symbols": ["settings_decl"], "postprocess": 
@@ -1622,10 +1635,10 @@ var grammar = {
             return null;
         }
         },
-    {"name": "statement$ebnf$4$subexpression$1", "symbols": ["_", {"literal":">"}]},
-    {"name": "statement$ebnf$4", "symbols": ["statement$ebnf$4$subexpression$1"], "postprocess": id},
-    {"name": "statement$ebnf$4", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "statement", "symbols": ["scuffed_template_statement", "statement$ebnf$4"], "postprocess": id},
+    {"name": "statement$ebnf$5$subexpression$1", "symbols": ["_", {"literal":">"}]},
+    {"name": "statement$ebnf$5", "symbols": ["statement$ebnf$5$subexpression$1"], "postprocess": id},
+    {"name": "statement$ebnf$5", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "statement", "symbols": ["scuffed_template_statement", "statement$ebnf$5"], "postprocess": id},
     {"name": "class_statement", "symbols": ["scuffed_template_statement"], "postprocess": id},
     {"name": "global_statement", "symbols": ["scuffed_template_statement"], "postprocess": id},
     {"name": "scuffed_template_statement$ebnf$1$subexpression$1", "symbols": ["_", {"literal":"<"}]},
@@ -1663,9 +1676,7 @@ var grammar = {
     {"name": "setting_var_decl$ebnf$1", "symbols": [(lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": id},
     {"name": "setting_var_decl$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "setting_var_decl", "symbols": [(lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), {"literal":"Setting"}, "_", "setting_var_decl$ebnf$1"], "postprocess": function(d) { return Compound(d, n.SettingDeclaration, []); }},
-    {"name": "setting_var_decl$ebnf$2", "symbols": [(lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": id},
-    {"name": "setting_var_decl$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "setting_var_decl", "symbols": [(lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), {"literal":"Setting"}, "_", "setting_type_kwargs", "_", "setting_var_decl$ebnf$2"], "postprocess": function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5]]); }},
+    {"name": "setting_var_decl", "symbols": [(lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), {"literal":"Setting"}, "_", "setting_type_kwargs", "_", (lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5]]); }},
     {"name": "setting_std_optional_kwarg", "symbols": [{"literal":"hidden"}]},
     {"name": "setting_std_optional_kwarg$subexpression$1", "symbols": [{"literal":"name"}]},
     {"name": "setting_std_optional_kwarg$subexpression$1", "symbols": [{"literal":"category"}]},
@@ -1673,6 +1684,7 @@ var grammar = {
     {"name": "setting_std_optional_kwarg$subexpression$2", "symbols": [(lexer.has("dqstring") ? {type: "dqstring"} : dqstring)]},
     {"name": "setting_std_optional_kwarg$subexpression$2", "symbols": [(lexer.has("sqstring") ? {type: "sqstring"} : sqstring)]},
     {"name": "setting_std_optional_kwarg", "symbols": ["setting_std_optional_kwarg$subexpression$1", (lexer.has("op_assignment") ? {type: "op_assignment"} : op_assignment), "setting_std_optional_kwarg$subexpression$2"], "postprocess": MkSettingKwarg},
+    {"name": "setting_std_optional_kwarg", "symbols": [(lexer.has("tokenPartialSettingArg") ? {type: "tokenPartialSettingArg"} : tokenPartialSettingArg)], "postprocess": MkSettingKwarg},
     {"name": "setting_std_optional_kwargs$ebnf$1", "symbols": []},
     {"name": "setting_std_optional_kwargs$ebnf$1$subexpression$1", "symbols": ["setting_std_optional_kwarg", "_"]},
     {"name": "setting_std_optional_kwargs$ebnf$1", "symbols": ["setting_std_optional_kwargs$ebnf$1", "setting_std_optional_kwargs$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},

@@ -272,6 +272,11 @@ function MkSettingsTabKwarg(d) {
     return MkSettingKwarg(d, n.SettingsTabKwarg)
 }
 
+settingArgNames = ["name", "category", "description", "min", "max", "hidden", "drag", "color", "multiline", "password", "icon"];
+
+const tokenPartialSettingArg = {
+    test: x => !settingArgNames.every(n => !n.substring(0, n.length - 1).startsWith(x))
+};
 
 %}
 
@@ -334,7 +339,7 @@ statement -> %else_token optional_statement {%
     function (d) { return Compound(d, n.ElseStatement, [d[1]]); }
 %}
 
-statement -> %get_token _ {% d => Compound(d, n.GetStatement, []) %}
+statement -> %get_token _ (%const_token _):? {% d => Compound(d, n.GetStatement, []) %}
 statement -> %set_token _ {% d => Compound(d, n.SetStatement, []) %}
 
 statement -> %try_token {% d => Compound(d, n.TryStatement, []) %}
@@ -458,6 +463,11 @@ global_declaration -> (setting_tab_decl _):? function_decl {%
 global_declaration -> (settings_decl _):? var_decl {%
     function (d) { /* console.log(d); */ return {
         ...d[1], setting: d[0] ? d[0][0] : null
+    }; }
+%}
+global_declaration -> settings_decl _ {%
+    function (d) { /* console.log(d); */ return {
+        ...Compound(d, n.VariableDecl, null), setting: d[0]
     }; }
 %}
 # e.g., an unfinished settings declaration
@@ -1578,10 +1588,12 @@ settings_decl -> _ setting_var_decl {% d => d[1] %}
 # todo: setting_var-decl doesn't keep the "setting" token, but i guess it's always the first 7 letters anyway after the `[`.
 setting_var_decl -> %lsqbracket "Setting" _ %rsqbracket:? {% function(d) { return Compound(d, n.SettingDeclaration, []); } %}
 # setting_var_decl -> %lsqbracket "Setting" _ setting_std_optional_kwargs _ %rsqbracket:? {% function(d) { return Compound(d, n.SettingDeclaration, [d[3]]); } %}
-setting_var_decl -> %lsqbracket "Setting" _ setting_type_kwargs _ %rsqbracket:? {% function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5]]); } %}
+setting_var_decl -> %lsqbracket "Setting" _ setting_type_kwargs _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5]]); } %}
 # setting_var_decl -> %lsqbracket "Setting" _ setting_type_kwargs _ setting_std_optional_kwargs _ %rsqbracket:? {% function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5], d[7]]); } %}
 
 setting_std_optional_kwarg -> "hidden" | ("name" | "category" | "description") %op_assignment (%dqstring | %sqstring) {% MkSettingKwarg %}
+setting_std_optional_kwarg -> %tokenPartialSettingArg {% MkSettingKwarg %}
+# sneak in partials
 setting_std_optional_kwargs -> (setting_std_optional_kwarg _):* setting_std_optional_kwarg {%
     (d) => {
         let result = [d[1]];
