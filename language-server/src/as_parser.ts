@@ -3245,6 +3245,7 @@ export function ResolveTypeFromExpression(scope : ASScope, node : any) : typedb.
             // if (node.children[0].value == "_ProcessAllEventsFor") console.log(`seen _ProcessAllEventsFor at FunctionCall; left_func null? ${left_func?.name}`)
             if (!left_func)
             {
+                // console.log(`Did not find left_func for: ${JSON.stringify(node.children[0])}`);
                 // Check if this is a constructor to some type
                 if (node.children[0] && node.children[0].type == node_types.Identifier)
                 {
@@ -3254,6 +3255,7 @@ export function ResolveTypeFromExpression(scope : ASScope, node : any) : typedb.
                 }
                 return null;
             }
+            // console.log(`Found left_func: ${left_func.name}, returning ${typedb.LookupType(left_func.namespace, left_func.returnType)?.name}`);
             return typedb.LookupType(left_func.namespace, left_func.returnType);
                 // || typedb.LookupType(null, left_func.returnType);
         }

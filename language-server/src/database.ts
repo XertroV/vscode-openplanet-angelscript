@@ -2078,6 +2078,44 @@ export function RemoveNamespaceDeclaration(namespace : DBNamespace, moduleName :
         namespace.parentNamespace.removeChildNamespace(namespace);
 }
 
+
+export function LookupTypesInheriting(namespace : DBNamespace, typename : string) : DBType[] {
+    if (!typename) return [];
+    let identifier = CleanTypeName(typename);
+    console.log(`Looking up subtypes of: ${typename}`);
+    let dbType = (namespace || RootNamespace).GetTypeByName(identifier);
+    if (!dbType) dbType = LookupType(namespace, typename);
+    console.log(`Found DBType for: ${typename} named: ${dbType?.name}`);
+    if (!dbType) return [];
+    let ret: DBType[] = [];
+    let typeNames = new Set<string>();
+    let findSubTypesForNamespace = (ns: DBNamespace) => {
+        ns.forEachSymbol(s => {
+            if (s instanceof DBType) {
+                if (s.supertype == identifier && !typeNames.has(identifier)) {
+                    ret.push(s);
+                    typeNames.add(identifier);
+                }
+            } else if (s instanceof DBNamespace) {
+                findSubTypesForNamespace(s)
+            }
+        })
+    };
+    findSubTypesForNamespace(RootNamespace);
+    // all the symbols we just added are novel (and no duplicates) so next we want to find all types that inherit these types,
+    // and add them to the return, too. (deduping along the way).
+    ret.forEach(s => {
+        let extraTypes = LookupTypesInheriting(s.namespace, s.name);
+        extraTypes.forEach(t => {
+            if (!typeNames.has(t.name)) {
+                ret.push(t);
+                typeNames.add(t.name);
+            }
+        })
+    })
+    return ret;
+}
+
 export function LookupType(namespace : DBNamespace, typename : string) : DBType | null
 {
     if (!typename)

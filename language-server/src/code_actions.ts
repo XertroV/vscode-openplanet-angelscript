@@ -613,45 +613,64 @@ function AddCastHelpers(context : CodeActionContext)
             rightType = GetTypeFromExpressionIgnoreNullptr(scope, statement.ast.children[0]);
     }
     else if (statement.ast.type == scriptfiles.node_types.Identifier) {
-        rightType = GetTypeFromExpressionIgnoreNullptr(scope, statement.ast.expression);
+        rightType = GetTypeFromExpressionIgnoreNullptr(scope, statement.ast);
     } else if (statement.ast.type == scriptfiles.node_types.MemberAccess) {
-        rightType = GetTypeFromExpressionIgnoreNullptr(scope, statement.ast.expression);
+        rightType = GetTypeFromExpressionIgnoreNullptr(scope, statement.ast);
+    } else if (statement.ast.type == scriptfiles.node_types.FunctionCall) {
+        rightType = GetTypeFromExpressionIgnoreNullptr(scope, statement.ast);
     }
 
-    if (!leftType || !rightType)
+    // console.log(`AddCastHelpers got as far as a left or a right type: (${leftType?.name}, ${rightType?.name})
+    // statement.ast.type: ${statement.ast.type}
+    // ${!(statement.ast)} <= should be false
+    // ${scriptfiles.ResolveTypeFromExpression(scope, statement.ast)}
+    // `)
+
+    // if (!leftType || !rightType)
+    if (!rightType)
         return;
 
-    console.log(`AddCastHelpers got as far as a left or a right type: (${leftType.name}, ${rightType.name})`)
-
     // Don't care about primitives
-    if (leftType.isPrimitive || rightType.isPrimitive)
+    if (leftType?.isPrimitive || rightType.isPrimitive)
         return;
 
     // Don't care about structs
-    if (leftType.isStruct || rightType.isStruct)
+    if (leftType?.isStruct || rightType.isStruct)
         return;
 
     // Maybe we can implicitly convert
-    if (rightType.inheritsFrom(leftType.name))
+    if (!!leftType && rightType.inheritsFrom(leftType?.name))
         return;
 
     console.log(`Cast to before leftType inheritsFrom: ${rightType.name}`);
 
     // Cast needs to make sense
-    if (!leftType.inheritsFrom(rightType.name))
+    if (leftType && !leftType.inheritsFrom(rightType.name))
         return;
 
-    context.actions.push(<CodeAction> {
-        kind: CodeActionKind.QuickFix,
-        title: "Cast to "+leftType.name,
-        source: "angelscript",
-        data: {
-            uri: context.module.uri,
-            type: "addCast",
-            castTo: leftType.name,
-            position: context.module.getPosition(context.range_start),
-        }
-    });
+    let leftTypes: typedb.DBType[] = [];
+    if (leftType) {
+        leftTypes.push(leftType);
+    } else {
+        // get classes that this type is a superclass of
+        leftTypes = typedb.LookupTypesInheriting(context.scope.getNamespace(), rightType.name);
+    }
+
+    console.log(`Cast To helper suggesting ${leftTypes.length} options for \`${statement.content_trimmed}\`.`);
+
+    for (let lt of leftTypes) {
+        context.actions.push(<CodeAction> {
+            kind: CodeActionKind.QuickFix,
+            title: "Cast to "+lt.name,
+            source: "angelscript",
+            data: {
+                uri: context.module.uri,
+                type: "addCast",
+                castTo: lt.name,
+                position: context.module.getPosition(context.range_start),
+            }
+        });
+    }
 }
 
 function ResolveCastHelper(asmodule : scriptfiles.ASModule, action : CodeAction, data : any)
@@ -679,6 +698,12 @@ function ResolveCastHelper(asmodule : scriptfiles.ASModule, action : CodeAction,
     {
         if (statement.ast.children && statement.ast.children[0])
             rightNode = statement.ast.children[0]
+    } else if (statement.ast.type == scriptfiles.node_types.Identifier) {
+        rightNode = statement.ast;
+    } else if (statement.ast.type == scriptfiles.node_types.MemberAccess) {
+        rightNode = statement.ast;
+    } else if (statement.ast.type == scriptfiles.node_types.FunctionCall) {
+        rightNode = statement.ast;
     }
 
     if (!rightNode)
@@ -846,7 +871,9 @@ function AddAutoActions(context : CodeActionContext)
             continue;
 
         let realTypename = dbtype.getQualifiedTypenameInNamespace(context.scope.getNamespace());
-        let atSign = (dbtype.isPrimitive || dbtype.name.startsWith("array<")) ? "" : "@";
+        let atSign = (dbtype.isPrimitive
+            || dbtype.name.startsWith("array<")
+            || dbtype.name.startsWith("MwFastBuffer<")) ? "" : "@";
         realTypename += atSign;
 
         context.actions.push(<CodeAction> {
@@ -1750,15 +1777,4 @@ function ResolveGenerateMethod(asmodule : scriptfiles.ASModule, action : CodeAct
     action.edit.changes[asmodule.displayUri] = [
         TextEdit.insert(insertPosition, snippet)
     ];
-}
-
-
-
-
-
-function AddCastActions(context: CodeActionContext) {
-    if (!context.scope || !context.statement || !context.statement.ast) return;
-    if (context.statement.ast.type == scriptfiles.node_types.Assignment) {
-
-    }
 }
