@@ -721,10 +721,10 @@ function AddCompletionsFromSettingsDeclarations(context: CompletionContext, comp
             console.log('got setting_node!!!')
             console.dir(setting_node);
         } else {
-            console.dir(context.statement)
+            // console.dir(context.statement)
             // console.dir(context.priorExpression)
         }
-        console.trace('AddCompletionsFromSettingsDeclarations')
+        // console.trace('AddCompletionsFromSettingsDeclarations')
         let kwargNames = ["name", "category", "description", "min", "max"]
         let argNames = ["hidden", "drag", "color", "multiline", "password"]
         kwargNames.forEach(n => {
@@ -1927,7 +1927,7 @@ function GenerateCompletionContext(asmodule : scriptfiles.ASModule, offset : num
     let candidates = ExtractExpressionPreceding(content, offset-contentOffset, ignoreTable);
     context.scope = asmodule.getScopeAt(offset);
     console.log(`candidates.length: ${candidates.length}`);
-    console.dir(candidates, {depth: 3})
+    // console.dir(candidates, {depth: 3})
 
     // Try to parse each candidate in the scope
     //  In reverse order, we prefer the longest candidate
