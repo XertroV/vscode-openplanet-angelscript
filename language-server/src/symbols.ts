@@ -362,26 +362,43 @@ export function GetHover(asmodule : scriptfiles.ASModule, position : Position) :
     }
 
     let priorSymbol = asmodule.getSymbolAtOrBefore(findSymbol.start-2);
+    let followedByParen = "(" == asmodule.content[findSymbol.end]
+        || " " == asmodule.content[findSymbol.end] && "(" == asmodule.content[findSymbol.end + 1];
 
     console.warn(`GetHover for type: ${ASSymbolTypeToString(findSymbol.type)}, ${findSymbol.ns_name} :: ${findSymbol.symbol_name}`);
     console.warn(`priorSymbol: ${ASSymbolTypeToString(priorSymbol?.type)} ${priorSymbol?.symbol_name}`);
+    console.warn(`followedByParen: ${followedByParen}`);
 
     switch (findSymbol.type)
     {
         case scriptfiles.ASSymbolType.Typename:
         {
-            let ns = typedb.GetRootNamespace()
+            console.log('scriptfiles.ASSymbolType.Typename');
+            // if followed by paren then we're calling a constructor probs
+            let allowTypes = followedByParen ? typedb.DBAllowSymbol.Functions : typedb.DBAllowSymbol.Types;
+            let ns = typedb.GetRootNamespace();
             let dbtype;
             if (findSymbol.getNamespaceIfAny()) {
                 ns = typedb.LookupNamespace(ns, findSymbol.ns_name);
-                dbtype = ns.findFirstSymbol(findSymbol.getSymbolNameWithoutNamespace(), typedb.DBAllowSymbol.Types) as typedb.DBType;
+                dbtype = ns.findFirstSymbol(findSymbol.getSymbolNameWithoutNamespace(), allowTypes) as typedb.DBType;
             }
             if (!dbtype && priorSymbol && priorSymbol.isNamespaceOrTypename())
                 dbtype = typedb.GetTypeByName(findSymbol.getSymbolNameWithoutNamespace(), priorSymbol.symbol_name);
             if (!dbtype)
                 dbtype = typedb.GetTypeByName(findSymbol.getSymbolNameWithoutNamespace());
-            if (dbtype)
+            if (dbtype) {
+                if (followedByParen) {
+                    // console.log('scriptfiles.ASSymbolType.Typename looking for constructor');
+                    let funcType = dbtype.namespace.findFirstSymbol(findSymbol.getSymbolNameWithoutNamespace(), typedb.DBAllowSymbol.Functions) as typedb.DBMethod;
+                    if (funcType) {
+                        // console.log('scriptfiles.ASSymbolType.Typename returning hover for func');
+                        return GetHoverForFunction(ns, funcType, false);
+                    }
+                }
+                // console.log('scriptfiles.ASSymbolType.Typename returning hover for type');
                 return GetHoverForType(dbtype);
+            }
+            // console.log('scriptfiles.ASSymbolType.Typename did not terminate');
         }
         break;
         case scriptfiles.ASSymbolType.Namespace:
@@ -701,6 +718,7 @@ function GetHoverForType(hoveredType : typedb.DBType) : Hover
     }
     else
     {
+        let isClass = !hoveredType.isStruct;
         if (hoveredType.isStruct)
             hover += "struct ";
         else

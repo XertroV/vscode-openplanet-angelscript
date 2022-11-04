@@ -30,9 +30,14 @@ If you have issues ping @XertroV on the Openplanet discord.
 - check for redefinition of variables in same scope and squiggle
 - add functions for `uint(-1)` etc
 - insert type MwFastBuffer no `@`
+- annotation type add `@`
+- replace auto with X sometimes shows many many suggestions (related to inline funciton decl or other scope issue?)
+-
 
 ## Changelog
 
+- 0.2.7
+  - Add constructor decl hover
 - 0.2.6
   - add mixin syntax support
   - add functions for primitive conversions

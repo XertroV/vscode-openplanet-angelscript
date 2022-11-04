@@ -612,9 +612,16 @@ function AddCastHelpers(context : CodeActionContext)
         if (statement.ast.children && statement.ast.children[0])
             rightType = GetTypeFromExpressionIgnoreNullptr(scope, statement.ast.children[0]);
     }
+    else if (statement.ast.type == scriptfiles.node_types.Identifier) {
+        rightType = GetTypeFromExpressionIgnoreNullptr(scope, statement.ast.expression);
+    } else if (statement.ast.type == scriptfiles.node_types.MemberAccess) {
+        rightType = GetTypeFromExpressionIgnoreNullptr(scope, statement.ast.expression);
+    }
 
     if (!leftType || !rightType)
         return;
+
+    console.log(`AddCastHelpers got as far as a left or a right type: (${leftType.name}, ${rightType.name})`)
 
     // Don't care about primitives
     if (leftType.isPrimitive || rightType.isPrimitive)
@@ -627,6 +634,8 @@ function AddCastHelpers(context : CodeActionContext)
     // Maybe we can implicitly convert
     if (rightType.inheritsFrom(leftType.name))
         return;
+
+    console.log(`Cast to before leftType inheritsFrom: ${rightType.name}`);
 
     // Cast needs to make sense
     if (!leftType.inheritsFrom(rightType.name))
@@ -837,11 +846,12 @@ function AddAutoActions(context : CodeActionContext)
             continue;
 
         let realTypename = dbtype.getQualifiedTypenameInNamespace(context.scope.getNamespace());
-        realTypename += dbtype.isPrimitive ? "" : "@";
+        let atSign = (dbtype.isPrimitive || dbtype.name.startsWith("array<")) ? "" : "@";
+        realTypename += atSign;
 
         context.actions.push(<CodeAction> {
             kind: CodeActionKind.QuickFix,
-            title: "Change auto to "+dbtype.getDisplayName() + (dbtype.isPrimitive ? "" : "@"),
+            title: "Change auto to "+dbtype.getDisplayName() + (atSign),
             source: "angelscript",
             data: {
                 uri: context.module.uri,
@@ -1740,4 +1750,15 @@ function ResolveGenerateMethod(asmodule : scriptfiles.ASModule, action : CodeAct
     action.edit.changes[asmodule.displayUri] = [
         TextEdit.insert(insertPosition, snippet)
     ];
+}
+
+
+
+
+
+function AddCastActions(context: CodeActionContext) {
+    if (!context.scope || !context.statement || !context.statement.ast) return;
+    if (context.statement.ast.type == scriptfiles.node_types.Assignment) {
+
+    }
 }

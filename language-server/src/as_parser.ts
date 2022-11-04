@@ -2238,6 +2238,7 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
                 dbfunc.documentation = typedb.FormatDocumentationComment(funcdef.documentation);
             dbfunc.moduleOffset = _previous.start_offset + (funcdef.name?.start || 0);
             dbfunc.moduleOffsetEnd = _previous.start_offset + (funcdef.name?.end || 0);
+            dbfunc.suggestionDecl = _previous.content_trimmed;
 
             if (funcdef.returntype)
                 dbfunc.returnType = GetQualifiedTypename(funcdef.returntype);
@@ -2358,6 +2359,7 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
             dbfunc.moduleOffset = _previous.start_offset + constrdef.name.start;
             dbfunc.moduleOffsetEnd = _previous.start_offset + constrdef.name.end;
             dbfunc.isConstructor = true;
+            dbfunc.suggestionDecl = _previous.content_trimmed;
             scope.dbfunc = dbfunc;
 
             // Constructor gets added to the namespace as a global function instead
