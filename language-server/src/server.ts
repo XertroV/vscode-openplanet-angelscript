@@ -72,11 +72,16 @@ let ReceivingTypesTimeout : any = null;
 let SetTypeTimeout = false;
 let UnrealTypesTimedOut = false;
 
+let AddedOPVirtualTypes = false;
+
 function load_openplanet() {
     LoadOpenplanetJson();
-    typedb.AddOpenplanetIcons();
-    typedb.AddOpenplanetFuncdefs();
-    typedb.AddPrimitiveTypes(false);
+    if (!AddedOPVirtualTypes) {
+        AddedOPVirtualTypes = true;
+        typedb.AddOpenplanetIcons();
+        typedb.AddOpenplanetFuncdefs();
+        typedb.AddPrimitiveTypes(false);
+    }
 }
 
 let JsonLoaded_Core = false;
@@ -88,34 +93,38 @@ function LoadOpenplanetJson() {
     const opCoreJson = path.join(opDir, 'OpenplanetCore.json');
     const opNextJson = path.join(opDir, 'OpenplanetNext.json');
 
-    fs.readFile(opCoreJson, (err, data) => {
-        if (err) {
-            console.error(`Error reading ${opCoreJson} -- does it exist?`);
-            JsonLoaded_Core = true;
-        } else {
-            typedb.AddTypesFromOpenplanet(JSON.parse(data.toLocaleString()));
-            DirtyAllDiagnostics();
-            typedb.OnDirtyTypeCaches();
-            JsonLoaded_Core = true;
-        }
-    })
+    console.log(`Loading Openplanet JSON files; previously loaded: {core: ${JsonLoaded_Core}, next: ${JsonLoaded_Next}}`)
 
-    fs.readFile(opNextJson, (err, data) => {
-        if (err) {
-            console.error(`Error reading ${opNextJson} -- does it exist?`);
-            JsonLoaded_Next = true;
-        } else {
-            typedb.AddNadeoTypesFromOpenplanet(JSON.parse(data.toLocaleString()));
-            DirtyAllDiagnostics();
-            typedb.OnDirtyTypeCaches();
-            JsonLoaded_Next = true;
-        }
-    })
+    if (!JsonLoaded_Core) {
+        JsonLoaded_Core = true;
+        fs.readFile(opCoreJson, (err, data) => {
+            if (err) {
+                console.error(`Error reading ${opCoreJson} -- does it exist?`);
+                JsonLoaded_Core = false;
+            } else {
+                typedb.AddTypesFromOpenplanet(JSON.parse(data.toLocaleString()));
+                DirtyAllDiagnostics();
+                typedb.OnDirtyTypeCaches();
+            }
+        })
+    }
+
+    if (!JsonLoaded_Next) {
+        JsonLoaded_Next = true;
+        fs.readFile(opNextJson, (err, data) => {
+            if (err) {
+                console.error(`Error reading ${opNextJson} -- does it exist?`);
+                JsonLoaded_Next = false;
+            } else {
+                typedb.AddNadeoTypesFromOpenplanet(JSON.parse(data.toLocaleString()));
+                DirtyAllDiagnostics();
+                typedb.OnDirtyTypeCaches();
+            }
+        })
+    }
 }
 
-load_openplanet();
-
-// load_openplanet();
+load_openplanet(); // try early with defaults
 
 // Create a simple text document manager. The text document manager
 // supports full document sync only
@@ -1040,6 +1049,8 @@ connection.onRequest("angelscript/provideFileDecoration", (...params: any[]): an
 
  connection.onDidChangeConfiguration(function (change : DidChangeConfigurationParams)
  {
+    console.warn('onDidChangeConfiguration')
+
     let settingsObject = change.settings as any;
     let settings : any = settingsObject.OpenplanetAngelscript;
     if (!settings)
@@ -1048,8 +1059,12 @@ connection.onRequest("angelscript/provideFileDecoration", (...params: any[]): an
     let diagnosticSettings = scriptdiagnostics.GetDiagnosticSettings();
     let scriptSettings = scriptfiles.GetScriptSettings();
     let dirtyDiagnostics = false;
-
+    let reloadOPJson = false;
     if (scriptSettings.openplanetNextLocation != settings.openplanetNextLocation
+        || scriptSettings.openplanetNextPluginsLocation != settings.openplanetNextPluginsLocation) {
+        reloadOPJson = true;
+    }
+    if (reloadOPJson
       || diagnosticSettings.markUnreadVariablesAsUnused != settings.helper.markUnreadVariablesAsUnused
       || diagnosticSettings.squiggleUnparsableStatements != settings.parser.squiggleUnparsableStatements) {
         dirtyDiagnostics = true;
@@ -1064,6 +1079,9 @@ connection.onRequest("angelscript/provideFileDecoration", (...params: any[]): an
 
     if (dirtyDiagnostics)
         DirtyAllDiagnostics();
+
+    if (reloadOPJson)
+        LoadOpenplanetJson();
 
     let completionSettings = parsedcompletion.GetCompletionSettings();
     completionSettings.mathCompletionShortcuts = settings.helper.mathCompletionShortcuts;
@@ -1084,6 +1102,10 @@ connection.onRequest("angelscript/provideFileDecoration", (...params: any[]): an
     inlineValueSettings.showInlineValueForLocalVariables = settings.inlineValues.showInlineValueForLocalVariables;
     inlineValueSettings.showInlineValueForParameters = settings.inlineValues.showInlineValueForParameters;
     inlineValueSettings.showInlineValueForMemberAssignment = settings.inlineValues.showInlineValueForMemberAssignment;
+
+    load_openplanet();
+    for (let RootPath of Roots)
+        LoadOpenplanetInfoToml(RootPath+"/info.toml");
  });
 
 function TryResolveInlayHints(asmodule : scriptfiles.ASModule, range : Range) : Array<inlayhints.ASInlayHint> | null

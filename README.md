@@ -30,10 +30,13 @@ If you have issues ping @XertroV on the Openplanet discord.
 - check for redefinition of variables in same scope and squiggle
 - annotation type add `@`
 - ✅ 'Change auto to X@' sometimes shows many many suggestions when it should show one (related to inline function decl or other scope issue?)
+- add suggestions for settings keyword args
+
 
 ## Changelog
 
 - 0.2.8
+  - inprog: settings keyword suggestions
   - fix too many 'Change auto to X' suggestions -- will only suggest one, now, and only within the prior 20 symbols.
 - 0.2.7
   - add cast suggestions, particularly helpful for Nadeo types (try ctrl+. when your cursor is over `auto app = GetApp();`)

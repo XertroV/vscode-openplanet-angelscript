@@ -1129,6 +1129,9 @@ function AddMemberActions(context : CodeActionContext)
     if (!context.statement.ast)
         return;
 
+    // don't enable any of these, but leave as reference for similar stuff in future
+    return;
+
     let dbType = context.scope.getParentType();
     if (context.statement.ast.type == scriptfiles.node_types.FunctionDecl
         && context.statement.ast.name
@@ -1145,8 +1148,8 @@ function AddMemberActions(context : CodeActionContext)
                     let superFunc = superType.findFirstSymbol(context.statement.ast.name.value, typedb.DBAllowSymbol.Functions);
                     if (superFunc && superFunc instanceof typedb.DBMethod)
                     {
-                        if (superFunc.isBlueprintEvent)
-                            isOverrideEvent = true;
+                        // if (superFunc.isBlueprintEvent)
+                        //     isOverrideEvent = true;
                     }
                 }
             }

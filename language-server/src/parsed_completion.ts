@@ -164,11 +164,6 @@ export function Complete(asmodule: scriptfiles.ASModule, position: Position): Ar
     let offset = asmodule.getOffset(position);
     let context = GenerateCompletionContext(asmodule, offset - 1);
 
-    // this needs some refining, but not sure what to check
-    if (context.scope.getNamespace().isRootNamespace() && context.scope.scopetype == scriptfiles.ASScopeType.Global) {
-        AddOpenplanetCallbackCompletions(context, completions);
-    }
-
     // No completions when in ignored code (comments, strings, etc)
     if (context.isIgnoredCode)
         return [];
@@ -180,6 +175,14 @@ export function Complete(asmodule: scriptfiles.ASModule, position: Position): Ar
     // Add completions from import statements
     if (AddCompletionsFromImportStatement(context, completions))
         return completions;
+
+    if (AddCompletionsFromSettingsDeclarations(context, completions))
+        return completions;
+
+    // this needs some refining, but not sure what to check
+    if (context.scope.getNamespace().isRootNamespace() && context.scope.scopetype == scriptfiles.ASScopeType.Global) {
+        AddOpenplanetCallbackCompletions(context, completions);
+    }
 
     // // Add completions from unreal macro specifiers
     // if (AddCompletionsFromUnrealMacro(context, completions))
@@ -709,6 +712,48 @@ function AddCompletionsFromSpecifiers(context : CompletionContext, specifiers : 
             });
         }
     }
+}
+
+function AddCompletionsFromSettingsDeclarations(context: CompletionContext, completions: CompletionItem[]) {
+    if (context.statement && context.statement.ast && context.statement.ast.type == scriptfiles.node_types.VariableDecl) {
+        let setting_node = context.statement.ast.setting;
+        if (setting_node) {
+            console.log('got setting_node!!!')
+            console.dir(setting_node);
+        } else {
+            console.dir(context.statement)
+            // console.dir(context.priorExpression)
+        }
+        console.trace('AddCompletionsFromSettingsDeclarations')
+        let kwargNames = ["name", "category", "description", "min", "max"]
+        let argNames = ["hidden", "drag", "color", "multiline", "password"]
+        kwargNames.forEach(n => {
+            completions.push({
+                label: n, kind: CompletionItemKind.Field,
+                sortText: Sort.Keyword,
+                insertText: `${n}=`
+            })
+        })
+        argNames.forEach(n => {
+            completions.push({
+                label: n, kind: CompletionItemKind.Field,
+                sortText: Sort.Keyword,
+                insertText: `${n} `
+            })
+        })
+    } else if (context.statement && context.statement.ast && context.statement.ast.type == scriptfiles.node_types.SettingsTabDeclaration) {
+        let kwargNames = ["name", "icon"]
+        kwargNames.forEach(n => {
+            completions.push({
+                label: n, kind: CompletionItemKind.Field,
+                sortText: Sort.Keyword,
+                insertText: `${n}=`
+            })
+        })
+    } else {
+        return false;
+    }
+    return true;
 }
 
 function AddCompletionsFromImportStatement(context : CompletionContext, completions : Array<CompletionItem>) : boolean
@@ -1881,6 +1926,8 @@ function GenerateCompletionContext(asmodule : scriptfiles.ASModule, offset : num
 
     let candidates = ExtractExpressionPreceding(content, offset-contentOffset, ignoreTable);
     context.scope = asmodule.getScopeAt(offset);
+    console.log(`candidates.length: ${candidates.length}`);
+    console.dir(candidates, {depth: 3})
 
     // Try to parse each candidate in the scope
     //  In reverse order, we prefer the longest candidate
@@ -2804,7 +2851,7 @@ function ExtractExpressionPreceding(content : string, offset : number, ignoreTab
                         }
 
                         if (exprStartOffset >= 4
-                            && content[exprStartOffset-4] == "C"
+                            && content[exprStartOffset-4] == "c"
                             && content[exprStartOffset-3] == "a"
                             && content[exprStartOffset-2] == "s"
                             && content[exprStartOffset-1] == "t")
