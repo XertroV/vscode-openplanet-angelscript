@@ -1253,6 +1253,12 @@ var grammar = {
     {"name": "constant", "symbols": [(lexer.has("dqstring") ? {type: "dqstring"} : dqstring)], "postprocess": 
         function(d) { return Literal(n.ConstString, d[0]); }
         },
+    {"name": "constant$ebnf$1", "symbols": []},
+    {"name": "constant$ebnf$1$subexpression$1", "symbols": ["_", (lexer.has("dqstring") ? {type: "dqstring"} : dqstring)]},
+    {"name": "constant$ebnf$1", "symbols": ["constant$ebnf$1", "constant$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "constant", "symbols": [(lexer.has("dqstring") ? {type: "dqstring"} : dqstring), "constant$ebnf$1"], "postprocess": 
+        function(d) { return Literal(n.ConstString, d[0]); } // todo, extend
+        },
     {"name": "constant", "symbols": [(lexer.has("dqstring") ? {type: "dqstring"} : dqstring), "_", (lexer.has("lsqbracket") ? {type: "lsqbracket"} : lsqbracket), "_", (lexer.has("number") ? {type: "number"} : number), "_", (lexer.has("rsqbracket") ? {type: "rsqbracket"} : rsqbracket)], "postprocess": 
         function(d) { return Literal(n.ConstInteger, d[0]); } // `"test"[2]` -> returns uint8
         },

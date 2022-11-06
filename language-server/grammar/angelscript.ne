@@ -1212,6 +1212,10 @@ constant -> %dqstring {%
     function(d) { return Literal(n.ConstString, d[0]); }
 %}
 
+constant -> %dqstring (_ %dqstring):* {%
+    function(d) { return Literal(n.ConstString, d[0]); } // todo, extend
+%}
+
 constant -> %dqstring _ %lsqbracket _ %number _ %rsqbracket {%
     function(d) { return Literal(n.ConstInteger, d[0]); } // `"test"[2]` -> returns uint8
 %}

@@ -42,6 +42,7 @@ If you have issues ping @XertroV on the Openplanet discord.
   - improve settings kwarg suggestion locations
   - fix broken `Define: ` for openplanet callbacks
   - fix detection of empty function bodies where keywords (like `override`) occur after that arguments list
+  - fix parsing strings continued over multiple lines `"a" \n "b" == "ab"`
 - 0.2.9
   - fix array parsing so inline type decls for anonymous arrays/dictionaries work (`dictionary d = {{'k', array<string> = {'a', 'b'}}};`)
 - 0.2.8
