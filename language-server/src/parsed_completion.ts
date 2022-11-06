@@ -105,6 +105,7 @@ class CompletionContext
     isIncompleteNamespace: boolean = false;
     isFunctionDeclaration: boolean = false;
     isInsideType: boolean = false;
+    isSettingDeclaration: boolean = false;
     expectedType: typedb.DBType = null;
 
     maybeTypename: boolean = false;
@@ -725,6 +726,8 @@ function AddCompletionsFromSettingsDeclarations(context: CompletionContext, comp
             // console.dir(context.statement)
             // console.dir(context.priorExpression)
         }
+        if (!context.isSettingDeclaration) return;
+
         // console.trace('AddCompletionsFromSettingsDeclarations')
         let kwargNames = ["name", "category", "description", "min", "max"]
         let argNames = ["hidden", "drag", "color", "multiline", "password"]
@@ -1928,7 +1931,7 @@ function GenerateCompletionContext(asmodule : scriptfiles.ASModule, offset : num
     let candidates = ExtractExpressionPreceding(content, offset-contentOffset, ignoreTable);
     context.scope = asmodule.getScopeAt(offset);
     console.log(`candidates.length: ${candidates.length}`);
-    // console.dir(candidates, {depth: 3})
+    console.dir(candidates, {depth: 3})
 
     // Try to parse each candidate in the scope
     //  In reverse order, we prefer the longest candidate
@@ -1946,6 +1949,9 @@ function GenerateCompletionContext(asmodule : scriptfiles.ASModule, offset : num
         context.expectedType = null;
         context.statement.ast = null;
         context.requiresPriorType = false;
+
+        if (!candidate.isRightExpression && (candidate.code.startsWith("Setting ") || candidate.code.startsWith("SettingsTab ")))
+            context.isSettingDeclaration = true;
 
         // Try to parse as a proper statement in the scope
         let baseType = context.scope.scopetype;

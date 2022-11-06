@@ -38,7 +38,7 @@ If you have issues ping @XertroV on the Openplanet discord.
 ## Changelog
 
 - 0.2.10
-  - (inprog) improve settings kwarg suggestion locations
+  - improve settings kwarg suggestion locations
   - fix broken `Define: ` for openplanet callbacks
   - fix detection of empty function bodies where keywords (like `override`) occur after that arguments list
 - 0.2.9
