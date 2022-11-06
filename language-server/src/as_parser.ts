@@ -6454,6 +6454,8 @@ function CheckIfInlineArray(scope: ASScope, cur_element: ASElement, cur_offset: 
         }
         // console.log(`cur_element.content: ${cur_element.content}`);
         let contentTrimmed = cur_element.content.replace("\r", " ").replace("\n", " ").trim();
+        let contentWords = cur_element.content.split(" ").filter(v => v.length > 0);
+        let wordImmediatelyBefore = contentWords.length > 0 ? contentWords[contentWords.length - 1] : "";
         let matchesKeyword = (kw: string) =>
                 contentTrimmed.startsWith(`${kw} `)
                 || contentTrimmed.startsWith(`${kw}{`)
@@ -6461,18 +6463,19 @@ function CheckIfInlineArray(scope: ASScope, cur_element: ASElement, cur_offset: 
                 || cur_element.content.includes(` ${kw}{`)
                 || cur_element.content.includes(`\n${kw} `)
                 || cur_element.content.includes(`\n${kw}{`);
+        let matchesPrior = (kw: string) => kw === wordImmediatelyBefore;
         if (matchesKeyword("enum")) return false;
         if (matchesKeyword("class")) return false;
         if (matchesKeyword("interface")) return false;
         if (matchesKeyword("namespace")) return false;
         if (matchesKeyword("try")) return false;
         if (matchesKeyword("catch")) return false;
-        if (matchesKeyword("if")) return false;
         if (matchesKeyword("else")) return false;
-        if (matchesKeyword("override")) return false;
-        if (matchesKeyword("const")) return false;
-        if (matchesKeyword("final")) return false;
-        if (matchesKeyword("property")) return false;
+        if (matchesPrior("if")) return false;
+        if (matchesPrior("override")) return false;
+        if (matchesPrior("const")) return false;
+        if (matchesPrior("final")) return false;
+        if (matchesPrior("property")) return false;
         if (contentTrimmed.endsWith(")")) return false; // function definition; if () {}; while () {}; etc
         if (contentTrimmed.includes("enum")) // warn if our checks failed somehow, but could be false positive b/c of a lack of whitespace
             console.warn(`Found enum! (and we shouldnt have): "${contentTrimmed}"`)

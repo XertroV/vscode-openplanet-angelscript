@@ -34,6 +34,7 @@ If you have issues ping @XertroV on the Openplanet discord.
 - fix/add `CoroutineFunc@` data types
 - fix suggestions for fundefs -- way too many! (including missing some of the last characters + many many repetitions)
 - properties that are funcdef types should be registered as local functions
+- cast to helper suggests pointless stuff for arrays (maybe other template types too)
 
 ## Changelog
 
