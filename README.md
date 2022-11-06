@@ -32,10 +32,15 @@ If you have issues ping @XertroV on the Openplanet discord.
 - ✅ 'Change auto to X@' sometimes shows many many suggestions when it should show one (related to inline function decl or other scope issue?)
 - add suggestions for settings keyword args
 - fix/add `CoroutineFunc@` data types
-
+- fix suggestions for fundefs -- way too many! (including missing some of the last characters + many many repetitions)
+- properties that are funcdef types should be registered as local functions
 
 ## Changelog
 
+- 0.2.10
+  - (inprog) improve settings kwarg suggestion locations
+  - fix broken `Define: ` for openplanet callbacks
+  - fix detection of empty function bodies where keywords (like `override`) occur after that arguments list
 - 0.2.9
   - fix array parsing so inline type decls for anonymous arrays/dictionaries work (`dictionary d = {{'k', array<string> = {'a', 'b'}}};`)
 - 0.2.8

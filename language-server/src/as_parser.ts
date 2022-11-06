@@ -6467,7 +6467,12 @@ function CheckIfInlineArray(scope: ASScope, cur_element: ASElement, cur_offset: 
         if (matchesKeyword("namespace")) return false;
         if (matchesKeyword("try")) return false;
         if (matchesKeyword("catch")) return false;
+        if (matchesKeyword("if")) return false;
         if (matchesKeyword("else")) return false;
+        if (matchesKeyword("override")) return false;
+        if (matchesKeyword("const")) return false;
+        if (matchesKeyword("final")) return false;
+        if (matchesKeyword("property")) return false;
         if (contentTrimmed.endsWith(")")) return false; // function definition; if () {}; while () {}; etc
         if (contentTrimmed.includes("enum")) // warn if our checks failed somehow, but could be false positive b/c of a lack of whitespace
             console.warn(`Found enum! (and we shouldnt have): "${contentTrimmed}"`)

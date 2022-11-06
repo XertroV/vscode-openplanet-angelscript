@@ -176,8 +176,9 @@ export function Complete(asmodule: scriptfiles.ASModule, position: Position): Ar
     if (AddCompletionsFromImportStatement(context, completions))
         return completions;
 
-    if (AddCompletionsFromSettingsDeclarations(context, completions))
-        return completions;
+    // add if applicable and continue
+    AddCompletionsFromSettingsDeclarations(context, completions);
+
 
     // this needs some refining, but not sure what to check
     if (context.scope.getNamespace().isRootNamespace() && context.scope.scopetype == scriptfiles.ASScopeType.Global) {

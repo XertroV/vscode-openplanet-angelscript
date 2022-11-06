@@ -2104,15 +2104,16 @@ export function LookupTypesInheriting(namespace : DBNamespace, typename : string
     findSubTypesForNamespace(RootNamespace);
     // all the symbols we just added are novel (and no duplicates) so next we want to find all types that inherit these types,
     // and add them to the return, too. (deduping along the way).
-    ret.forEach(s => {
+    let ret2 = ret.flatMap(s => {
         let extraTypes = LookupTypesInheriting(s.namespace, s.name);
-        extraTypes.forEach(t => {
-            if (!typeNames.has(t.name)) {
-                ret.push(t);
-                typeNames.add(t.name);
-            }
-        })
+        return extraTypes.filter(t => !typeNames.has(t.name));
     })
+    ret2.forEach(s => {
+        if (!typeNames.has(s.name)) {
+            ret.push(s);
+            typeNames.add(s.name);
+        }
+    });
     return ret;
 }
 
