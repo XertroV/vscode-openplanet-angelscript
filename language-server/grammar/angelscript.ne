@@ -22,7 +22,7 @@ const lexer = moo.compile({
     atsign: "@",
     postfix_operator: ["++", "--"],
     compound_assignment: ["+=", "-=", "/=", "*=", "**=", "~=", "^=", "|=", "&=", "%=", "<<=", ">>=", ">>>="],
-    op_binary_logic: ['&&', '||'],
+    op_binary_logic: ['&&', '||', 'or ', 'and ', 'xor ', '^^'],
     op_binary_sum: ['+', '-'],
     op_binary_product: ['*', '/', '%', '**'],
     // note: removed `>>` from op_binary_compare; causes bug with cast<array<X>>
@@ -31,7 +31,7 @@ const lexer = moo.compile({
     gt: ">",
     op_binary_bitwise: ["|", "&", "^"],
     op_assignment: "=",
-    op_unary: ["!", "~"],
+    op_unary: ["!", "~", "not "],
     ternary: "?",
     trpstring:  {
         match: /"""[^]*"""/,

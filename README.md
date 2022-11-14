@@ -29,15 +29,21 @@ If you have issues ping @XertroV on the Openplanet discord.
 
 - check for redefinition of variables in same scope and squiggle
 - annotation type add `@`
-- ✅ 'Change auto to X@' sometimes shows many many suggestions when it should show one (related to inline function decl or other scope issue?)
-- add suggestions for settings keyword args
+- add suggestions for settings keyword args (some done)
 - fix/add `CoroutineFunc@` data types
 - fix suggestions for fundefs -- way too many! (including missing some of the last characters + many many repetitions)
 - properties that are funcdef types should be registered as local functions
 - cast to helper suggests pointless stuff for arrays (maybe other template types too)
+- add `funcdef UI::CallbackCompletion(UI::InputTextCallbackData@ data);`
+- complex class mixin/inheritance syntax
+- `void` as value for `&out` vars to ignore
+- "Arguments can also be named and passed to a specific argument independent of the order the parameters were declared in. No positional arguments may follow any named arguments."
+- `const obj @ const d = obj();`
 
 ## Changelog
 
+- 0.2.12
+  - add `and`, `xor`, and `or` binary compare operators (and `^^`, too), and `not`
 - 0.2.10
   - improve settings kwarg suggestion locations
   - fix broken `Define: ` for openplanet callbacks

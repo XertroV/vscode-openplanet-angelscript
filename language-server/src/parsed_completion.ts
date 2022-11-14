@@ -2247,7 +2247,8 @@ function GenerateCompletionContext(asmodule : scriptfiles.ASModule, offset : num
 
         if (!context.expectedType)
         {
-            if (context.rightOperator == "&&" || context.rightOperator == "||" || context.rightOperator == "!")
+            let boolOperators = ['&&', '||', '!', '^^', 'and', 'or', 'xor', 'not', 'and ', 'or ', 'xor ', 'not '];
+            if (boolOperators.includes(context.rightOperator.trim()))
             {
                 // On the right of a boolean operator should always be a bool
                 context.expectedType = typedb.GetTypeByName("bool");

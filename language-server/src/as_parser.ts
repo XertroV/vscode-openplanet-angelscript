@@ -3425,6 +3425,13 @@ function getBinaryOperatorOverloadMethod(operator : any) : string
         case "<=": return "BOOLEAN";
         case "&&": return "BOOLEAN";
         case "||": return "BOOLEAN";
+        case "^^": return "BOOLEAN";
+        case "and": return "BOOLEAN";
+        case "and ": return "BOOLEAN";
+        case "or": return "BOOLEAN";
+        case "or ": return "BOOLEAN";
+        case "xor": return "BOOLEAN";
+        case "xor ": return "BOOLEAN";
     }
 
     return operator;
@@ -3439,6 +3446,8 @@ function getUnaryOperatorOverloadMethod(operator : any) : string
         case "++": return "opPreInc";
         case "--": return "opPreDec";
         case "!": return "BOOLEAN";
+        case "not": return "BOOLEAN";
+        case "not ": return "BOOLEAN";
     }
 
     return operator;
