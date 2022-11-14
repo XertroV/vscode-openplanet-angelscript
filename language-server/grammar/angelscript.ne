@@ -485,16 +485,51 @@ global_declaration -> typename {%
     }; }
 %}
 
-global_declaration -> ((%shared_token | %mixin_token) _):? (%class_token | %interface_token) _ atref:? %identifier ( _ %colon):? (_ typename_identifier):? {%
+# # hmm, not sure that atref:? should be there
+# global_declaration -> ((%shared_token | %mixin_token) _):? (%class_token | %interface_token) _ atref:? %identifier ( _ %colon):? (_ typename_identifier):? {%
+#     function (d) { return {
+#         ...Compound(d, n.ClassDefinition, null),
+#         name: Identifier(d[4]),
+#         // superclass: d[6] ? Identifier(d[6][1]) : null,
+#         superclass: d[6] ? d[6][1] : null,
+#         is_shared: (d[0] && d[0][0]) ? d[0][0].value == "shared" : false,
+#         is_mixin: (d[0] && d[0][0]) ? d[0][0].value == "mixin" : false
+#     }}
+# %}
+
+class_decl_keyword -> (%shared_token | %mixin_token) _ {%
+    function(d) {
+        return d[0].value;
+    }
+%}
+
+class_inherits_from -> _ typename_identifier (_ %comma _ typename_identifier:?):* {%
+    function(d) {
+        let ids = [d[1]];
+        if (d[2] && d[2].length > 0) {
+            for (let inner of d[2]) {
+                if (inner[3]) {
+                    ids.push(inner[3]);
+                }
+            }
+        }
+        return ids;
+    }
+%}
+
+global_declaration -> class_decl_keyword:* (%class_token | %interface_token) _ atref:? %identifier ( _ %colon):? class_inherits_from:? {%
     function (d) { return {
         ...Compound(d, n.ClassDefinition, null),
         name: Identifier(d[4]),
         // superclass: d[6] ? Identifier(d[6][1]) : null,
         superclass: d[6] ? d[6][1] : null,
-        is_shared: (d[0] && d[0][0]) ? d[0][0].value == "shared" : false,
-        is_mixin: (d[0] && d[0][0]) ? d[0][0].value == "mixin" : false
+        is_shared: (d[0]) ? d[0].includes("shared") : false,
+        is_mixin: (d[0]) ? d[0].includes("mixin") : false
     }}
 %}
+
+
+
 global_declaration -> (%shared_token _):? %enum_token _ %identifier {%
     function (d) { return {
         ...Compound(d, n.EnumDefinition, null),

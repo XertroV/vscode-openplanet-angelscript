@@ -486,11 +486,33 @@ var grammar = {
             typename: d[0],
         }; }
         },
-    {"name": "global_declaration$ebnf$3$subexpression$1$subexpression$1", "symbols": [(lexer.has("shared_token") ? {type: "shared_token"} : shared_token)]},
-    {"name": "global_declaration$ebnf$3$subexpression$1$subexpression$1", "symbols": [(lexer.has("mixin_token") ? {type: "mixin_token"} : mixin_token)]},
-    {"name": "global_declaration$ebnf$3$subexpression$1", "symbols": ["global_declaration$ebnf$3$subexpression$1$subexpression$1", "_"]},
-    {"name": "global_declaration$ebnf$3", "symbols": ["global_declaration$ebnf$3$subexpression$1"], "postprocess": id},
-    {"name": "global_declaration$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "class_decl_keyword$subexpression$1", "symbols": [(lexer.has("shared_token") ? {type: "shared_token"} : shared_token)]},
+    {"name": "class_decl_keyword$subexpression$1", "symbols": [(lexer.has("mixin_token") ? {type: "mixin_token"} : mixin_token)]},
+    {"name": "class_decl_keyword", "symbols": ["class_decl_keyword$subexpression$1", "_"], "postprocess": 
+        function(d) {
+            return d[0].value;
+        }
+        },
+    {"name": "class_inherits_from$ebnf$1", "symbols": []},
+    {"name": "class_inherits_from$ebnf$1$subexpression$1$ebnf$1", "symbols": ["typename_identifier"], "postprocess": id},
+    {"name": "class_inherits_from$ebnf$1$subexpression$1$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "class_inherits_from$ebnf$1$subexpression$1", "symbols": ["_", (lexer.has("comma") ? {type: "comma"} : comma), "_", "class_inherits_from$ebnf$1$subexpression$1$ebnf$1"]},
+    {"name": "class_inherits_from$ebnf$1", "symbols": ["class_inherits_from$ebnf$1", "class_inherits_from$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "class_inherits_from", "symbols": ["_", "typename_identifier", "class_inherits_from$ebnf$1"], "postprocess": 
+        function(d) {
+            let ids = [d[1]];
+            if (d[2] && d[2].length > 0) {
+                for (let inner of d[2]) {
+                    if (inner[3]) {
+                        ids.push(inner[3]);
+                    }
+                }
+            }
+            return ids;
+        }
+        },
+    {"name": "global_declaration$ebnf$3", "symbols": []},
+    {"name": "global_declaration$ebnf$3", "symbols": ["global_declaration$ebnf$3", "class_decl_keyword"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "global_declaration$subexpression$1", "symbols": [(lexer.has("class_token") ? {type: "class_token"} : class_token)]},
     {"name": "global_declaration$subexpression$1", "symbols": [(lexer.has("interface_token") ? {type: "interface_token"} : interface_token)]},
     {"name": "global_declaration$ebnf$4", "symbols": ["atref"], "postprocess": id},
@@ -498,8 +520,7 @@ var grammar = {
     {"name": "global_declaration$ebnf$5$subexpression$1", "symbols": ["_", (lexer.has("colon") ? {type: "colon"} : colon)]},
     {"name": "global_declaration$ebnf$5", "symbols": ["global_declaration$ebnf$5$subexpression$1"], "postprocess": id},
     {"name": "global_declaration$ebnf$5", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "global_declaration$ebnf$6$subexpression$1", "symbols": ["_", "typename_identifier"]},
-    {"name": "global_declaration$ebnf$6", "symbols": ["global_declaration$ebnf$6$subexpression$1"], "postprocess": id},
+    {"name": "global_declaration$ebnf$6", "symbols": ["class_inherits_from"], "postprocess": id},
     {"name": "global_declaration$ebnf$6", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "global_declaration", "symbols": ["global_declaration$ebnf$3", "global_declaration$subexpression$1", "_", "global_declaration$ebnf$4", (lexer.has("identifier") ? {type: "identifier"} : identifier), "global_declaration$ebnf$5", "global_declaration$ebnf$6"], "postprocess": 
         function (d) { return {
@@ -507,8 +528,8 @@ var grammar = {
             name: Identifier(d[4]),
             // superclass: d[6] ? Identifier(d[6][1]) : null,
             superclass: d[6] ? d[6][1] : null,
-            is_shared: (d[0] && d[0][0]) ? d[0][0].value == "shared" : false,
-            is_mixin: (d[0] && d[0][0]) ? d[0][0].value == "mixin" : false
+            is_shared: (d[0]) ? d[0].includes("shared") : false,
+            is_mixin: (d[0]) ? d[0].includes("mixin") : false
         }}
         },
     {"name": "global_declaration$ebnf$7$subexpression$1", "symbols": [(lexer.has("shared_token") ? {type: "shared_token"} : shared_token), "_"]},
