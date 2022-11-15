@@ -35,16 +35,17 @@ If you have issues ping @XertroV on the Openplanet discord.
 - properties that are funcdef types should be registered as local functions
 - cast to helper suggests pointless stuff for arrays (maybe other template types too)
 - add `funcdef UI::CallbackCompletion(UI::InputTextCallbackData@ data);`
-- complex class mixin/inheritance syntax
+- (done) complex class mixin/inheritance syntax
 - `void` as value for `&out` vars to ignore
 - "Arguments can also be named and passed to a specific argument independent of the order the parameters were declared in. No positional arguments may follow any named arguments."
-- `const obj @ const d = obj();`
-- supertypes finish and polish (search for `.getSuperType()`, `.supertype`)
+- `const obj @ const d = obj();` -- const syntax
+- supertypes finish and polish (search for `.getSuperType()`; maybe remove .supertype all together in favor of .supertypes)
 
 ## Changelog
 
 - 0.2.12
   - add `and`, `xor`, and `or` binary compare operators (and `^^`, too), and `not`
+  - support interfaces, multiple superclasses (preliminary impl, not completely done)
 - 0.2.10
   - improve settings kwarg suggestion locations
   - fix broken `Define: ` for openplanet callbacks

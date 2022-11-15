@@ -714,6 +714,7 @@ export class DBType implements DBSymbol
         if ('inherits' in input)
         {
             this.supertype = input['inherits'];
+            this.supertypes = [input['inherits']];
         }
 
         if ('desc' in input)
