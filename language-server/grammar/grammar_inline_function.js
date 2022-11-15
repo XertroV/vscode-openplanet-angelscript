@@ -499,7 +499,7 @@ var grammar = {
     {"name": "class_decl_keyword$subexpression$1", "symbols": [(lexer.has("mixin_token") ? {type: "mixin_token"} : mixin_token)]},
     {"name": "class_decl_keyword", "symbols": ["class_decl_keyword$subexpression$1", "_"], "postprocess": 
         function(d) {
-            return d[0];
+            return d[0][0];
         }
         },
     {"name": "class_inherits_from$ebnf$1", "symbols": []},
@@ -532,13 +532,13 @@ var grammar = {
     {"name": "global_declaration$ebnf$6", "symbols": ["class_inherits_from"], "postprocess": id},
     {"name": "global_declaration$ebnf$6", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "global_declaration", "symbols": ["global_declaration$ebnf$3", "global_declaration$subexpression$1", "_", "global_declaration$ebnf$4", (lexer.has("identifier") ? {type: "identifier"} : identifier), "global_declaration$ebnf$5", "global_declaration$ebnf$6"], "postprocess": 
-        
         function (d) { return {
             ...Compound(d, n.ClassDefinition, null),
             name: Identifier(d[4]),
             // superclass: d[6] ? Identifier(d[6][1]) : null,
             superclass: d[6] ? d[6][0] : null,
             superclasses: d[6],
+            is_interface: d[1][0].value == "interface",
             is_shared: (d[0]) ? NodesAny(d[0], n => n.value == "shared") : false,
             is_mixin: (d[0]) ? NodesAny(d[0], n => n.value == "mixin") : false
         }}

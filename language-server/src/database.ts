@@ -584,6 +584,9 @@ export class DBType implements DBSymbol
     isEvent : boolean = false;
     isPrimitive : boolean = false;
     isTemplateInstantiation : boolean = false;
+    isShared : boolean = false;
+    isMixin : boolean = false;
+    isInterface : boolean = false;
 
     classification : DBTypeClassification = DBTypeClassification.Unknown;
     acccessSpecifiers : Array<DBAccessSpecifier> = null;

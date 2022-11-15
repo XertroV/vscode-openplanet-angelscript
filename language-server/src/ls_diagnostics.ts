@@ -478,7 +478,7 @@ function AddFunctionDiagnostics(scope : scriptfiles.ASScope, dbfunc : typedb.DBM
         let parentType = dbfunc.containingType.getSuperType();
         // if (!parentType)
         //     console.info(`AddFunctionDiagnostics: no parent type found for, dbfunc.name: ${dbfunc.name}`);
-        if (parentType)
+        if (parentType && !parentType.isInterface)
         {
             let parentMethod = parentType.findFirstSymbol(dbfunc.name, typedb.DBAllowSymbol.Functions);
             if (parentMethod && parentMethod instanceof typedb.DBMethod)
@@ -508,6 +508,7 @@ function AddFunctionDiagnostics(scope : scriptfiles.ASScope, dbfunc : typedb.DBM
                 // Add diagnostic if we're overriding a non-blueprintevent and we aren't using the 'override' specifier
                 if (!dbfunc.isOverride && !dbfunc.isBlueprintEvent && parentMethod.declaredModule)
                 {
+                    console.trace({name: parentType.name, iface: parentType.isInterface});
                     let matchesParentSignature = false;
                     let allBaseMethods = parentType.findSymbols(dbfunc.name);
                     for (let baseMethod of allBaseMethods)

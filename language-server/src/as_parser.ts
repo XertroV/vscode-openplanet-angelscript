@@ -2077,6 +2077,10 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
             dbtype.moduleOffset = _previous.start_offset + classdef.name.start;
             dbtype.moduleOffsetEnd = _previous.start_offset + classdef.name.end;
 
+            dbtype.isShared = classdef.is_shared;
+            dbtype.isMixin = classdef.is_mixin;
+            dbtype.isInterface = classdef.is_interface;
+
             scope.module.types.push(dbtype);
             scope.dbtype = dbtype;
 
@@ -2226,6 +2230,7 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
             dbtype.moduleScopeEnd = scope.end_offset;
         }
         // Function declaration, either in a class or global
+        // note: does not work for functions in interfaces! (which have no body)
         else if (_previous.ast.type == node_types.FunctionDecl || _previous.ast.type == node_types.InlineFunctionDecl)
         {
             scope.declaration = _previous;
@@ -2246,32 +2251,6 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
                 dbfunc.returnType = "void";
 
             AddParametersToFunction(scope, _previous, dbfunc, funcdef.parameters);
-
-            if (funcdef.macro)
-            {
-                dbfunc.macroSpecifiers = new Map<string, string>();
-                dbfunc.macroMeta = new Map<string, string>();
-
-                MakeMacroSpecifiers(funcdef.macro, dbfunc.macroSpecifiers, dbfunc.macroMeta);
-
-                // Mark as event
-                if (dbfunc.macroSpecifiers.has("BlueprintOverride"))
-                {
-                    dbfunc.isBlueprintEvent = true;
-                    dbfunc.isBlueprintOverride = true;
-                }
-                else if (dbfunc.macroSpecifiers.has("BlueprintEvent"))
-                {
-                    dbfunc.isBlueprintEvent = true;
-                }
-
-                // Check if we have keywords
-                let keywords = dbfunc.macroMeta.get("scriptkeywords");
-                if (keywords)
-                    dbfunc.keywords = keywords.split(" ");
-
-                dbfunc.cacheDelegateMeta();
-            }
 
             if (funcdef.access)
             {
@@ -2537,9 +2516,22 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
                 console.trace('todo: node_types.InlineFunctionDecl.\n' + JSON.stringify(statement.ast))
             }
             break;
+            case node_types.FunctionDecl:
             case node_types.FuncdefDefinition: {
-                let funcdef = statement.ast.children[0];
-                // console.warn(`funcdef: ${funcdef.name.value}`)
+                let funcdef = statement.ast;  // could be function in interface
+                let is_Funcdef = ast_type == node_types.FuncdefDefinition;
+                if (is_Funcdef)
+                    funcdef = statement.ast.children[0];
+                else { // so it's a function decl that may/may not have a body
+                    if (!statement.endsWithSemicolon) {
+                        break; // don't do anything in this case since it'll be handled in the part that uses `_previous`
+                    }
+                }
+                console.warn(`funcdef: ${funcdef.name.value}`)
+                // console.trace(funcdef)
+
+                let isNamedFunction = !!funcdef.name?.value;
+
                 let dbfunc = AddDBMethod(scope, funcdef.name.value);
                 if (funcdef.documentation)
                     dbfunc.documentation = typedb.FormatDocumentationComment(funcdef.documentation);
@@ -2553,11 +2545,51 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
 
                 AddParametersToFunction(scope, statement, dbfunc, funcdef.parameters);
 
-                let namespace = scope.getNamespace();
+                if (funcdef.access)
+                {
+                    if (funcdef.access.value == "protected")
+                        dbfunc.isProtected = true;
+                    else if (funcdef.access.value == "private")
+                        dbfunc.isPrivate = true;
+                    else if (scope.parentscope.dbtype)
+                        dbfunc.accessSpecifier = scope.parentscope.dbtype.getAccessSpecifier(funcdef.access.value);
+                }
 
-                scope.module.globalSymbols.push(dbfunc);
-                namespace.addSymbol(dbfunc.getFuncType());
-                namespace.addSymbol(dbfunc.asFuncDefApplier());
+                dbfunc.isProperty = isNamedFunction && (dbfunc.name.startsWith(getAccPrefix) || dbfunc.name.startsWith(setAccPrefix));
+                if (funcdef.qualifiers)
+                {
+                    // console.log(`function ${dbfunc.name} qualifiers: ${funcdef.qualifiers}`);
+                    for (let qual of funcdef.qualifiers)
+                    {
+                        if (qual == "property")
+                            dbfunc.isProperty = true;
+                        else if (qual == "const")
+                            dbfunc.isConst = true;
+                        else if (qual == "final")
+                            dbfunc.isFinal = true;
+                        else if (qual == "override")
+                            dbfunc.isOverride = true;
+                    }
+                }
+                if (funcdef.scoping)
+                {
+                    if (funcdef.scoping == "mixin")
+                        dbfunc.isMixin = true;
+                    else if (funcdef.scoping == "local")
+                        dbfunc.isLocal = true;
+                }
+
+                if (scope.dbtype) {
+                    scope.dbtype.addSymbol(dbfunc);
+                } else {
+                    let namespace = scope.getNamespace();
+
+                    scope.module.globalSymbols.push(dbfunc);
+                    if (is_Funcdef) {
+                        namespace.addSymbol(dbfunc.getFuncType());
+                        namespace.addSymbol(dbfunc.asFuncDefApplier());
+                    }
+                }
             }
             break;
             case node_types.ImportFunctionStatement:

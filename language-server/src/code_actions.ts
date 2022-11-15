@@ -532,7 +532,8 @@ function ResolveMethodOverrideSnippet(asmodule : scriptfiles.ASModule, action : 
         if (parentType)
         {
             let parentMethod = parentType.findFirstSymbol(method.name, typedb.DBAllowSymbol.Functions);
-            if (parentMethod instanceof typedb.DBMethod && parentMethod.declaredModule && !parentMethod.isEmpty)
+            // if (parentMethod instanceof typedb.DBMethod && parentMethod.declaredModule && !parentMethod.isEmpty)
+            if (parentMethod instanceof typedb.DBMethod && parentMethod.declaredModule) // && !parentMethod.isEmpty)
             {
                 let hasReturnValue = !method.returnType || method.returnType == "void";
                 if (hasReturnValue || parentMethod.hasMetaData("RequireSuperCall"))
