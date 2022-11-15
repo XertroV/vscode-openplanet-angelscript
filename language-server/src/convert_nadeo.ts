@@ -124,7 +124,7 @@ export function ConvertNadeoType(ty: string, tyDeets: any, docsNS: string): Core
 
 export function GenerateOpDocsLink(typeName: string) {
     let clean = CleanTypeName(typeName)
-    return `Docs: <https://next.openplanet.dev/${NadeoTypesToDocsNS.get(clean)}/${clean}>`;
+    return `<https://next.openplanet.dev/${NadeoTypesToDocsNS.get(clean)}/${clean}>`;
 }
 
 function addSubTypes(ty: string, tyDeets: any, ret: CoreTy) {

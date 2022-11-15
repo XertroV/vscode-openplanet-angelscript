@@ -773,6 +773,7 @@ function GetHoverForLocalVariable(scope : scriptfiles.ASScope, asvar : scriptfil
 
 function GetHoverForProperty(type : typedb.DBType | typedb.DBNamespace, prop : typedb.DBProperty) : Hover
 {
+    console.log(`GetHoverForProperty: ${type.name}.${prop.name}`);
     let prefix = null;
     if(type instanceof typedb.DBNamespace)
     {
@@ -785,11 +786,14 @@ function GetHoverForProperty(type : typedb.DBType | typedb.DBNamespace, prop : t
     let hover = "";
     hover += FormatPropertyDocumentation(prop.documentation);
     if (NadeoTypesToDocsNS.has(type.name)) {
-        hover += `\n\nParent ${GenerateOpDocsLink(type.name)}`;
+        hover += `\n\nParent Docs: ${GenerateOpDocsLink(type.name)}`;
+        if (prop.name == "CurrentRaceTime" || prop.name == "CurrentLapTime") {
+            hover += "\n\nOnly updated when the interface is visible.\n\nUse `StartTime` instead via: `CurrentRaceTime = GetApp().Network.PlaygroundClientScriptApi.GameTime - StartTime`.";
+        }
     }
     let cleanPropType = typedb.CleanTypeName(prop.typename);
     if (NadeoTypesToDocsNS.has(cleanPropType)) {
-        hover += `\n\nProperty ${GenerateOpDocsLink(cleanPropType)}`;
+        hover += `\n\nProperty Docs: ${GenerateOpDocsLink(cleanPropType)}`;
     }
     hover += `\n\n${parsedcompletion.MkAsSnippet(prop.format(prefix))}`;
 
