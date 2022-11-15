@@ -1066,7 +1066,6 @@ export function ResolveModule(module : ASModule)
 
 function EnsureTypeHierarchyFullyParsed(dbtype : typedb.DBType) : boolean
 {
-    // does this ever get called or do anythign?
     let newTypesLoaded = false;
 
     let superTypeName = dbtype.supertype;
@@ -2071,6 +2070,7 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
             //     console.log(`class ${dbtype.name} has supertype: ${JSON.stringify(classdef.superclass)}`);
             // }
             dbtype.supertype = classdef.superclass ? classdef.superclass.value : null;
+            dbtype.supertypes = classdef.superclasses ? classdef.superclasses.map((sc: any) => sc.value) : null;
             if (classdef.documentation)
                 dbtype.documentation = typedb.FormatDocumentationComment(classdef.documentation);
 
@@ -5127,28 +5127,30 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
             AddIdentifierSymbol(scope, statement, node.name, ASSymbolType.Typename, null, node.name.value);
 
             // If we specified a super type, add the symbol for that too
-            if (node.superclass)
+            if (node.superclasses?.length > 0)
             {
-                let superType = typedb.LookupType(scope.getNamespace(), node.superclass.value);
-                if (superType)
-                {
-                    // console.log(`node.superclass: ${JSON.stringify(node.superclass)}`);
-                    // console.log(`node: ${JSON.stringify(node)}`);
-                    let scPass = {name: node.superclass, ...node.superclass};
-                    let superSymbol = AddTypenameSymbol(scope, statement, scPass);
-                    // let superSymbol = AddIdentifierSymbol(scope, statement, node.superclass, ASSymbolType.Typename, null, node.superclass.value);
-                    if (superType.declaredModule && !ScriptSettings.automaticImports && !scope.module.isModuleImported(superType.declaredModule))
-                        superSymbol.isUnimported = true;
-                    scope.module.markDependencyType(superType);
-                }
-                else
-                {
-                    let hasPotentialCompletions = false;
-                    if (scope.module.isEditingNode(statement, node.superclass))
-                        hasPotentialCompletions = typedb.HasTypeWithPrefix(scope.getNamespace(), node.superclass.value);
-                    AddUnknownSymbol(scope, statement, node.superclass, hasPotentialCompletions);
-                    scope.module.markDependencyIdentifier(node.superclass.value);
-                    return null;
+                for (let superclass of node.superclasses) {
+                    let superType = typedb.LookupType(scope.getNamespace(), superclass.value);
+                    if (superType)
+                    {
+                        // console.log(`superclass: ${JSON.stringify(superclass)}`);
+                        // console.log(`node: ${JSON.stringify(node)}`);
+                        let scPass = {name: superclass, ...superclass};
+                        let superSymbol = AddTypenameSymbol(scope, statement, scPass);
+                        // let superSymbol = AddIdentifierSymbol(scope, statement, superclass, ASSymbolType.Typename, null, superclass.value);
+                        if (superType.declaredModule && !ScriptSettings.automaticImports && !scope.module.isModuleImported(superType.declaredModule))
+                            superSymbol.isUnimported = true;
+                        scope.module.markDependencyType(superType);
+                    }
+                    else
+                    {
+                        let hasPotentialCompletions = false;
+                        if (scope.module.isEditingNode(statement, superclass))
+                            hasPotentialCompletions = typedb.HasTypeWithPrefix(scope.getNamespace(), superclass.value);
+                        AddUnknownSymbol(scope, statement, superclass, hasPotentialCompletions);
+                        scope.module.markDependencyIdentifier(superclass.value);
+                        return null;
+                    }
                 }
             }
         }

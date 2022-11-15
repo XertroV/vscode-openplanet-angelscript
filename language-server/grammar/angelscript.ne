@@ -278,6 +278,15 @@ const tokenPartialSettingArg = {
     test: x => !settingArgNames.every(n => !n.substring(0, n.length - 1).startsWith(x))
 };
 
+function NodesAny(nodes, predicate) {
+    for (let node of nodes) {
+        if (predicate(node)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 %}
 
 @lexer lexer
@@ -499,7 +508,7 @@ global_declaration -> typename {%
 
 class_decl_keyword -> (%shared_token | %mixin_token) _ {%
     function(d) {
-        return d[0].value;
+        return d[0];
     }
 %}
 
@@ -518,13 +527,15 @@ class_inherits_from -> _ typename_identifier (_ %comma _ typename_identifier:?):
 %}
 
 global_declaration -> class_decl_keyword:* (%class_token | %interface_token) _ atref:? %identifier ( _ %colon):? class_inherits_from:? {%
+
     function (d) { return {
         ...Compound(d, n.ClassDefinition, null),
         name: Identifier(d[4]),
         // superclass: d[6] ? Identifier(d[6][1]) : null,
-        superclass: d[6] ? d[6][1] : null,
-        is_shared: (d[0]) ? d[0].includes("shared") : false,
-        is_mixin: (d[0]) ? d[0].includes("mixin") : false
+        superclass: d[6] ? d[6][0] : null,
+        superclasses: d[6],
+        is_shared: (d[0]) ? NodesAny(d[0], n => n.value == "shared") : false,
+        is_mixin: (d[0]) ? NodesAny(d[0], n => n.value == "mixin") : false
     }}
 %}
 

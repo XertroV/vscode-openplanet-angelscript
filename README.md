@@ -39,6 +39,7 @@ If you have issues ping @XertroV on the Openplanet discord.
 - `void` as value for `&out` vars to ignore
 - "Arguments can also be named and passed to a specific argument independent of the order the parameters were declared in. No positional arguments may follow any named arguments."
 - `const obj @ const d = obj();`
+- supertypes finish and polish (search for `.getSuperType()`, `.supertype`)
 
 ## Changelog
 

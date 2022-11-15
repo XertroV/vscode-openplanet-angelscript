@@ -22,6 +22,7 @@
         "Angelscript",
         "funcdef",
         "Openplanet",
+        "supertypes",
         "wstring"
     ],
 }

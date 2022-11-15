@@ -572,6 +572,7 @@ export class DBType implements DBSymbol
     typeid : number = -1;
     name : string;
     supertype : string;
+    supertypes : string[];
     // unrealsuper : string;
     documentation : string;
     namespace : DBNamespace;
@@ -623,6 +624,7 @@ export class DBType implements DBSymbol
         let inst = new DBType();
         inst.name = this.name.replace(`<${oldSubtypes.join(', ')}>`, `<${actualTypes.join(", ")}>`);
         inst.supertype = this.supertype;
+        inst.supertypes = this.supertypes;
         inst.isEnum = this.isEnum;
         inst.declaredModule = this.declaredModule;
         inst.moduleOffset = this.moduleOffset;
@@ -839,11 +841,13 @@ export class DBType implements DBSymbol
         {
             let checkType = this.extendTypes[checkIndex];
 
-            if (checkType.supertype)
+            if (checkType.supertypes)
             {
-                let dbsuper = LookupType(checkType.namespace, checkType.supertype);
-                if(dbsuper && !this.extendTypes.includes(dbsuper))
-                    this.extendTypes.push(dbsuper);
+                for (let st of checkType.supertypes) {
+                    let dbsuper = LookupType(checkType.namespace, st);
+                    if(dbsuper && !this.extendTypes.includes(dbsuper))
+                        this.extendTypes.push(dbsuper);
+                }
             }
 
             checkIndex += 1;
@@ -955,30 +959,48 @@ export class DBType implements DBSymbol
         let dbCheck : DBType = LookupType(this.namespace, checktype);
         if(!dbCheck)
             return false;
-        let depth = 0;
-        while(it && depth < 100)
-        {
-            if (it == dbCheck)
-                return true;
+        let _inheritsFrom = (it: DBType, depth: number): {found: boolean, depth: number} => {
+            if (!it || depth > 100) return {found: false, depth};
+            if (it == dbCheck) return {found: true, depth};
+            if (!it.supertypes) return {found: false, depth};
+            let notFoundRet = {found: false, depth: depth + 1};
+            for (let stName of it.supertypes) {
+                let st = LookupType(it.namespace, stName);
+                if (!st) continue;
+                let stInheritsFrom = _inheritsFrom(st, depth + 1);
+                if (stInheritsFrom.found) {
+                    return stInheritsFrom;
+                } else {
+                    notFoundRet = stInheritsFrom;
+                }
+            }
+            return notFoundRet;
+        };
+        return _inheritsFrom(it, 0).found;
+        // let depth = 0;
+        // while(it && depth < 100)
+        // {
+        //     if (it == dbCheck)
+        //         return true;
 
-            if (it.supertype)
-            {
-                it = LookupType(it.namespace, it.supertype);
-                depth += 1;
-                continue;
-            }
-            // else if (it.unrealsuper)
-            // {
-            //     it = LookupType(it.namespace, it.unrealsuper);
-            //     depth += 1;
-            //     continue;
-            // }
-            else
-            {
-                break;
-            }
-        }
-        return false;
+        //     if (it.supertype)
+        //     {
+        //         it = LookupType(it.namespace, it.supertype);
+        //         depth += 1;
+        //         continue;
+        //     }
+        //     // else if (it.unrealsuper)
+        //     // {
+        //     //     it = LookupType(it.namespace, it.unrealsuper);
+        //     //     depth += 1;
+        //     //     continue;
+        //     // }
+        //     else
+        //     {
+        //         break;
+        //     }
+        // }
+        // return false;
     }
 
     isValueType() : boolean
@@ -995,17 +1017,36 @@ export class DBType implements DBSymbol
     getInheritanceTypes() : Array<DBType>
     {
         let typeList = new Array<DBType>();
+        typeList.push(this); // remove later
+        let ix = 0;
         let check : DBType = this;
-        while (check && typeList.indexOf(check) == -1)
+        while (ix < typeList.length)
         {
-            typeList.push(check);
-            check = LookupType(check.namespace, check.supertype);
+            check = typeList[ix];
+            if (check.supertypes) {
+                for (let stName of check.supertypes) {
+                    let st = LookupType(check.namespace, stName);
+                    if (!st) continue;
+                    if (typeList.includes(st)) continue;
+                    typeList.push(st);
+                }
+            }
+            ix += 1;
         }
+        // return typeList.slice(1);
         return typeList;
     }
 
     canOverrideFromParent(methodname : string) : boolean
     {
+        let allSTs = this.getInheritanceTypes();
+        for (let st of allSTs) {
+            let method = st.getMethod(methodname, false);
+            if (method) {
+                return true;
+            }
+        }
+        return false;
         // Check script parents
         let checktype = this.supertype;
         let depth = 0;
@@ -2092,7 +2133,7 @@ export function LookupTypesInheriting(namespace : DBNamespace, typename : string
     let findSubTypesForNamespace = (ns: DBNamespace) => {
         ns.forEachSymbol(s => {
             if (s instanceof DBType) {
-                if (s.supertype == identifier && !typeNames.has(identifier)) {
+                if ((s.supertype == identifier || s.supertypes?.includes(identifier)) && !typeNames.has(identifier)) {
                     ret.push(s);
                     typeNames.add(identifier);
                 }
