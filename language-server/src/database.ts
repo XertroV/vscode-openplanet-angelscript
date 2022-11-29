@@ -337,17 +337,17 @@ export class DBMethod implements DBSymbol
             this.name = input['decl'].split("(")[0]; // "Blah(...)" -> "Blah"
         }
 
-        if ('ns' in input)
-            this.ns = input.ns;
+        // if ('ns' in input)
+        //     this.ns = input.ns;
 
-        // this.namespace = RootNamespace;
-        // if ('ns' in input && input.ns.length > 0) {
-        //     this.ns = input['ns'];
-        //     this.namespace = LookupNamespace(null, this.ns);
-        //     if (!this.namespace) {
-        //         this.namespace = DeclareNamespace(null, this.ns, new DBNamespaceDeclaration());
-        //     }
-        // }
+        this.namespace = RootNamespace;
+        if ('ns' in input && input.ns.length > 0) {
+            this.ns = input['ns'];
+            this.namespace = LookupNamespace(null, this.ns);
+            if (!this.namespace) {
+                this.namespace = DeclareNamespace(null, this.ns, new DBNamespaceDeclaration());
+            }
+        }
 
         // todo: is this about return type or const methods?
         if ('const' in input)
@@ -2653,12 +2653,24 @@ export function AddOpenplanetFuncdefs() {
             returntypedecl: "bool",
             args: [{name: "stack", typedecl: "CMwStack &in"}, {name: "nod", typedecl: "CMwNod@"}]
         },
+        {
+            ns: "UI",
+            name: "InputTextCallback",
+            returntypedecl: "void",
+            args: [{name: "data", typedecl: "UI::InputTextCallbackData@"}]
+        },
+        {
+            ns: "UI",
+            name: "NodTreeMemberCallback",
+            returntypedecl: "void",
+            args: [{name: "nod", typedecl: "CMwNod@"}, {name: "info", typedecl: "Reflection::MwMemberInfo@"}]
+        },
     ]
     funcdefs.forEach(fd => {
         let method = new DBMethod;
         method.fromJSON(fd);
-        RootNamespace.addSymbol(method.getFuncType());
-        RootNamespace.addSymbol(method.asFuncDefApplier());
+        method.namespace.addSymbol(method.getFuncType());
+        method.namespace.addSymbol(method.asFuncDefApplier());
     })
 }
 

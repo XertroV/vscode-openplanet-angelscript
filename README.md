@@ -34,15 +34,16 @@ If you have issues ping @XertroV on the Openplanet discord.
 - fix suggestions for fundefs -- way too many! (including missing some of the last characters + many many repetitions)
 - properties that are funcdef types should be registered as local functions
 - cast to helper suggests pointless stuff for arrays (maybe other template types too)
-- add `funcdef UI::CallbackCompletion(UI::InputTextCallbackData@ data);`
-- (done) complex class mixin/inheritance syntax
 - `void` as value for `&out` vars to ignore
 - "Arguments can also be named and passed to a specific argument independent of the order the parameters were declared in. No positional arguments may follow any named arguments."
 - `const obj @ const d = obj();` -- const syntax
 - supertypes finish and polish (search for `.getSuperType()`; maybe remove .supertype all together in favor of .supertypes)
+- rename getter/setter adds extra _ to start of usages
 
 ## Changelog
 
+- 0.2.13
+  - add `funcdef UI::InputTextCallback(UI::InputTextCallbackData@ d)`
 - 0.2.12
   - add `and`, `xor`, and `or` binary compare operators (and `^^`, too), and `not`
   - support interfaces, multiple superclasses (preliminary impl, not completely done)
