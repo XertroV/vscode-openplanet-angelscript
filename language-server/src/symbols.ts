@@ -764,7 +764,7 @@ function GetHoverForLocalVariable(scope : scriptfiles.ASScope, asvar : scriptfil
         }
     }
 
-    hover += parsedcompletion.MkAsSnippet(asvar.typename+" "+asvar.name);
+    hover += "\n" + parsedcompletion.MkAsSnippet(asvar.typename+" "+asvar.name);
     return <Hover> {contents: <MarkupContent> {
         kind: "markdown",
         value: hover,

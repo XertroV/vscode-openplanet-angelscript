@@ -36,7 +36,7 @@ let FunctionLabelSuffix = "()";
 let FunctionLabelWithParamsSuffix = "(…)";
 
 export function MkAsSnippet(str: string) {
-    return "```angelscript_snippet\n"+str+"\n\n```";
+    return "\n```angelscript_snippet\n"+str+"\n```\n";
 }
 
 namespace Sort

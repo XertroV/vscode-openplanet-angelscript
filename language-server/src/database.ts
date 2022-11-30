@@ -549,9 +549,10 @@ export class DBMethod implements DBSymbol
             funcType.delegateReturn = this.returnType;
             funcType.isDelegate = true;
             funcType.delegateSource = this;
-            funcType.documentation = FormatDocumentationComment(MkAsSnippet(this.format()));
+            funcType.documentation = FormatDocumentationComment(MkAsSnippet(`funcdef ` + this.format() + ';'));
             this.funcType = funcType;
-            // AddTypeToDatabase(this.namespace, funcType);
+            // if (this.namespace.findSymbols(this.name, DBAllowSymbol.Types).length == 0)
+            AddTypeToDatabase(this.namespace, funcType);
         }
         return this.funcType;
     }
@@ -561,6 +562,7 @@ export class DBMethod implements DBSymbol
         if (!this.funcDefApplier) {
             this.funcDefApplier = new DBMethod;
             this.funcDefApplier.fromJSON({name: this.name, returntypedecl: this.name + "@", args: [{name: "func", typedecl: "Function@"}]});
+            this.funcDefApplier.documentation = FormatDocumentationComment(MkAsSnippet(`funcdef ` + this.format() + ';'));
         }
         return this.funcDefApplier;
     }
@@ -2669,7 +2671,8 @@ export function AddOpenplanetFuncdefs() {
     funcdefs.forEach(fd => {
         let method = new DBMethod;
         method.fromJSON(fd);
-        method.namespace.addSymbol(method.getFuncType());
+        // method.namespace.addSymbol(method.getFuncType());
+        method.getFuncType(); // adds to db if it doesn't exist
         method.namespace.addSymbol(method.asFuncDefApplier());
     })
 }

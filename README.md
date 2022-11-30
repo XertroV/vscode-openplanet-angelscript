@@ -25,6 +25,10 @@ To check if something's going wrong, look for logs in `Output > Angelscript Lang
 
 If you have issues ping @XertroV on the Openplanet discord.
 
+**Note:** inline array declarations like `string[] asdf = {'a', 'b', 'c', 'd'};` are taxing for the extension at the moment. This can cause out of memory errors for complex expressions like `string[][] = {{'a','b','c'},{'a','b','c'},{'a','b','c'},{'a','b','c'},{'a','b','c'},{'a','b','c'}}`.
+The workaround is to populate the array with one array at a time using `.InsertLast`.
+It's a bug.
+
 ## todo:
 
 - check for redefinition of variables in same scope and squiggle
@@ -39,11 +43,14 @@ If you have issues ping @XertroV on the Openplanet discord.
 - `const obj @ const d = obj();` -- const syntax
 - supertypes finish and polish (search for `.getSuperType()`; maybe remove .supertype all together in favor of .supertypes)
 - rename getter/setter adds extra _ to start of usages
+- (fixed) openplanet next plugin folder setting not working
+- list parsing v broken for complex expressions
 
 ## Changelog
 
 - 0.2.13
   - add `funcdef UI::InputTextCallback(UI::InputTextCallbackData@ d)`
+  - fix: openplanet next plugin folder setting not working (hopefully works consistently now)
 - 0.2.12
   - add `and`, `xor`, and `or` binary compare operators (and `^^`, too), and `not`
   - support interfaces, multiple superclasses (preliminary impl, not completely done)

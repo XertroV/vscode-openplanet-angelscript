@@ -83,6 +83,7 @@ function load_openplanet() {
         typedb.AddOpenplanetFuncdefs();
         typedb.AddPrimitiveTypes(false);
     }
+    // InitialLoadCompleted = true;
 }
 
 let JsonLoaded_Core = false;
@@ -125,7 +126,7 @@ function LoadOpenplanetJson() {
     }
 }
 
-load_openplanet(); // try early with defaults
+// load_openplanet(); // try early with defaults
 
 // Create a simple text document manager. The text document manager
 // supports full document sync only
@@ -135,6 +136,9 @@ load_openplanet(); // try early with defaults
 let shouldSendDiagnosticRelatedInformation: boolean = false;
 let RootUris : string[] = [];
 let Roots : string[] = [];
+
+// let InitialLoadCompleted = false;
+let InitialConfigProvided = false;
 
 // After the server has started the client sends an initialize request. The server receives
 // in the passed params the rootPath of the workspace plus the client capabilities.
@@ -157,34 +161,8 @@ connection.onInitialize((_params): InitializeResult => {
     //connection.console.log("RootPath: "+RootPath);
     //connection.console.log("RootUri: "+RootUri+" from "+_params.rootUri);
 
-    // Initially read and parse all angelscript files in the workspace
-    let GlobsRemaining = Roots.length;
-    for (let RootPath of Roots)
-    {
-        glob(RootPath + "/**/*.as", null, function (err: any, files: any)
-        {
-            for (let file of files)
-            {
-                let uri = getFileUri(file);
-                console.warn(`Loading files: ${getModuleName(uri)}, ${file}, ${uri}`);
-                let asmodule = scriptfiles.GetOrCreateModule(getModuleName(uri), file, uri);
-                LoadQueue.push(asmodule);
-            }
-
-            GlobsRemaining -= 1;
-            if (GlobsRemaining <= 0)
-                TickQueues();
-        });
-
-        // Read templates
-        glob(RootPath+"/.vscode/templates/*.as.template", null, function(err : any, files : any)
-        {
-            scriptlenses.LoadFileTemplates(files);
-        });
-
-        // Read info.toml
-        LoadOpenplanetInfoToml(RootPath+"/info.toml");
-    }
+    WaitForInitialUserConfigAndLoadWorkspace();
+    ReadAndParseAllFiles(false);
 
     return {
         capabilities: {
@@ -240,6 +218,46 @@ connection.onInitialize((_params): InitializeResult => {
     }
 });
 
+function WaitForInitialUserConfigAndLoadWorkspace() {
+    if (!InitialConfigProvided) {
+        setTimeout(WaitForInitialUserConfigAndLoadWorkspace, 50);
+        return;
+    }
+    ReadAndParseAllFiles();
+}
+
+function ReadAndParseAllFiles(readInfoToml = true) {
+    // Initially read and parse all angelscript files in the workspace
+    let GlobsRemaining = Roots.length;
+    for (let RootPath of Roots)
+    {
+        glob(RootPath + "/**/*.as", null, function (err: any, files: any)
+        {
+            for (let file of files)
+            {
+                let uri = getFileUri(file);
+                console.warn(`Loading files: ${getModuleName(uri)}, ${file}, ${uri}`);
+                let asmodule = scriptfiles.GetOrCreateModule(getModuleName(uri), file, uri);
+                LoadQueue.push(asmodule);
+            }
+
+            GlobsRemaining -= 1;
+            if (GlobsRemaining <= 0)
+                TickQueues();
+        });
+
+        // Read templates
+        glob(RootPath+"/.vscode/templates/*.as.template", null, function(err : any, files : any)
+        {
+            scriptlenses.LoadFileTemplates(files);
+        });
+
+        // Read info.toml
+        if (readInfoToml)
+            LoadOpenplanetInfoToml(RootPath+"/info.toml");
+    }
+}
+
 function LoadOpenplanetInfoToml(file: string) {
     fs.readFile(file, 'utf-8', (err, data) => {
         if (err)
@@ -278,7 +296,7 @@ function LoadOpenplanetDependencies(deps: string[]) {
         let missing = [...(foundOpRoot ? [] : ["OpenplanetNext"]),
                        ...(foundOpPlugins ? [] : ["Trackmania\\Openplanet"])];
         let msg = (missing.length > 1 ? "directories" : "directory") + ": " + missing.join(",");
-        let shortMsg = `Could not find ${msg}. Please set the manually in extension settings.`;
+        let shortMsg = `Could not find setting for directory ${msg}. Please set the manually in extension settings.`;
         let longMsg = `${shortMsg}\n\nI looked in these places:\n- ${opRoot}\n- ${opPlugins}`;
         console.warn(longMsg);
         connection.sendNotification(
@@ -305,6 +323,13 @@ function LoadOpenplanetDependencies(deps: string[]) {
             foundDeps.add(pluginName);
             depDirsToCheck.push(dir);
         }
+    }
+
+    if (!fs.existsSync(opPlugins)) {
+        connection.window.showWarningMessage(`Expected to find a Official Openplanet Plugins folder at: ${opPlugins} but did not.`);
+    }
+    if (!fs.existsSync(opRoot)) {
+        connection.window.showWarningMessage(`Expected to find the OpenplanetNext folder at: ${opRoot} but did not.`);
     }
 
     // plugins as directories
@@ -1051,6 +1076,7 @@ connection.onRequest("angelscript/provideFileDecoration", (...params: any[]): an
  connection.onDidChangeConfiguration(function (change : DidChangeConfigurationParams)
  {
     console.warn('onDidChangeConfiguration')
+    InitialConfigProvided = true;
 
     let settingsObject = change.settings as any;
     let settings : any = settingsObject.OpenplanetAngelscript;
@@ -1060,7 +1086,7 @@ connection.onRequest("angelscript/provideFileDecoration", (...params: any[]): an
     let diagnosticSettings = scriptdiagnostics.GetDiagnosticSettings();
     let scriptSettings = scriptfiles.GetScriptSettings();
     let dirtyDiagnostics = false;
-    let reloadOPJson = false;
+    let reloadOPJson = !AddedOPVirtualTypes || !JsonLoaded_Core || !JsonLoaded_Next;
     if (scriptSettings.openplanetNextLocation != settings.openplanetNextLocation
         || scriptSettings.openplanetNextPluginsLocation != settings.openplanetNextPluginsLocation) {
         reloadOPJson = true;
