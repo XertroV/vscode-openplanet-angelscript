@@ -660,8 +660,8 @@ function GenerateMdDocsFromAction(data: GenDocsData): string {
     return docs;
 }
 
-function GenerateMdDocsForNamespace(ns: typedb.DBNamespace): string {
-    // child types
+
+function GetFuncsPropsTypesIn(ns: typedb.DBNamespace | typedb.DBType): [typedb.DBMethod[], typedb.DBProperty[], typedb.DBType[]] {
     let props: typedb.DBProperty[] = [];
     let funcs: typedb.DBMethod[] = [];
     let types: typedb.DBType[] = [];
@@ -677,8 +677,42 @@ function GenerateMdDocsForNamespace(ns: typedb.DBNamespace): string {
     funcs.sort((a, b) => a.name < b.name ? -1 : (a.name == b.name ? 0 : 1));
     types.sort((a, b) => a.name < b.name ? -1 : (a.name == b.name ? 0 : 1));
 
+    return [funcs, props, types];
+}
+
+
+function GetDocsForFuncsPropsTypes(funcs: typedb.DBMethod[], props: typedb.DBProperty[], types: typedb.DBType[], headingLvl: number = 2): [string, string, string] {
+    let funcsList = ""
+    let propsList = ""
+    let typesList = ""
+
+    let hashes = `#`.repeat(headingLvl)
+
+    if (funcs.length > 0) {
+        funcsList = `${hashes} Functions\n\n`
+        funcsList += funcs.map(GenerateFuncDocs).join("\n\n");
+    }
+
+    if (props.length > 0) {
+        propsList = `${hashes} Properties\n\n`
+        propsList += props.map(GeneratePropDocs).join("\n\n");
+    }
+
+    if (types.length > 0) {
+        typesList = `${hashes} Types/Classes\n\n`
+        typesList += types.map(GenerateTypeDocs).join("\n\n");
+    }
+
+    return [funcsList, propsList, typesList];
+}
+
+
+function GenerateMdDocsForNamespace(ns: typedb.DBNamespace): string {
+    // child types
+    let [funcs, props, types] = GetFuncsPropsTypesIn(ns);
+
     let childNSs: string[] = [];
-    let childNSDocs: string[] = [];
+    let childNSDocs: string[] = [""];  // empty to start with so we auto get HR between sections
     ns.childNamespaces.forEach(v => {
         childNSs.push('* ' + v.getQualifiedNamespace());
         childNSDocs.push(GenerateMdDocsForNamespace(v));
@@ -691,24 +725,7 @@ function GenerateMdDocsForNamespace(ns: typedb.DBNamespace): string {
 ${childNSs.join()}`;
     }
 
-    let funcsList = ""
-    let propsList = ""
-    let typesList = ""
-
-    if (funcs.length > 0) {
-        funcsList = `## Functions\n\n`
-        funcsList += funcs.map(GenerateFuncDocs);
-    }
-
-    if (props.length > 0) {
-        propsList = `## Properties\n\n`
-        propsList += props.map(GeneratePropDocs);
-    }
-
-    if (types.length > 0) {
-        typesList = `## Types/Classes\n\n`
-        typesList += types.map(GenerateTypeDocs);
-    }
+    let [funcsList, propsList, typesList] = GetDocsForFuncsPropsTypes(funcs, props, types, 2)
 
     return `# NS: ${ns.getQualifiedNamespace()}
 
@@ -720,22 +737,45 @@ ${propsList}
 
 ${typesList}
 
-----------
-
 ${childNSDocs.join('\n\n----------\n\n')}
 `
 }
 
 function GenerateFuncDocs(func: typedb.DBMethod): string {
-    return `todo: GenerateFuncDocs for \`${func.name}\``
+    let d = `### \`${func.format()}\``
+    if (func.documentation?.length > 0) {
+        d += "\n\n" + func.documentation
+    }
+    return d;
 }
 
 function GeneratePropDocs(prop: typedb.DBProperty): string {
-    return `todo: GeneratePropDocs for \`${prop.name}\``
+    let d = `### \`${prop.format()}\``
+    if (prop.documentation?.length > 0) {
+        d += "\n\n" + prop.documentation
+    }
+    return d;
 }
 
 function GenerateTypeDocs(ty: typedb.DBType): string {
-    return `todo: GenerateTypeDocs for \`${ty.name}\``
+    let d = `### \`${ty.getDisplayName()}\`\n\n`
+    if (ty.documentation?.length > 0) {
+        d += ty.documentation + "\n\n"
+    }
+    if (ty.isEnum) {
+        for (let sName in ty.symbols) {
+            let _sym = ty.symbols.get(sName)
+            let syms = Array.isArray(_sym) ? _sym : [_sym];
+            for (let el of syms) {
+                d += `- \`${el.name}\``
+            }
+        }
+    } else {
+        let [funcs, props, types] = GetFuncsPropsTypesIn(ty);
+        let [funcsList, propsList, typesList] = GetDocsForFuncsPropsTypes(funcs, props, types, 4)
+        d += [funcsList, propsList, typesList].join("\n\n")
+    }
+    return d;
 }
 
 function GetTypeFromExpressionIgnoreNullptr(scope : scriptfiles.ASScope, node : any) : typedb.DBType
