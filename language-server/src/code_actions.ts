@@ -1,9 +1,19 @@
-import { CodeAction, CodeActionKind, Command, Diagnostic, Position, Range, WorkspaceEdit, TextEdit, SymbolTag, LSPObject } from "vscode-languageserver-types";
+import { CodeAction, CodeActionKind, Command, Diagnostic, Position, Range, WorkspaceEdit, TextEdit, SymbolTag, LSPObject, CreateFile, InsertReplaceEdit, TextDocumentEdit, AnnotatedTextEdit, OptionalVersionedTextDocumentIdentifier } from "vscode-languageserver-types";
 import * as typedb from "./database";
 import * as scriptfiles from "./as_parser";
 import * as scriptsymbols from "./symbols";
 import * as completion from "./parsed_completion";
 import { getAccPrefix } from "./as_parser";
+import { Connection } from "vscode-languageserver/node";
+
+
+let connection: Connection;
+
+export function SetConnectionForActions(c: Connection) {
+    connection = c;
+}
+
+
 
 class CodeActionContext
 {
@@ -89,6 +99,9 @@ export function GetCodeActions(asmodule : scriptfiles.ASModule, range : Range, d
     // Actions to generate a method by usage
     AddGenerateMethodActions(context);
 
+    // Actions to generate documentation from a namespace declaration
+    AddGenerateNamespaceDocs(context);
+
     return context.actions;
 }
 
@@ -114,6 +127,8 @@ export function ResolveCodeAction(asmodule : scriptfiles.ASModule, action : Code
         ResolveInsertCases(asmodule, action, data);
     else if (data.type == "methodFromUsage")
         ResolveGenerateMethod(asmodule, action, data);
+    else if (data.type == "generateNsDocs")
+        ResolveNamespaceDocsMethod(asmodule, action, data);
     return action;
 }
 
@@ -562,6 +577,165 @@ function ResolveMethodOverrideSnippet(asmodule : scriptfiles.ASModule, action : 
     action.edit.changes[asmodule.displayUri] = [
         TextEdit.insert(insertPosition, snippet)
     ];
+}
+
+function AddGenerateNamespaceDocs(context: CodeActionContext) {
+    if (!context.scope) return;
+    if (!context.statement) return;
+    if (!context.statement.ast) return;
+    if (context.statement.ast.type != scriptfiles.node_types.NamespaceDefinition) return;
+
+
+    let nsdef = context.statement.ast;
+    let nsIdentifier: string = nsdef.name.value;
+    nsIdentifier = nsIdentifier.split("::").slice(-1)[0];
+    console.warn("FOUND NAMESPACE: " + nsIdentifier)
+
+    let ns = context.scope.getNamespace();
+    let fullName = ns.getQualifiedNamespace();
+    console.warn("FQ NAME: " + fullName)
+    console.dir({filename: context.module.filename, uri: context.module.uri, duri: context.module.displayUri})
+
+    context.actions.push(<CodeAction> {
+        kind: CodeActionKind.QuickFix,
+        title: `Generate Documentation for ${fullName} in ./${nsIdentifier}.autodoc.md`,
+        source: "angelscript",
+        data: {
+            uri: context.module.displayUri,
+            type: "generateNsDocs",
+            qualifiedName: fullName,
+            name: nsIdentifier,
+            position: context.module.getPosition(context.range_start)
+        }
+    });
+}
+
+function ResolveNamespaceDocsMethod(asmodule: scriptfiles.ASModule, action: CodeAction, data: any) {
+    console.log(`Called: ResolveNamespaceDocsMethod for ${data.name}`);
+    console.dir(action); // {title, kind, data: data}
+    console.dir(data); // data, as above; {uri, type, qualifiedName, name, position}
+    let uriParts: string[] = data.uri.split('/');
+    let newFileName = `${data.name}.autodoc.md`;
+    let uri: string = `${uriParts.slice(0, -1).join('/')}/${newFileName}`;
+    let insertRangeStart: {line: 0, character: 0};
+    console.log(`output uri: ${uri}`)
+
+    let edit = <WorkspaceEdit>{};
+    // edit.documentChanges = [];
+    // edit.documentChanges.push(CreateFile.create(uri, {overwrite: true}));
+
+    // // we'll overwrite the edit in a mo
+    // connection.workspace.applyEdit(edit);
+
+    edit.documentChanges = [
+        CreateFile.create(uri, {overwrite: true}),
+        TextDocumentEdit.create(
+            OptionalVersionedTextDocumentIdentifier.create(uri, null),
+            [{newText: GenerateMdDocsFromAction(data), range: Range.create(0, 0, 99999, 99999)}]
+        )
+    ];
+    connection.workspace.applyEdit(edit);
+
+    console.dir(edit);
+}
+
+type GenDocsData = {qualifiedName: string, name: string};
+
+function GenerateMdDocsFromAction(data: GenDocsData): string {
+    let ns = typedb.GetRootNamespace();
+    let nsParts = data.qualifiedName.split("::");
+    for (let part of nsParts) {
+        if (part.length == 0) continue;
+        ns = ns.findChildNamespace(part);
+        if (!ns) {
+            console.warn(`Could not find child NS: ${part} with FQ name: ${data.qualifiedName}`);
+            return;
+        }
+    }
+    console.log(`Generating MD docs for Namespace: ${ns.name}`)
+    // traverse everything in the namespace and document it
+    let docs = GenerateMdDocsForNamespace(ns);
+    console.log(`Got MD docs for Namespace: ${ns.name} of length: ${docs.length}`);
+    console.log(docs);
+    return docs;
+}
+
+function GenerateMdDocsForNamespace(ns: typedb.DBNamespace): string {
+    // child types
+    let props: typedb.DBProperty[] = [];
+    let funcs: typedb.DBMethod[] = [];
+    let types: typedb.DBType[] = [];
+
+    ns.forEachSymbol((symbol) => {
+        if (symbol instanceof typedb.DBProperty) props.push(symbol)
+        else if (symbol instanceof typedb.DBMethod) funcs.push(symbol)
+        else if (symbol instanceof typedb.DBType) types.push(symbol)
+        else console.warn(`Symbol that isn't a property, method, or type: ${symbol.name}`);
+    });
+
+    props.sort((a, b) => a.name < b.name ? -1 : (a.name == b.name ? 0 : 1));
+    funcs.sort((a, b) => a.name < b.name ? -1 : (a.name == b.name ? 0 : 1));
+    types.sort((a, b) => a.name < b.name ? -1 : (a.name == b.name ? 0 : 1));
+
+    let childNSs: string[] = [];
+    let childNSDocs: string[] = [];
+    ns.childNamespaces.forEach(v => {
+        childNSs.push('* ' + v.getQualifiedNamespace());
+        childNSDocs.push(GenerateMdDocsForNamespace(v));
+    });
+
+    let childNSList = "";
+    if (childNSs.length > 0) {
+        childNSList = `## Child Namespaces
+
+${childNSs.join()}`;
+    }
+
+    let funcsList = ""
+    let propsList = ""
+    let typesList = ""
+
+    if (funcs.length > 0) {
+        funcsList = `## Functions\n\n`
+        funcsList += funcs.map(GenerateFuncDocs);
+    }
+
+    if (props.length > 0) {
+        propsList = `## Properties\n\n`
+        propsList += props.map(GeneratePropDocs);
+    }
+
+    if (types.length > 0) {
+        typesList = `## Types/Classes\n\n`
+        typesList += types.map(GenerateTypeDocs);
+    }
+
+    return `# NS: ${ns.getQualifiedNamespace()}
+
+${childNSList}
+
+${funcsList}
+
+${propsList}
+
+${typesList}
+
+----------
+
+${childNSDocs.join('\n\n----------\n\n')}
+`
+}
+
+function GenerateFuncDocs(func: typedb.DBMethod): string {
+    return `todo: GenerateFuncDocs for \`${func.name}\``
+}
+
+function GeneratePropDocs(prop: typedb.DBProperty): string {
+    return `todo: GeneratePropDocs for \`${prop.name}\``
+}
+
+function GenerateTypeDocs(ty: typedb.DBType): string {
+    return `todo: GenerateTypeDocs for \`${ty.name}\``
 }
 
 function GetTypeFromExpressionIgnoreNullptr(scope : scriptfiles.ASScope, node : any) : typedb.DBType

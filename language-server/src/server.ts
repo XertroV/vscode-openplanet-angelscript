@@ -57,6 +57,7 @@ import { FileDecoration } from 'vscode';
 
 // Create a connection for the server. The connection uses Node's IPC as a transport
 let connection: Connection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
+scriptactions.SetConnectionForActions(connection);
 
 let ParseQueue : Array<scriptfiles.ASModule> = [];
 let ParseQueueIndex = 0;
