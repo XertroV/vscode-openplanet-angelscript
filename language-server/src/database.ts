@@ -279,6 +279,7 @@ export class DBMethod implements DBSymbol
     moduleScopeEnd : number = -1;
 
     suggestionDecl?: string;
+    isImported: boolean = false;
 
     nameNoAccessor(): string {
         if (this.name.startsWith(getAccPrefix) || this.name.startsWith(setAccPrefix)) {

@@ -676,6 +676,7 @@ function GetFuncsPropsTypesIn(ns: typedb.DBNamespace | typedb.DBType): FPT {
             props.push(symbol)
         }
         else if (symbol instanceof typedb.DBMethod) {
+            if (symbol.isImported) return;
             if (symbol.name.startsWith(getAccPrefix)) {
                 props.push(symbol)
             } else {
@@ -736,6 +737,8 @@ function GenerateMdDocsForNamespace(ns: typedb.DBNamespace): string {
     let childNSs: string[] = [];
     let childNSDocs: string[] = [""];  // empty to start with so we auto get HR between sections
     ns.childNamespaces.forEach(v => {
+        let d = GenerateMdDocsForNamespace(v);
+        if (d.trim().length == 0) return; // if no docs then don't add it
         childNSs.push('* ' + v.getQualifiedNamespace());
         childNSDocs.push(GenerateMdDocsForNamespace(v));
     });
@@ -748,6 +751,9 @@ ${childNSs.join('\n')}`;
     }
 
     let [funcsList, propsList, typesList] = GetDocsForFuncsPropsTypes(funcs, props, types, 2)
+
+    let isEmpty = childNSList.length == 0 && funcsList.length == 0 && propsList.length == 0 && typesList.length == 0;
+    if (isEmpty) return "";
 
     return `# NS: ${ns.getQualifiedNamespace()}
 
@@ -780,13 +786,16 @@ function GeneratePropDocs(prop: DocProps[0], headingLvl = 3): string {
     let hashes = '#'.repeat(headingLvl)
     let name: string;
     let ty: string;
+    let textName: string;
     if (prop instanceof typedb.DBMethod) {
-        name = `${prop.returnType} ${prop.nameNoAccessor()}`;
+        textName = prop.nameNoAccessor();
+        name = `${prop.returnType} ${textName}`;
     } else {
+        textName = prop.name;
         name = prop.format();
         // ty = prop.typename;
     }
-    let d = `${hashes} \`${name}\``
+    let d = `${hashes} ${textName} -- \`${name}\``
     if (prop.documentation?.length > 0) {
         d += "\n\n" + PrepCodeDocsForMdDocs(prop.documentation)
     }
@@ -796,7 +805,7 @@ function GeneratePropDocs(prop: DocProps[0], headingLvl = 3): string {
 function GenerateTypeDocs(ty: typedb.DBType, headingLvl = 3): string {
     let hashes = '#'.repeat(headingLvl)
     let clsOrEnum = ty.isEnum ? "enum" : "class";
-    let d = `${hashes} \`${clsOrEnum} ${ty.name}\`\n\n`
+    let d = `${hashes} ${ty.getQualifiedTypenameInNamespace(null)} (${clsOrEnum})\n\n`
     if (ty.documentation?.length > 0) {
         d += PrepCodeDocsForMdDocs(ty.documentation) + "\n\n"
     }

@@ -1833,6 +1833,7 @@ function AddParametersToFunction(scope : ASScope, statement : ASStatement, dbfun
 // Get the concatenated qualified typename
 function GetQualifiedTypename(typename : any) : string
 {
+    console.dir(typename)
     let strtype : string;
     if (typename.const_qualifier)
         strtype = typename.const_qualifier.value+" "+typename.value;
@@ -2606,6 +2607,7 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
                     dbfunc.documentation = typedb.FormatDocumentationComment(funcdef.documentation);
                 dbfunc.moduleOffset = statement.start_offset + funcdef.name.start;
                 dbfunc.moduleOffsetEnd = statement.start_offset + funcdef.name.end;
+                dbfunc.isImported = true;
 
                 if (funcdef.returntype)
                     dbfunc.returnType = GetQualifiedTypename(funcdef.returntype);

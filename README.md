@@ -36,21 +36,22 @@ It's a bug.
 - add suggestions for settings keyword args (some done)
 - fix/add `CoroutineFunc@` data types
 - fix suggestions for fundefs -- way too many! (including missing some of the last characters + many many repetitions)
-- properties that are funcdef types should be registered as local functions
+- class properties that are funcdef types should be registered as local functions
 - cast to helper suggests pointless stuff for arrays (maybe other template types too)
 - `void` as value for `&out` vars to ignore
 - "Arguments can also be named and passed to a specific argument independent of the order the parameters were declared in. No positional arguments may follow any named arguments."
 - `const obj @ const d = obj();` -- const syntax
 - supertypes finish and polish (search for `.getSuperType()`; maybe remove .supertype all together in favor of .supertypes)
 - rename getter/setter adds extra _ to start of usages
-- (fixed) openplanet next plugin folder setting not working
 - list parsing v broken for complex expressions
 
 ## Changelog
 
 - 0.2.13
-  - add `funcdef UI::InputTextCallback(UI::InputTextCallbackData@ d)`
-  - fix: openplanet next plugin folder setting not working (hopefully works consistently now)
+  - add `funcdef UI::InputTextCallback(UI::InputTextCallbackData@ d)` & `NodTreeMemberCallback`
+  - improved detection of references and include them more often where they should be
+  - add autodoc feature (usage: `ctrl+.` when the cursor is on the name of a namespace, i.e., like `namespace MyN|amspace {...` will offer an auto-doc-gen option)
+  - initial support for extra docs for Nadeo types
 - 0.2.12
   - add `and`, `xor`, and `or` binary compare operators (and `^^`, too), and `not`
   - support interfaces, multiple superclasses (preliminary impl, not completely done)

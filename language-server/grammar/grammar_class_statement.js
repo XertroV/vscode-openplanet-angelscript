@@ -714,7 +714,7 @@ var grammar = {
     {"name": "mb_ref_identifier", "symbols": ["mb_ref_identifier$ebnf$1", (lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": 
         function (d) { return {
             ...ExtendedCompound(d, Identifier(d[1])),
-            is_reference: !!d[0],
+            is_reference: d[0],
         }; }
         },
     {"name": "var_decl", "symbols": ["typename", "_", "mb_ref_identifier"], "postprocess": 
@@ -789,7 +789,7 @@ var grammar = {
     {"name": "function_decl$ebnf$1$subexpression$1", "symbols": [(lexer.has("shared_token") ? {type: "shared_token"} : shared_token), "_"]},
     {"name": "function_decl$ebnf$1", "symbols": ["function_decl$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "function_decl$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "function_decl", "symbols": ["function_decl$ebnf$1", "function_signature"], "postprocess": function(d) { return d[1]; }},
+    {"name": "function_decl", "symbols": ["function_decl$ebnf$1", "function_signature"], "postprocess": function(d) { return { ...d[1], is_shared: !!d[0]}; }},
     {"name": "constructor_decl", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "_", "parameter_list", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": 
         function (d) { return {
             ...Compound(d, n.ConstructorDecl, null),
@@ -1331,7 +1331,7 @@ var grammar = {
             ...d[1],
             const_qualifier: d[0],
             ref_qualifier: d[3],
-            is_reference: d[2],
+            is_reference: d[2] || d[1].is_reference,
         });}
         },
     {"name": "non_const_typename$ebnf$1", "symbols": ["atref"], "postprocess": id},
@@ -1343,7 +1343,7 @@ var grammar = {
             ...d[0],
             const_qualifier: null,
             ref_qualifier: d[2],
-            is_reference: d[1],
+            is_reference: d[1] || d[0].is_reference,
         });}
         },
     {"name": "unqualified_typename", "symbols": ["typename_identifier"], "postprocess": 
@@ -1351,6 +1351,7 @@ var grammar = {
             ...Compound(d, n.Typename, null),
             value: d[0].value,
             name: d[0],
+            is_reference: !!d[0].is_reference
         }}
         },
     {"name": "unqualified_typename", "symbols": ["template_typename"], "postprocess": id},

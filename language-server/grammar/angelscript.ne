@@ -698,7 +698,7 @@ access_mod_list -> %identifier (_ "," _ %identifier):* (_ %comma):? {%
 mb_ref_identifier -> atref:? %identifier {%
     function (d) { return {
         ...ExtendedCompound(d, Identifier(d[1])),
-        is_reference: !!d[0],
+        is_reference: d[0],
     }; }
 %}
 
@@ -767,7 +767,7 @@ var_decl_multi_part -> %identifier (_ "=" _ expression):? {%
     }
 %}
 
-function_decl -> (%shared_token _):? function_signature {% function(d) { return d[1]; } %}
+function_decl -> (%shared_token _):? function_signature {% function(d) { return { ...d[1], is_shared: !!d[0]}; } %}
 
 constructor_decl -> %identifier _ %lparen _ parameter_list _ %rparen {%
     function (d) { return {
@@ -1306,7 +1306,7 @@ typename -> const_qualifier:? unqualified_typename atref:? ref_qualifiers:? {%
         ...d[1],
         const_qualifier: d[0],
         ref_qualifier: d[3],
-        is_reference: d[2],
+        is_reference: d[2] || d[1].is_reference,
     });}
 %}
 non_const_typename -> unqualified_typename atref:? ref_qualifiers:? {%
@@ -1314,7 +1314,7 @@ non_const_typename -> unqualified_typename atref:? ref_qualifiers:? {%
         ...d[0],
         const_qualifier: null,
         ref_qualifier: d[2],
-        is_reference: d[1],
+        is_reference: d[1] || d[0].is_reference,
     });}
 %}
 
@@ -1323,6 +1323,7 @@ unqualified_typename -> typename_identifier {%
         ...Compound(d, n.Typename, null),
         value: d[0].value,
         name: d[0],
+        is_reference: !!d[0].is_reference
     }}
 %}
 
