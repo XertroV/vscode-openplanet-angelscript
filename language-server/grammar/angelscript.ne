@@ -533,6 +533,7 @@ global_declaration -> class_decl_keyword:* (%class_token | %interface_token) _ a
         // superclass: d[6] ? Identifier(d[6][1]) : null,
         superclass: d[6] ? d[6][0] : null,
         superclasses: d[6],
+        is_reference: d[3],
         is_interface: d[1][0].value == "interface",
         is_shared: (d[0]) ? NodesAny(d[0], n => n.value == "shared") : false,
         is_mixin: (d[0]) ? NodesAny(d[0], n => n.value == "mixin") : false

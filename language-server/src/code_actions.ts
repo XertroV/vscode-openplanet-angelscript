@@ -687,20 +687,21 @@ function GetDocsForFuncsPropsTypes(funcs: typedb.DBMethod[], props: typedb.DBPro
     let typesList = ""
 
     let hashes = `#`.repeat(headingLvl)
+    let tyHashes = `#`.repeat(headingLvl - 1)
 
     if (funcs.length > 0) {
         funcsList = `${hashes} Functions\n\n`
-        funcsList += funcs.map(GenerateFuncDocs).join("\n\n");
+        funcsList += funcs.map(v => GenerateFuncDocs(v, headingLvl + 1)).join("\n\n");
     }
 
     if (props.length > 0) {
         propsList = `${hashes} Properties\n\n`
-        propsList += props.map(GeneratePropDocs).join("\n\n");
+        propsList += props.map(v => GeneratePropDocs(v, headingLvl + 1)).join("\n\n");
     }
 
     if (types.length > 0) {
-        typesList = `${hashes} Types/Classes\n\n`
-        typesList += types.map(GenerateTypeDocs).join("\n\n");
+        typesList = `${tyHashes} Types/Classes\n\n`
+        typesList += types.map(v => GenerateTypeDocs(v, headingLvl)).join("\n\n");
     }
 
     return [funcsList, propsList, typesList];
@@ -722,7 +723,7 @@ function GenerateMdDocsForNamespace(ns: typedb.DBNamespace): string {
     if (childNSs.length > 0) {
         childNSList = `## Child Namespaces
 
-${childNSs.join()}`;
+${childNSs.join('\n')}`;
     }
 
     let [funcsList, propsList, typesList] = GetDocsForFuncsPropsTypes(funcs, props, types, 2)
@@ -741,26 +742,34 @@ ${childNSDocs.join('\n\n----------\n\n')}
 `
 }
 
-function GenerateFuncDocs(func: typedb.DBMethod): string {
-    let d = `### \`${func.format()}\``
+function PrepCodeDocsForMdDocs(codeDoc: string) {
+    return codeDoc.split("\n").map(v => v.trim()).join("\n")
+}
+
+function GenerateFuncDocs(func: typedb.DBMethod, headingLvl = 3): string {
+    let hashes = '#'.repeat(headingLvl)
+    let d = `${hashes} ${func.name} -- \`${func.format()}\``
     if (func.documentation?.length > 0) {
-        d += "\n\n" + func.documentation
+        d += "\n\n" + PrepCodeDocsForMdDocs(func.documentation)
     }
     return d;
 }
 
-function GeneratePropDocs(prop: typedb.DBProperty): string {
-    let d = `### \`${prop.format()}\``
+function GeneratePropDocs(prop: typedb.DBProperty, headingLvl = 3): string {
+    let hashes = '#'.repeat(headingLvl)
+    let d = `${hashes} \`${prop.format()}\``
     if (prop.documentation?.length > 0) {
-        d += "\n\n" + prop.documentation
+        d += "\n\n" + PrepCodeDocsForMdDocs(prop.documentation)
     }
     return d;
 }
 
-function GenerateTypeDocs(ty: typedb.DBType): string {
-    let d = `### \`${ty.getDisplayName()}\`\n\n`
+function GenerateTypeDocs(ty: typedb.DBType, headingLvl = 3): string {
+    let hashes = '#'.repeat(headingLvl)
+    let clsOrEnum = ty.isEnum ? "enum" : "class";
+    let d = `${hashes} \`${clsOrEnum} ${ty.name}\`\n\n`
     if (ty.documentation?.length > 0) {
-        d += ty.documentation + "\n\n"
+        d += PrepCodeDocsForMdDocs(ty.documentation) + "\n\n"
     }
     if (ty.isEnum) {
         for (let sName in ty.symbols) {
@@ -772,7 +781,7 @@ function GenerateTypeDocs(ty: typedb.DBType): string {
         }
     } else {
         let [funcs, props, types] = GetFuncsPropsTypesIn(ty);
-        let [funcsList, propsList, typesList] = GetDocsForFuncsPropsTypes(funcs, props, types, 4)
+        let [funcsList, propsList, typesList] = GetDocsForFuncsPropsTypes(funcs, props, types, headingLvl + 1)
         d += [funcsList, propsList, typesList].join("\n\n")
     }
     return d;

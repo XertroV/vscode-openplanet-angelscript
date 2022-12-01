@@ -1838,6 +1838,8 @@ function GetQualifiedTypename(typename : any) : string
         strtype = typename.const_qualifier.value+" "+typename.value;
     else
         strtype = typename.value;
+    if (typename.is_reference)
+        strtype += "@"
     if (typename.ref_qualifier)
         strtype += typename.ref_qualifier;
     return strtype;
@@ -1851,6 +1853,8 @@ function CopyQualifiersToTypename(qualifiers_from : any, typename : string) : st
         strtype = qualifiers_from.const_qualifier.value+" "+typename;
     else
         strtype = typename;
+    if (qualifiers_from.is_reference)
+        strtype += qualifiers_from.is_reference;
     if (qualifiers_from.ref_qualifier)
         strtype += qualifiers_from.ref_qualifier;
     return strtype;
@@ -2346,7 +2350,7 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
             {
                 let namespace = scope.parentscope.getNamespace();
                 dbfunc.documentation = scope.parentscope.dbtype.documentation;
-                dbfunc.returnType = scope.parentscope.dbtype.name;
+                dbfunc.returnType = scope.parentscope.dbtype.name+"@";
 
                 scope.module.globalSymbols.push(dbfunc);
                 namespace.addSymbol(dbfunc);
@@ -2688,7 +2692,7 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
             dbfunc.isConstructor = true;
 
             dbfunc.documentation = scope.dbtype.documentation;
-            dbfunc.returnType = scope.dbtype.name;
+            dbfunc.returnType = scope.dbtype.name + "@";
 
             namespace.addSymbol(dbfunc);
             scope.module.globalSymbols.push(dbfunc);
