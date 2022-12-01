@@ -508,7 +508,7 @@ function AddFunctionDiagnostics(scope : scriptfiles.ASScope, dbfunc : typedb.DBM
                 // Add diagnostic if we're overriding a non-blueprintevent and we aren't using the 'override' specifier
                 if (!dbfunc.isOverride && !dbfunc.isBlueprintEvent && parentMethod.declaredModule)
                 {
-                    console.trace({name: parentType.name, iface: parentType.isInterface});
+                    // console.trace({name: parentType.name, iface: parentType.isInterface});
                     let matchesParentSignature = false;
                     let allBaseMethods = parentType.findSymbols(dbfunc.name);
                     for (let baseMethod of allBaseMethods)

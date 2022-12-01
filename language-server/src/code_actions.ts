@@ -589,12 +589,12 @@ function AddGenerateNamespaceDocs(context: CodeActionContext) {
     let nsdef = context.statement.ast;
     let nsIdentifier: string = nsdef.name.value;
     nsIdentifier = nsIdentifier.split("::").slice(-1)[0];
-    console.warn("FOUND NAMESPACE: " + nsIdentifier)
+    // console.warn("FOUND NAMESPACE: " + nsIdentifier)
 
     let ns = context.scope.getNamespace();
     let fullName = ns.getQualifiedNamespace();
-    console.warn("FQ NAME: " + fullName)
-    console.dir({filename: context.module.filename, uri: context.module.uri, duri: context.module.displayUri})
+    // console.warn("FQ NAME: " + fullName)
+    // console.dir({filename: context.module.filename, uri: context.module.uri, duri: context.module.displayUri})
 
     context.actions.push(<CodeAction> {
         kind: CodeActionKind.QuickFix,
@@ -611,21 +611,15 @@ function AddGenerateNamespaceDocs(context: CodeActionContext) {
 }
 
 function ResolveNamespaceDocsMethod(asmodule: scriptfiles.ASModule, action: CodeAction, data: any) {
-    console.log(`Called: ResolveNamespaceDocsMethod for ${data.name}`);
-    console.dir(action); // {title, kind, data: data}
-    console.dir(data); // data, as above; {uri, type, qualifiedName, name, position}
+    // console.log(`Called: ResolveNamespaceDocsMethod for ${data.name}`);
+    // console.dir(action); // {title, kind, data: data}
+    // console.dir(data); // data, as above; {uri, type, qualifiedName, name, position}
     let uriParts: string[] = data.uri.split('/');
     let newFileName = `${data.name}.autodoc.md`;
     let uri: string = `${uriParts.slice(0, -1).join('/')}/${newFileName}`;
     let insertRangeStart: {line: 0, character: 0};
-    console.log(`output uri: ${uri}`)
 
     let edit = <WorkspaceEdit>{};
-    // edit.documentChanges = [];
-    // edit.documentChanges.push(CreateFile.create(uri, {overwrite: true}));
-
-    // // we'll overwrite the edit in a mo
-    // connection.workspace.applyEdit(edit);
 
     edit.documentChanges = [
         CreateFile.create(uri, {overwrite: true}),
