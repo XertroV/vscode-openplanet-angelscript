@@ -280,6 +280,13 @@ export class DBMethod implements DBSymbol
 
     suggestionDecl?: string;
 
+    nameNoAccessor(): string {
+        if (this.name.startsWith(getAccPrefix) || this.name.startsWith(setAccPrefix)) {
+            return this.name.substring(getAccPrefix.length);
+        }
+        return this.name;
+    }
+
     createTemplateInstance(templateTypes : Array<string>, actualTypes : Array<string>) : DBMethod
     {
         let inst = new DBMethod();

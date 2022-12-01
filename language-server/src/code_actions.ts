@@ -656,32 +656,52 @@ function GenerateMdDocsFromAction(data: GenDocsData): string {
     // traverse everything in the namespace and document it
     let docs = GenerateMdDocsForNamespace(ns);
     console.log(`Got MD docs for Namespace: ${ns.name} of length: ${docs.length}`);
-    console.log(docs);
+    // console.log(docs);
     return docs;
 }
+type DocFuncs = typedb.DBMethod[]
+type DocProps = (typedb.DBProperty | typedb.DBMethod)[]
+type DocTypes = typedb.DBType[]
+type FPT = [DocFuncs, DocProps, DocTypes]
+type FuncPropOrType = typedb.DBMethod | typedb.DBProperty | typedb.DBType;
 
+function SortByName(a: FuncPropOrType, b: FuncPropOrType) {
+    let aName = a.name.startsWith(getAccPrefix) ? a.name.substring(getAccPrefix.length) : a.name;
+    let bName = b.name.startsWith(getAccPrefix) ? b.name.substring(getAccPrefix.length) : b.name;
+    return aName < bName ? -1 : (aName == bName ? 0 : 1);
+}
 
-function GetFuncsPropsTypesIn(ns: typedb.DBNamespace | typedb.DBType): [typedb.DBMethod[], typedb.DBProperty[], typedb.DBType[]] {
-    let props: typedb.DBProperty[] = [];
-    let funcs: typedb.DBMethod[] = [];
-    let types: typedb.DBType[] = [];
+function GetFuncsPropsTypesIn(ns: typedb.DBNamespace | typedb.DBType): FPT {
+    let props: DocProps = [];
+    let funcs: DocFuncs = [];
+    let types: DocTypes = [];
 
     ns.forEachSymbol((symbol) => {
         if (symbol instanceof typedb.DBProperty) props.push(symbol)
-        else if (symbol instanceof typedb.DBMethod) funcs.push(symbol)
+        else if (symbol instanceof typedb.DBMethod) {
+            if (symbol.name.startsWith(getAccPrefix)) {
+                props.push(symbol)
+            } else {
+                funcs.push(symbol)
+            }
+        }
         else if (symbol instanceof typedb.DBType) types.push(symbol)
         else console.warn(`Symbol that isn't a property, method, or type: ${symbol.name}`);
     });
 
-    props.sort((a, b) => a.name < b.name ? -1 : (a.name == b.name ? 0 : 1));
-    funcs.sort((a, b) => a.name < b.name ? -1 : (a.name == b.name ? 0 : 1));
-    types.sort((a, b) => a.name < b.name ? -1 : (a.name == b.name ? 0 : 1));
+    function uniqueFilter(v: any, ix: number, self: any[]) {
+        return self.indexOf(v) === ix;
+    }
+
+    props.sort(SortByName).filter(uniqueFilter);
+    funcs.sort(SortByName).filter(uniqueFilter);
+    types.sort(SortByName).filter(uniqueFilter);
 
     return [funcs, props, types];
 }
 
 
-function GetDocsForFuncsPropsTypes(funcs: typedb.DBMethod[], props: typedb.DBProperty[], types: typedb.DBType[], headingLvl: number = 2): [string, string, string] {
+function GetDocsForFuncsPropsTypes(funcs: DocFuncs, props: DocProps, types: DocTypes, headingLvl: number = 2): [string, string, string] {
     let funcsList = ""
     let propsList = ""
     let typesList = ""
@@ -755,9 +775,17 @@ function GenerateFuncDocs(func: typedb.DBMethod, headingLvl = 3): string {
     return d;
 }
 
-function GeneratePropDocs(prop: typedb.DBProperty, headingLvl = 3): string {
+function GeneratePropDocs(prop: DocProps[0], headingLvl = 3): string {
     let hashes = '#'.repeat(headingLvl)
-    let d = `${hashes} \`${prop.format()}\``
+    let name: string;
+    let ty: string;
+    if (prop instanceof typedb.DBMethod) {
+        name = `${prop.returnType} ${prop.nameNoAccessor()}`;
+    } else {
+        name = prop.format();
+        // ty = prop.typename;
+    }
+    let d = `${hashes} \`${name}\``
     if (prop.documentation?.length > 0) {
         d += "\n\n" + PrepCodeDocsForMdDocs(prop.documentation)
     }
@@ -772,13 +800,13 @@ function GenerateTypeDocs(ty: typedb.DBType, headingLvl = 3): string {
         d += PrepCodeDocsForMdDocs(ty.documentation) + "\n\n"
     }
     if (ty.isEnum) {
-        for (let sName in ty.symbols) {
-            let _sym = ty.symbols.get(sName)
-            let syms = Array.isArray(_sym) ? _sym : [_sym];
-            for (let el of syms) {
-                d += `- \`${el.name}\``
-            }
-        }
+        // console.log(`enum: ${ty.name}`)
+        // console.log(`enum ty.symbols.size? ${ty.symbols.size}`)
+        // if (!!ty.auxiliarySymbols)
+        //     console.log(`enum aux symbols? ${ty.auxiliarySymbols.length}`)
+        ty.forEachSymbol(sym => {
+            d += `- \`${sym.name}\`\n`
+        })
     } else {
         let [funcs, props, types] = GetFuncsPropsTypesIn(ty);
         let [funcsList, propsList, typesList] = GetDocsForFuncsPropsTypes(funcs, props, types, headingLvl + 1)
