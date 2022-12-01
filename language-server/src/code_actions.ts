@@ -671,15 +671,22 @@ function GetFuncsPropsTypesIn(ns: typedb.DBNamespace | typedb.DBType): FPT {
     let types: DocTypes = [];
 
     ns.forEachSymbol((symbol) => {
-        if (symbol instanceof typedb.DBProperty) props.push(symbol)
+        if (symbol instanceof typedb.DBProperty) {
+            if (symbol.isPrivate || symbol.isProtected) return;
+            props.push(symbol)
+        }
         else if (symbol instanceof typedb.DBMethod) {
             if (symbol.name.startsWith(getAccPrefix)) {
                 props.push(symbol)
             } else {
+                if (['super'].includes(symbol.name)) return;
                 funcs.push(symbol)
             }
         }
-        else if (symbol instanceof typedb.DBType) types.push(symbol)
+        else if (symbol instanceof typedb.DBType) {
+            if (!symbol.isTemplateInstantiation)
+                types.push(symbol)
+        }
         else console.warn(`Symbol that isn't a property, method, or type: ${symbol.name}`);
     });
 
