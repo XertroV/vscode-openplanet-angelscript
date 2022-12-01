@@ -52,6 +52,7 @@ It's a bug.
   - improved detection of references and include them more often where they should be
   - add autodoc feature (usage: `ctrl+.` when the cursor is on the name of a namespace, i.e., like `namespace MyN|amspace {...` will offer an auto-doc-gen option)
   - initial support for extra docs for Nadeo types
+  - (better) respect custom settings WRT Openplanet directories
 - 0.2.12
   - add `and`, `xor`, and `or` binary compare operators (and `^^`, too), and `not`
   - support interfaces, multiple superclasses (preliminary impl, not completely done)
