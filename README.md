@@ -49,6 +49,7 @@ It's a bug.
 ## Changelog
 
 - 0.2.14
+  - performance improvements for anon arrays / dictionaries.
   - add `1e+3` syntax for floats in sci notation
   - add `order="X"` keyword for `SettingsTab`s
 - 0.2.13
