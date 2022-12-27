@@ -75,6 +75,7 @@ module.exports = {
     ForLoop: indexed ? i++ : "ForLoop",
     ForEachLoop: indexed ? i++ : "ForEachLoop",
     WhileLoop: indexed ? i++ : "WhileLoop",
+    DoWhileLoop: indexed ? i++ : "DoWhileLoop",
 
     Typename: indexed ? i++ : "Typename",
     Parameter: indexed ? i++ : "Parameter",

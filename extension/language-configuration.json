@@ -49,7 +49,7 @@
             }
         },
         {
-            "previousLineText": "^\\s*(if|while|for)\\s*\\(.*\\)\\s*$",
+            "previousLineText": "^\\s*(if|while|do|for)\\s*\\(.*\\)\\s*$",
             "beforeText": "^.*;$",
             "action": {
                 "indent": "outdent"

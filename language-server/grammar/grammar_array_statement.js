@@ -74,6 +74,7 @@ const lexer = moo.compile({
             try_token: "try",
             catch_token: "catch",
             while_token: "while",
+            do_token: "do",
             for_token: "for",
             case_token: "case",
             switch_token: "switch",
@@ -430,6 +431,9 @@ var grammar = {
     {"name": "for_comma_expression", "symbols": ["assignment"], "postprocess": id},
     {"name": "statement", "symbols": [(lexer.has("while_token") ? {type: "while_token"} : while_token), "_", (lexer.has("lparen") ? {type: "lparen"} : lparen), "optional_expression", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen), "optional_statement"], "postprocess": 
         function (d) { return Compound(d, n.WhileLoop, [d[3], d[6]]); }
+        },
+    {"name": "statement", "symbols": [(lexer.has("do_token") ? {type: "do_token"} : do_token), "_", "optional_statement"], "postprocess": 
+        function (d) { return Compound(d, n.DoWhileLoop, [d[2]]); }
         },
     {"name": "global_statement", "symbols": [(lexer.has("import_token") ? {type: "import_token"} : import_token)], "postprocess": 
         function (d) {

@@ -70,6 +70,7 @@ const lexer = moo.compile({
             try_token: "try",
             catch_token: "catch",
             while_token: "while",
+            do_token: "do",
             for_token: "for",
             case_token: "case",
             switch_token: "switch",
@@ -437,6 +438,10 @@ for_comma_expression -> assignment {% id %}
 
 statement -> %while_token _ %lparen optional_expression _ %rparen optional_statement {%
     function (d) { return Compound(d, n.WhileLoop, [d[3], d[6]]); }
+%}
+
+statement -> %do_token _ optional_statement {%
+    function (d) { return Compound(d, n.DoWhileLoop, [d[2]]); }
 %}
 
 global_statement -> %import_token {%

@@ -526,6 +526,7 @@ export function GetInlayHintsForNode(scope : scriptfiles.ASScope, statement : sc
         case node_types.ElseStatement:
         case node_types.ForLoop:
         case node_types.WhileLoop:
+        case node_types.DoWhileLoop:
         case node_types.CaseStatement:
         case node_types.DefaultCaseStatement:
         {

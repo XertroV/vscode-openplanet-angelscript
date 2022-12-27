@@ -103,7 +103,7 @@ export let node_types = require("../grammar/node_types.js");
 
 export let ASKeywords = [
     "for", "if", "enum", "return", "continue", "break", "import", "class", "interface", "struct", "default",
-    "void", "const", "else", "while", "case", "cast", "namespace",
+    "void", "const", "else", "while", "do", "case", "cast", "namespace",
     "true", "false", "this", "auto", "null", "shared", "funcdef", "function",
     "final", "property", "override", "mixin", "switch", "try", "catch", "get", "set",
     // "UFUNCTION", "UPROPERTY", "UCLASS", "USTRUCT", "nullptr",
@@ -914,7 +914,7 @@ export function ParseModule(module : ASModule, debug : boolean = false)
     GenerateTypeInformation(module.rootscope);
 
     let parseTime = performance.now() - startTime;
-    if (parseTime > 50)
+    if (parseTime > 5)
         console.log("Parse "+module.modulename+" " + (parseTime) + " ms - "+module.loadedFromCacheCount+" cached, "+module.parsedStatementCount+" parsed")
 }
 
@@ -2470,6 +2470,7 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
             case node_types.CatchStatement:
             case node_types.ForLoop:
             case node_types.WhileLoop:
+            case node_types.DoWhileLoop:
             case node_types.CaseStatement:
             case node_types.DefaultCaseStatement:
             {
@@ -5133,6 +5134,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
         case node_types.ElseStatement:
         case node_types.ForLoop:
         case node_types.WhileLoop:
+        case node_types.DoWhileLoop:
         case node_types.CaseStatement:
         case node_types.DefaultCaseStatement:
         {
