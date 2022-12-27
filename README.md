@@ -25,9 +25,10 @@ To check if something's going wrong, look for logs in `Output > Angelscript Lang
 
 If you have issues ping @XertroV on the Openplanet discord.
 
+<!--
 **Note:** inline array declarations like `string[] asdf = {'a', 'b', 'c', 'd'};` are taxing for the extension at the moment. This can cause out of memory errors for complex expressions like `string[][] = {{'a','b','c'},{'a','b','c'},{'a','b','c'},{'a','b','c'},{'a','b','c'},{'a','b','c'}}`.
 The workaround is to populate the array with one array at a time using `.InsertLast`.
-It's a bug.
+It's a bug. -->
 
 ## todo:
 
@@ -43,11 +44,12 @@ It's a bug.
 - `const obj @ const d = obj();` -- const syntax
 - supertypes finish and polish (search for `.getSuperType()`; maybe remove .supertype all together in favor of .supertypes)
 - rename getter/setter adds extra _ to start of usages
-- list parsing v broken for complex expressions
-- `do` loops exist apparently
+- (50%) list parsing v broken for complex expressions
 
 ## Changelog
 
+- 0.2.15
+  - add `do { ... } while ( ... );` support
 - 0.2.14
   - performance improvements for anon arrays / dictionaries.
   - add `1e+3` syntax for floats in sci notation
