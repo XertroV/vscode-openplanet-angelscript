@@ -1227,6 +1227,10 @@ const_number -> %number "." %number "e" "-" %number {%
     function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
 %}
 
+const_number -> %number "." %number "e" "+" %number {%
+    function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
+%}
+
 const_number -> %number "." %number "e" %number {%
     function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
 %}

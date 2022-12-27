@@ -1262,6 +1262,9 @@ var grammar = {
     {"name": "const_number", "symbols": [(lexer.has("number") ? {type: "number"} : number), {"literal":"."}, (lexer.has("number") ? {type: "number"} : number), {"literal":"e"}, {"literal":"-"}, (lexer.has("number") ? {type: "number"} : number)], "postprocess": 
         function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
         },
+    {"name": "const_number", "symbols": [(lexer.has("number") ? {type: "number"} : number), {"literal":"."}, (lexer.has("number") ? {type: "number"} : number), {"literal":"e"}, {"literal":"+"}, (lexer.has("number") ? {type: "number"} : number)], "postprocess": 
+        function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
+        },
     {"name": "const_number", "symbols": [(lexer.has("number") ? {type: "number"} : number), {"literal":"."}, (lexer.has("number") ? {type: "number"} : number), {"literal":"e"}, (lexer.has("number") ? {type: "number"} : number)], "postprocess": 
         function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
         },

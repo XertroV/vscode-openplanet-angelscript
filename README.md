@@ -44,6 +44,7 @@ It's a bug.
 - supertypes finish and polish (search for `.getSuperType()`; maybe remove .supertype all together in favor of .supertypes)
 - rename getter/setter adds extra _ to start of usages
 - list parsing v broken for complex expressions
+- `do` loops exist apparently
 
 ## Changelog
 
