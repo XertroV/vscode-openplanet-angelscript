@@ -1833,7 +1833,7 @@ function AddParametersToFunction(scope : ASScope, statement : ASStatement, dbfun
 // Get the concatenated qualified typename
 function GetQualifiedTypename(typename : any) : string
 {
-    console.dir(typename)
+    // console.dir(typename)
     let strtype : string;
     if (typename.const_qualifier)
         strtype = typename.const_qualifier.value+" "+typename.value;
@@ -7173,18 +7173,22 @@ export function ParseStatement(scopetype : ASScopeType, statement : ASStatement,
     }
 
     let parseError = false;
+    let start = performance.now();
     try
     {
         parser.feed(statement.content);
     }
     catch (error)
     {
+        let end = performance.now();
+        console.warn(`Parsing resulting in error took ${end-start} ms to reach`);
         let useOrigError = true;
         if (scopetype != ASScopeType.Enum) {
             let prev_parser = parser;
             try {
                 parser = parser_array_statement;
                 parser.restore(parser_array_statement_initial);
+                start = performance.now();
                 parser.feed(statement.content);
                 useOrigError = false;  // we succeeded parsing it as an array statement
                 // console.log(`Successfully parsed as array when unable to otherwise: ${statement.content}`);
@@ -7193,7 +7197,9 @@ export function ParseStatement(scopetype : ASScopeType, statement : ASStatement,
                 console.warn(`parsing as array statement failed: ${err}`)
                 parser = prev_parser;
             }
+            end = performance.now();
         }
+        console.warn(`Parsing array possibility took ${end-start} ms`);
 
         if (useOrigError) {
             // Debugging for unparseable statements
