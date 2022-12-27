@@ -939,8 +939,11 @@ expression -> expr_ternary {% id %}
 expression -> expr_array {% id %}
 expression -> expr_inline_function {% id %}
 
-expr_array -> (typename _ "=" _):? %lbrace _ array_expr_list _ %rbrace {%
-    function(d) { return Compound(d, n.ArrayInline, d[3] ? [d[3]] : []); }
+expr_array -> (typename _ "=" _):? %lbrace _ %rbrace:? {%
+    function(d) { return Compound(d, n.ArrayInline, []); }
+%}
+expr_array -> (typename _ "=" _):? %lbrace _ array_expr_list (_ %comma):? _ %rbrace {%
+    function(d) { return Compound(d, n.ArrayInline, d[4] ? d[4] : []); }
 %}
 
 expr_ternary -> expr_binary_logic _ %ternary _ expr_ternary _ %colon _ expr_ternary {%
@@ -1279,13 +1282,13 @@ constant -> %sqstring {%
     function(d) { return Literal(n.ConstString, d[0]); }
 %}
 
-constant -> "n" %dqstring {%
-    function(d) { return CompoundLiteral(n.ConstName, d, null); }
-%}
+# constant -> "n" %dqstring {%
+#     function(d) { return CompoundLiteral(n.ConstName, d, null); }
+# %}
 
-constant -> "f" %dqstring {%
-    function(d) { return CompoundLiteral(n.ConstFormatString, d, null); }
-%}
+# constant -> "f" %dqstring {%
+#     function(d) { return CompoundLiteral(n.ConstFormatString, d, null); }
+# %}
 
 constant -> const_number {% id %}
 
@@ -1537,27 +1540,17 @@ case_label -> ("-" _):? %number {%
 %}
 case_label -> namespace_access {% id %}
 
-# array_statement -> (typename _ "=" _):? expression (_ %comma _ (typename _ "=" _):? expression):* {%
-array_statement -> expression (_ %comma _ expression):* {%
+array_expr_list -> expression _ ("," _ expression _):* {%
     function (d) {
         let result = [d[0]];
-        if (d[1]) {
-            for (let sub of d[1]) {
-                result.push(sub[3]);
+        if (d[2]) {
+            for (let sub of d[2]) {
+                result.push(sub[2]);
             }
         }
         return Compound(d, n.ArrayValueList, result);
     }
 %}
-
-array_expr_list -> null {%
-    function(d) { return null; }
-%}
-array_expr_list -> _ %comma {%
-    function(d) { return null; }
-%}
-array_expr_list -> array_statement {% id %}
-
 
 enum_statement -> enum_decl (_ %comma enum_decl):* (_ %comma):? {%
     function (d)
@@ -1702,7 +1695,7 @@ settings_tab_kwargs -> (settings_tab_kwarg _):* settings_tab_kwarg {%
         return Compound(d, n.SettingsTabKwarg, result);
     }
 %}
-settings_tab_kwarg -> ("icon" | "name") %op_assignment (%dqstring | %sqstring) {% MkSettingsTabKwarg %}
+settings_tab_kwarg -> ("icon" | "name" | "order") %op_assignment (%dqstring | %sqstring) {% MkSettingsTabKwarg %}
 
 # floatNumber -> %number %dot %number "e" %op_unary:? %number
 # floatNumber -> %number %dot %number

@@ -48,6 +48,9 @@ It's a bug.
 
 ## Changelog
 
+- 0.2.14
+  - add `1e+3` syntax for floats in sci notation
+  - add `order="X"` keyword for `SettingsTab`s
 - 0.2.13
   - add `funcdef UI::InputTextCallback(UI::InputTextCallbackData@ d)` & `NodTreeMemberCallback`
   - improved detection of references and include them more often where they should be

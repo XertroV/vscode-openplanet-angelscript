@@ -6103,6 +6103,7 @@ function ParseScopeIntoStatements(scope : ASScope)
 
     let depth_brace = 0;
     let depth_paren = 0;
+    let array_level = 0;
     let tmp_depth_paren;
     let scope_start = -1;
     let prior_scope_start = -1;
@@ -6117,7 +6118,6 @@ function ParseScopeIntoStatements(scope : ASScope)
     let in_dq_string = false;
     let in_sq_string = false;
     let in_escape_sequence = false;
-    let in_array = false;
 
     let cur_element : ASElement = null;
     function finishElement(element : ASElement)
@@ -6326,7 +6326,8 @@ function ParseScopeIntoStatements(scope : ASScope)
         // We could be starting a scope
         if (curchar == '{')
         {
-            if (depth_brace == 0) {
+            // no subscopes in arrays
+            if (depth_brace == 0 && array_level == 0) {
                 if (!CheckIfInlineArray(scope, genHypotheticalStatement(false), cur_offset)) {
                     // can only start a scope outside parens
                     // todo: helps with some arrays `void f(string[] blah = {})` to check depth_paren, but not all `string[] a = {};`
@@ -6341,8 +6342,10 @@ function ParseScopeIntoStatements(scope : ASScope)
                     // ^^ not an error with inline function definitions
                     // depth_paren = 0;
                 } else {
-                    in_array = true;
+                    array_level += 1;
                 }
+            } else if (array_level > 0) {
+                array_level += 1;
             }
 
             depth_brace += 1;
@@ -6353,6 +6356,11 @@ function ParseScopeIntoStatements(scope : ASScope)
             {
                 // This is a brace mismatch error, we should actually ignore it
                 continue;
+            }
+
+            let in_array = array_level > 0;
+            if (array_level > 0) {
+                array_level -= 1;
             }
 
             depth_brace -= 1;
@@ -6436,7 +6444,6 @@ function ParseScopeIntoStatements(scope : ASScope)
                     //     }
                     // }
                 } else {
-                    in_array = false;
                     continue;
                 }
             }
@@ -6526,8 +6533,8 @@ function CheckIfInlineArray(scope: ASScope, cur_element: ASElement, cur_offset: 
         if (matchesPrior("final")) return false;
         if (matchesPrior("property")) return false;
         if (contentTrimmed.endsWith(")")) return false; // function definition; if () {}; while () {}; etc
-        if (contentTrimmed.includes("enum")) // warn if our checks failed somehow, but could be false positive b/c of a lack of whitespace
-            console.warn(`Found enum! (and we shouldnt have): "${contentTrimmed}"`)
+        // if (contentTrimmed.includes("enum")) // warn if our checks failed somehow, but could be false positive b/c of a lack of whitespace
+        //     console.warn(`Found enum! (and we shouldnt have): "${contentTrimmed}"`)
     }
 
     let depth_brace = 0;
@@ -7183,6 +7190,7 @@ export function ParseStatement(scopetype : ASScopeType, statement : ASStatement,
                 // console.log(`Successfully parsed as array when unable to otherwise: ${statement.content}`);
             } catch (err) {
                 // do nothing, throw original
+                console.warn(`parsing as array statement failed: ${err}`)
                 parser = prev_parser;
             }
         }
