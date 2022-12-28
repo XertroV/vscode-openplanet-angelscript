@@ -46,6 +46,7 @@ const lexer = moo.compile({
     hex_number: /0[xX][0-9A-Fa-f]*/,
     octal_number: /0[oO][0-8]*/,
     binary_number: /0[bB][01]*/,
+    number_exponent: /[0-9]+\.?[0-9]*e[+-]?[0-9]+/,
     identifier: { match: /[A-Za-z_][A-Za-z0-9_]*/,
         type: moo.keywords({
             enum_token: "enum",
@@ -1274,13 +1275,7 @@ var grammar = {
     {"name": "const_number", "symbols": [(lexer.has("octal_number") ? {type: "octal_number"} : octal_number)], "postprocess": 
         function(d) { return Literal(n.ConstOctalInteger, d[0]); }
         },
-    {"name": "const_number", "symbols": [(lexer.has("number") ? {type: "number"} : number), {"literal":"."}, (lexer.has("number") ? {type: "number"} : number), {"literal":"e"}, {"literal":"-"}, (lexer.has("number") ? {type: "number"} : number)], "postprocess": 
-        function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
-        },
-    {"name": "const_number", "symbols": [(lexer.has("number") ? {type: "number"} : number), {"literal":"."}, (lexer.has("number") ? {type: "number"} : number), {"literal":"e"}, {"literal":"+"}, (lexer.has("number") ? {type: "number"} : number)], "postprocess": 
-        function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
-        },
-    {"name": "const_number", "symbols": [(lexer.has("number") ? {type: "number"} : number), {"literal":"."}, (lexer.has("number") ? {type: "number"} : number), {"literal":"e"}, (lexer.has("number") ? {type: "number"} : number)], "postprocess": 
+    {"name": "const_number", "symbols": [(lexer.has("number_exponent") ? {type: "number_exponent"} : number_exponent)], "postprocess": 
         function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
         },
     {"name": "const_number", "symbols": [(lexer.has("number") ? {type: "number"} : number), {"literal":"."}, (lexer.has("number") ? {type: "number"} : number), {"literal":"f"}], "postprocess": 
@@ -1290,6 +1285,9 @@ var grammar = {
         function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
         },
     {"name": "const_number", "symbols": [(lexer.has("number") ? {type: "number"} : number), {"literal":"."}, {"literal":"f"}], "postprocess": 
+        function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
+        },
+    {"name": "const_number", "symbols": [(lexer.has("number") ? {type: "number"} : number), {"literal":"f"}], "postprocess": 
         function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
         },
     {"name": "const_number", "symbols": [(lexer.has("number") ? {type: "number"} : number), {"literal":"."}, (lexer.has("number") ? {type: "number"} : number)], "postprocess": 

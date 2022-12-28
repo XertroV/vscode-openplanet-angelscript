@@ -42,6 +42,7 @@ const lexer = moo.compile({
     hex_number: /0[xX][0-9A-Fa-f]*/,
     octal_number: /0[oO][0-8]*/,
     binary_number: /0[bB][01]*/,
+    number_exponent: /[0-9]+\.?[0-9]*e[+-]?[0-9]+/,
     identifier: { match: /[A-Za-z_][A-Za-z0-9_]*/,
         type: moo.keywords({
             enum_token: "enum",
@@ -1231,17 +1232,30 @@ const_number -> %octal_number {%
     function(d) { return Literal(n.ConstOctalInteger, d[0]); }
 %}
 
-const_number -> %number "." %number "e" "-" %number {%
+const_number -> %number_exponent {%
     function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
 %}
 
-const_number -> %number "." %number "e" "+" %number {%
-    function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
-%}
+# const_number -> %number ("." %number:?):? %e ("+" | "-"):? %number {%
+#     function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
+# %}
 
-const_number -> %number "." %number "e" %number {%
-    function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
-%}
+# const_number -> %number ("." %number):? "e" "+" %number {%
+#     function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
+# %}
+
+# const_number -> %number "." %number "e" %number {%
+#     function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
+# %}
+# const_number -> %number "." "e" %number {%
+#     function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
+# %}
+# const_number -> %number "e" %number {%
+#     function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
+# %}
+# const_number -> "." %number "e" %number {%
+#     function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
+# %}
 
 const_number -> %number "." %number "f" {%
     function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
@@ -1252,6 +1266,10 @@ const_number -> "." %number "f" {%
 %}
 
 const_number -> %number "." "f" {%
+    function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
+%}
+
+const_number -> %number "f" {%
     function(d) { return CompoundLiteral(n.ConstFloat, d, null); }
 %}
 
