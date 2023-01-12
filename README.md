@@ -48,6 +48,8 @@ It's a bug. -->
 
 ## Changelog
 
+- 0.2.16
+  - fix dependency loading from .op files using windows paths
 - 0.2.15
   - fix floating point number stuff, again.
   - add `do { ... } while ( ... );` support
