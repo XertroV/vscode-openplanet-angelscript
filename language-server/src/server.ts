@@ -344,9 +344,9 @@ function LoadOpenplanetDependencies(deps: string[]) {
         let pluginFileName = path.basename(pluginFile, ".op");
         if (!allowedDeps.has(pluginFileName) || foundDeps.has(pluginFileName)) // don't need it or already have it
             return;
-        let tmpDir = path.join(os.tmpdir(), "vscode-op-as", pluginFileName);
+        let tmpDir = path.join(os.tmpdir(), "vscode-op-as", pluginFileName).replace("\\", "/");
         let tmpDir_ = path.join(tmpDir, " ").trimEnd();
-        // console.info(`Clearing tmp directory: ${tmpDir}`);
+        console.info(`Clearing tmp directory: ${tmpDir}, basePath to replace later: ${tmpDir_}`);
         fs.mkdirSync(tmpDir, {recursive: true});
         // console.info(`Extracting ${pluginFile} to ${tmpDir}`);
         let archive = new AdmZip(pluginFile)
