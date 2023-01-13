@@ -48,6 +48,8 @@ It's a bug. -->
 
 ## Changelog
 
+- 0.2.18
+  - remove `local` & `access` keywords (do not appear in angelcode docs), add `typedef` and `protected`
 - 0.2.17
   - Big improvement to array/dictionary parsing (~700x in at least one case) -- some issues still remain.
 - 0.2.16

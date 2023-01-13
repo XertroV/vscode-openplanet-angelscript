@@ -59,11 +59,12 @@ const lexer = moo.compile({
             final_token: "final",
             override_token: "override",
             property_token: "property",
+            protected_token: "protected",
             mixin_token: "mixin",
             shared_token: "shared",
+            typedef_token: "typedef",
             funcdef_token: "funcdef",
             function_token: "function",
-            local_token: "local",
             if_token: "if",
             else_token: "else",
             get_token: "get",
@@ -80,7 +81,6 @@ const lexer = moo.compile({
             bool_token: ['true', 'false'],
             nullptr_token: 'null',
             this_token: 'this',
-            access_token: 'access',
 
             // This is a hack to help disambiguate syntax.
             // A statement of `TArray<int> Var` might be parsed as
