@@ -44,10 +44,12 @@ It's a bug. -->
 - `const obj @ const d = obj();` -- const syntax
 - supertypes finish and polish (search for `.getSuperType()`; maybe remove .supertype all together in favor of .supertypes)
 - rename getter/setter adds extra _ to start of usages
-- (50%) list parsing v broken for complex expressions
+- (75%) list parsing v broken for complex expressions
 
 ## Changelog
 
+- 0.2.17
+  - Big improvement to array/dictionary parsing (~700x in at least one case) -- some issues still remain.
 - 0.2.16
   - fix dependency loading from .op files using windows paths
 - 0.2.15
