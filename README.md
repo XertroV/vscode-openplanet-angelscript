@@ -48,6 +48,8 @@ It's a bug. -->
 
 ## Changelog
 
+- 0.2.19
+  - fix: outdated parser .js code shipped in .18
 - 0.2.18
   - remove `local` & `access` keywords (do not appear in angelcode docs), add `typedef` and `protected`
 - 0.2.17
