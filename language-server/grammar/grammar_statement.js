@@ -989,7 +989,7 @@ var grammar = {
     {"name": "expr_array$ebnf$4", "symbols": ["expr_array$ebnf$4$subexpression$1"], "postprocess": id},
     {"name": "expr_array$ebnf$4", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "expr_array", "symbols": ["expr_array$ebnf$3", (lexer.has("lbrace") ? {type: "lbrace"} : lbrace), "_", "array_expr_list", "expr_array$ebnf$4", "_", (lexer.has("rbrace") ? {type: "rbrace"} : rbrace)], "postprocess": 
-        function(d) { return Compound(d, n.ArrayInline, d[4] ? d[4] : []); }
+        function(d) { return Compound(d, n.ArrayInline, d[3] ? d[3].children : []); }
         },
     {"name": "expr_ternary", "symbols": ["expr_binary_logic", "_", (lexer.has("ternary") ? {type: "ternary"} : ternary), "_", "expr_ternary", "_", (lexer.has("colon") ? {type: "colon"} : colon), "_", "expr_ternary"], "postprocess": 
         function (d) { return Compound(d, n.TernaryOperation, [d[0], d[4], d[8]]); }
@@ -1598,16 +1598,17 @@ var grammar = {
         },
     {"name": "case_label", "symbols": ["namespace_access"], "postprocess": id},
     {"name": "array_expr_list$ebnf$1", "symbols": []},
-    {"name": "array_expr_list$ebnf$1$subexpression$1", "symbols": [{"literal":","}, "_", "expression", "_"]},
+    {"name": "array_expr_list$ebnf$1$subexpression$1", "symbols": ["expression", "_", {"literal":","}, "_"]},
     {"name": "array_expr_list$ebnf$1", "symbols": ["array_expr_list$ebnf$1", "array_expr_list$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "array_expr_list", "symbols": ["expression", "_", "array_expr_list$ebnf$1"], "postprocess": 
+    {"name": "array_expr_list", "symbols": ["array_expr_list$ebnf$1", "expression"], "postprocess": 
         function (d) {
-            let result = [d[0]];
-            if (d[2]) {
-                for (let sub of d[2]) {
-                    result.push(sub[2]);
+            let result = [];
+            if (d[0]) {
+                for (let sub of d[0]) {
+                    result.push(sub[0]);
                 }
             }
+            result.push(d[1]);
             return Compound(d, n.ArrayValueList, result);
         }
         },

@@ -906,16 +906,20 @@ export function ParseModule(module : ASModule, debug : boolean = false)
 
     // Parse content of file into distinct statements
     ParseScopeIntoStatements(module.rootscope);
+    let parseTime = () => performance.now() - startTime;
+    console.log("Parse (into statements) "+module.modulename+" " + (parseTime()) + " ms - "+module.loadedFromCacheCount+" cached, "+module.parsedStatementCount+" parsed")
 
     // Parse each statement into an abstract syntax tree
     ParseAllStatements(module.rootscope, debug);
+    console.log("Parse (+ all statements) "+module.modulename+" " + (parseTime()) + " ms - "+module.loadedFromCacheCount+" cached, "+module.parsedStatementCount+" parsed")
 
     // Traverse syntax trees to lift out functions, variables and imports during this first parse step
     GenerateTypeInformation(module.rootscope);
+    console.log("Parse (+ gen type info) "+module.modulename+" " + (parseTime()) + " ms - "+module.loadedFromCacheCount+" cached, "+module.parsedStatementCount+" parsed")
 
-    let parseTime = performance.now() - startTime;
-    if (parseTime > 5)
-        console.log("Parse "+module.modulename+" " + (parseTime) + " ms - "+module.loadedFromCacheCount+" cached, "+module.parsedStatementCount+" parsed")
+    // let parseTime = performance.now() - startTime;
+    if (parseTime() > 5)
+        console.log("Parse "+module.modulename+" " + (parseTime()) + " ms - "+module.loadedFromCacheCount+" cached, "+module.parsedStatementCount+" parsed")
 }
 
 // Parse the specified module and all its unparsed dependencies
@@ -4671,6 +4675,17 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
             }
         }
         break;
+        // array of things
+        case node_types.ArrayInline:
+        {
+            if (node.children) {
+                for (let child of node.children) {
+
+                    DetectNodeSymbols(scope, statement, child, parseContext, symbol_type);
+                }
+            }
+        }
+        break;
         // X[]
         case node_types.IndexOperator:
         {
@@ -7179,6 +7194,9 @@ export function ParseStatement(scopetype : ASScopeType, statement : ASStatement,
     try
     {
         parser.feed(statement.content);
+        if (statement.content.includes(`string[] test = {"", "", Icons::YoutubeSquare}`)) {
+            console.dir(parser.results, {depth: 10});
+        }
     }
     catch (error)
     {
@@ -7223,6 +7241,7 @@ export function ParseStatement(scopetype : ASScopeType, statement : ASStatement,
             statement.parseError = true;
         }
     }
+    console.info(`Main parse statement took: ${performance.now() - start}`);
 
     if (!parseError)
     {

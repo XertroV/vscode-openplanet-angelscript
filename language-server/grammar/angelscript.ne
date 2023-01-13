@@ -949,7 +949,7 @@ expr_array -> (typename _ "=" _):? %lbrace _ %rbrace:? {%
     function(d) { return Compound(d, n.ArrayInline, []); }
 %}
 expr_array -> (typename _ "=" _):? %lbrace _ array_expr_list (_ %comma):? _ %rbrace {%
-    function(d) { return Compound(d, n.ArrayInline, d[4] ? d[4] : []); }
+    function(d) { return Compound(d, n.ArrayInline, d[3] ? d[3].children : []); }
 %}
 
 expr_ternary -> expr_binary_logic _ %ternary _ expr_ternary _ %colon _ expr_ternary {%
@@ -1563,14 +1563,16 @@ case_label -> ("-" _):? %number {%
 %}
 case_label -> namespace_access {% id %}
 
-array_expr_list -> expression _ ("," _ expression _):* {%
+# array_expr_list -> expression _ ("," _ expression _):* {%
+array_expr_list -> (expression _ "," _):* expression {%
     function (d) {
-        let result = [d[0]];
-        if (d[2]) {
-            for (let sub of d[2]) {
-                result.push(sub[2]);
+        let result = [];
+        if (d[0]) {
+            for (let sub of d[0]) {
+                result.push(sub[0]);
             }
         }
+        result.push(d[1]);
         return Compound(d, n.ArrayValueList, result);
     }
 %}
