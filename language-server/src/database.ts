@@ -2483,10 +2483,11 @@ let NadeoTypeCounter = new TypeCounter();
 
 export function AddNadeoTypesFromOpenplanet(input: any) {
     // let enums: Array<> = [];
+    let isJsonV2 = 'op' in input;
     for (let k in input['ns']) { // k is a namespace, but it's not used in angelscript, only docs
         for (let ty in input['ns'][k]) {
             let tyDeets = input['ns'][k][ty];
-            let nadeoClassTy = ConvertNadeoType(ty, tyDeets, k);
+            let nadeoClassTy = ConvertNadeoType(ty, tyDeets, k, isJsonV2);
             AddOpenplanetClass(nadeoClassTy, "classes");
             NadeoTypeCounter.CountType("class");
             NadeoTypeCounter.CountType("method", nadeoClassTy.methods?.length);

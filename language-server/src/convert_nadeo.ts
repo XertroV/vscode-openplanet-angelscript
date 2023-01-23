@@ -44,7 +44,7 @@ export interface CoreEnum {
 
 export const NadeoTypesToDocsNS: Map<string, string> = new Map();
 
-export function ConvertNadeoType(ty: string, tyDeets: any, docsNS: string): CoreTy {
+export function ConvertNadeoType(ty: string, tyDeets: any, docsNS: string, isJsonV2: boolean): CoreTy {
     let inherits = tyDeets.p;
     let ret: CoreTy = { name: ty, ns: null, inherits, desc: '', isEnum: false }
     ret.behaviors = [];
@@ -67,8 +67,20 @@ export function ConvertNadeoType(ty: string, tyDeets: any, docsNS: string): Core
 
     let members = tyDeets.m;
     if (members) {
-        for (let key in members) {
-            let mDeets = members[key];
+        // populate _members with what we actually want to iterate over.
+        let _members = members;
+        // if we're not in the new json format, transform the old one to the new one
+        if (!isJsonV2) {
+            // move from an obj to an array, move key to obj['n']
+            let _members = [];
+            for (let key in members) {
+                let m = members[key];
+                m['n'] = key;
+                _members.push(m);
+            }
+        }
+        for (let mDeets of _members) {
+            let key = mDeets['n'];
             let isEnum = "e" in mDeets;
             let isFunc = !isEnum && typeof(mDeets.t) == "number";
             let isProp = !isEnum && typeof(mDeets.t) == "string";

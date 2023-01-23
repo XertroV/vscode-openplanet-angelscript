@@ -48,6 +48,9 @@ It's a bug. -->
 
 ## Changelog
 
+- 0.2.20
+  - Add support for new OpenplanetNext.json produced by v1.25.23+
+  - reduce amount of logging a bit
 - 0.2.19
   - fix: outdated parser .js code shipped in .18
 - 0.2.18
