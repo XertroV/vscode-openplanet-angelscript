@@ -7243,7 +7243,7 @@ export function ParseStatement(scopetype : ASScopeType, statement : ASStatement,
     }
     let stmtTime = performance.now() - start;
     if (stmtTime > 5) {
-        console.warn(`>5ms to parse: (${statement.rawIndex}) ${statement.content}`);
+        console.warn(`>5ms to parse: (${stmtTime} ms) ${statement.content}`);
     }
 
     if (!parseError)
