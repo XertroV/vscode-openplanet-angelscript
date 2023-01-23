@@ -50,6 +50,7 @@ It's a bug. -->
 
 - 0.2.21
   - Fix bad logging output for slow-to-parse statements.
+  - Dummy release -- version numbers were off by 1.
 - 0.2.20
   - Add support for new OpenplanetNext.json produced by v1.25.23+
   - reduce amount of logging a bit
