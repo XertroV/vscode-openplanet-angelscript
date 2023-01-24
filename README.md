@@ -48,6 +48,8 @@ It's a bug. -->
 
 ## Changelog
 
+- 0.2.22
+  - Fix bug parsing v1 OpNext.json format
 - 0.2.21
   - Fix bad logging output for slow-to-parse statements.
   - Dummy release -- version numbers were off by 1.
