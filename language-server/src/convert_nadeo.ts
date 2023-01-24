@@ -72,7 +72,7 @@ export function ConvertNadeoType(ty: string, tyDeets: any, docsNS: string, isJso
         // if we're not in the new json format, transform the old one to the new one
         if (!isJsonV2) {
             // move from an obj to an array, move key to obj['n']
-            let _members = [];
+            _members = [];
             for (let key in members) {
                 let m = members[key];
                 m['n'] = key;
