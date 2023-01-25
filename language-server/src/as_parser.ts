@@ -1917,6 +1917,29 @@ function MakeMacroSpecifiers(macro : any, macroSpecifiers : Map<string, string>,
     }
 }
 
+function AddFunctionHandleDBFunc(scope : ASScope, asvar: ASVariable, _type: typedb.DBType) {
+    let ns = scope.getNamespace();
+    let dbfunc = new typedb.DBMethod();
+    dbfunc.args = _type.delegateArgs;
+    dbfunc.name = asvar.name;
+    dbfunc.argumentStr = _type.delegateArgs.map(arg => arg.format()).join(", ");
+    dbfunc.declaredModule = scope.module.modulename;
+    dbfunc.returnType = _type.delegateReturn;
+    dbfunc.documentation = asvar.documentation;
+    dbfunc.moduleOffset = asvar.start_offset_name;
+    dbfunc.moduleOffsetEnd = asvar.end_offset_name;
+    dbfunc.isPrivate = asvar.isPrivate;
+    dbfunc.isProtected = asvar.isProtected;
+    dbfunc.accessSpecifier = asvar.accessSpecifier;
+    dbfunc.isConstructor = false;
+    // dbfunc.isConst = _type.is
+    dbfunc.isProperty = false;
+    dbfunc.isBlueprintEvent = false;
+    console.dir(dbfunc);
+    if (scope.dbtype) scope.dbtype.addSymbol(dbfunc);
+    else scope.getNamespace().addSymbol(dbfunc);
+}
+
 // Add a variable declaration to the scope
 function AddVarDeclToScope(scope : ASScope, statement : ASStatement, vardecl : any, in_statement : boolean = false) : ASVariable
 {
@@ -1991,6 +2014,15 @@ function AddVarDeclToScope(scope : ASScope, statement : ASStatement, vardecl : a
         dbprop.isPrivate = asvar.isPrivate;
         dbprop.isProtected = asvar.isProtected;
         dbprop.accessSpecifier = asvar.accessSpecifier;
+
+        if (dbprop.name == "asdf") {
+            console.dir(dbprop);
+        }
+
+        let _type = scope.getNamespace().GetTypeByName(asvar.typename.replace(/@*$/g, ''));
+        if (_type && _type.isDelegate) {
+            AddFunctionHandleDBFunc(scope, asvar, _type);
+        }
 
         // Add macro specifiers if we had any
         if (vardecl.macro)

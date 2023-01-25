@@ -48,6 +48,8 @@ It's a bug. -->
 
 ## Changelog
 
+- 0.2.23
+  - for variables declared as function handles, add a function implementation to the relevant scope.
 - 0.2.22
   - Fix bug parsing v1 OpNext.json format
 - 0.2.21

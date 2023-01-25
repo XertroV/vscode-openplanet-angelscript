@@ -230,6 +230,7 @@ function ShouldLabelConstantNode(node : any, argName : string) : boolean
 {
     if (!node)
         return false;
+    // todo: check const stuff from parser
     switch (node.type)
     {
         case node_types.This:
@@ -261,7 +262,7 @@ function ShouldLabelConstantNode(node : any, argName : string) : boolean
             if (node.children[0] && node.children[0].type == node_types.Identifier)
             {
                 let nsType = typedb.GetTypeByName(node.children[0].value);
-                if (nsType && nsType.isStruct)
+                if (nsType && (nsType.isStruct))
                     return true;
             }
 

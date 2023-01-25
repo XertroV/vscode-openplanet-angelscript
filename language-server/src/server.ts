@@ -649,7 +649,7 @@ connection.onDefinition((_textDocumentPosition: TextDocumentPositionParams): Def
     if (!asmodule.resolved)
         return null;
     let definitions = scriptsymbols.GetDefinition(asmodule, _textDocumentPosition.position);
-    if (definitions && definitions.length == 1)
+    if (definitions && definitions.length == 1 && definitions[0])
         return definitions[0];
     return definitions;
 });
