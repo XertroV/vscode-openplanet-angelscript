@@ -48,8 +48,11 @@ It's a bug. -->
 
 ## Changelog
 
-- 0.2.23
+- 0.2.23 (pre)
   - for variables declared as function handles, add a function implementation to the relevant scope.
+  - fix suggestion of `Super::` stuff in classes with superclasses.
+  - fix detection of methods in the superclass namespace (will no longer show in red).
+  - Override snippets don't add a newline before the first `{` (will make this a setting if requested)
 - 0.2.22
   - Fix bug parsing v1 OpNext.json format
 - 0.2.21

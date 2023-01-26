@@ -2482,7 +2482,10 @@ function ExtractPriorExpressionAndSymbol(context : CompletionContext, node : any
             let fullNamespace = scriptfiles.CollapseNamespaceFromNode(node.children[0]);
 
             // We could be calling a function in the Super class
-            if (fullNamespace == "Super" && context.scope.getParentType())
+            let parentType = context.scope.getParentType();
+            let fqtn = parentType.getQualifiedTypenameInNamespace(parentType.namespace);
+            let tn = parentType.name;
+            if (fullNamespace == fqtn || fullNamespace == tn)
                 context.priorType = context.scope.getParentType().getSuperType();
 
             // We could be typing an enum value
@@ -3737,7 +3740,9 @@ function AddMethodOverrideSnippets(context : CompletionContext, completions : Ar
         let superStr = "";
         if (parentMethod && parentMethod.declaredModule && (!parentMethod.returnType || parentMethod.returnType == "void" || parentMethod.hasMetaData("RequireSuperCall")))
         {
-            superStr += "Super::"+method.name+"(";
+            let parentType = typeOfScope.getSuperType();
+            let fqtn = parentType.getQualifiedTypenameInNamespace(parentType.namespace);
+            superStr += fqtn + "::" + method.name + "(";
             for (let i = 0; i < method.args.length; ++i)
             {
                 if (i != 0)
@@ -3849,7 +3854,9 @@ function GetDeclarationSnippet(method : typedb.DBMethod, indent : string, includ
         complStr += " override";
     if (!method.isBlueprintEvent && method.isProperty && method.declaredModule)
         complStr += " property";
-    complStr += "\n";
+    // todo, add a setting for this
+    // don't auto insert newlines after override constructor
+    complStr += " ";
     return complStr;
 }
 
@@ -4058,7 +4065,7 @@ function AddSuperCallSnippet(context : CompletionContext, completions : Array<Co
     let nsNode = context.statement.ast;
     if (nsNode.type != scriptfiles.node_types.NamespaceAccess)
         return;
-    if (!nsNode.children[0] || nsNode.children[0].value != 'Super')
+    if (!nsNode.children[0])
         return;
 
     let scopeFunction = context.scope.getParentFunction();
@@ -4067,8 +4074,13 @@ function AddSuperCallSnippet(context : CompletionContext, completions : Array<Co
         return;
 
     let superType = scopeType.getSuperType();
-    if (!superType)
-        return;
+
+        if (!superType)
+            return;
+
+    let nsAccessor: string = nsNode.children[0].value;
+    let superFQTN = superType.getQualifiedTypenameInNamespace(superType.namespace);
+    if (!nsAccessor.endsWith(superType.name) && !nsAccessor.endsWith(superFQTN)) return;
 
     let superFunction = superType.findFirstSymbol(scopeFunction.name, typedb.DBAllowSymbol.Functions);
     if (!(superFunction instanceof typedb.DBMethod))
@@ -4092,7 +4104,7 @@ function AddSuperCallSnippet(context : CompletionContext, completions : Array<Co
 
     context.havePreselection = true;
     completions.push({
-        label: "Super::"+scopeFunction.name+"(...)",
+        label: superFQTN+"::"+scopeFunction.name+"(...)",
         filterText: scopeFunction.name+"(...)",
         insertText: insertText,
         kind: CompletionItemKind.Snippet,

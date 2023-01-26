@@ -3288,9 +3288,12 @@ export function ResolveTypeFromExpression(scope : ASScope, node : any) : typedb.
                 return null;
 
             let fullNamespace = CollapseNamespaceFromNode(node.children[0]);
-            if (fullNamespace == "Super" && scope.getParentType())
+            let parentType = scope.getParentType();
+            let parentNsType = parentType ? parentType.getQualifiedTypenameInNamespace(parentType.namespace) : "";
+            let parentTypeName = parentType ? parentType.name : "";
+            if (parentType && (fullNamespace == parentNsType || fullNamespace == parentTypeName))
             {
-                let superType = scope.getParentType().getSuperType();
+                let superType = parentType.getSuperType();
                 if (!superType)
                     return null;
                 return ResolvePropertyType(superType, node.children[1].value);
@@ -3834,7 +3837,9 @@ export function ResolveFunctionFromExpression(scope : ASScope, node : any) : typ
             if (insideType)
             {
                 // Access the super type
-                if (fullNamespace == "Super")
+                let fqtn = insideType.getQualifiedTypenameInNamespace(insideType.namespace);
+                let tn = insideType.name;
+                if (fullNamespace == fqtn || fullNamespace == tn)
                 {
                     let superType = scope.getParentType().getSuperType();
                     if (superType)
@@ -4013,7 +4018,9 @@ export function ResolveFunctionOverloadsFromExpression(scope : ASScope, node : a
             if (insideType)
             {
                 // Access the super type
-                if (fullNamespace == "Super")
+                let fqtn = insideType.getQualifiedTypenameInNamespace(insideType.namespace);
+                let tn = insideType.name;
+                if (fullNamespace == fqtn || fullNamespace == tn)
                 {
                     let superType = scope.getParentType().getSuperType();
                     if (superType)
@@ -4352,8 +4359,10 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
 
                 if (insideType && node.children[0])
                 {
-                    // todo: no Super namespace in openplanet
-                    if (node.children[0].value == "Super")
+                    let fqtn = insideType.getQualifiedTypenameInNamespace(insideType.namespace);
+                    let tn = insideType.name;
+                    let fullNamespace = node.children[0].value;
+                    if (fullNamespace == fqtn || fullNamespace == tn)
                     {
                         parentType = scope.getParentType().getSuperType();
                     }
