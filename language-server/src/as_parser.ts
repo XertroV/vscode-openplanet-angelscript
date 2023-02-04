@@ -3408,7 +3408,7 @@ export function ResolveTypeFromExpression(scope : ASScope, node : any) : typedb.
         // { X, Y, Z } -- array
         case node_types.ArrayInline: {
             let arrTy = typedb.LookupType(null, `array<T>`);
-            let argList = node.children[0];
+            let argList = node.children;
             if (!argList || !argList.children) return arrTy;
             let elements = argList.children;
             let type: typedb.DBType;

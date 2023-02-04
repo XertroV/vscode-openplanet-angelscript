@@ -51,7 +51,9 @@ It's a bug. -->
 
 ## Changelog
 
-- 0.2.23 (pre)
+- 0.2.23
+  - fix codeActions exception spam when editing an array, and during another instance
+  - add warning notification when codeActions fails and print the traceback to the log
   - for variables declared as function handles, add a function implementation to the relevant scope.
   - fix suggestion of `Super::` stuff in classes with superclasses.
   - fix detection of methods in the superclass namespace (will no longer show in red).
