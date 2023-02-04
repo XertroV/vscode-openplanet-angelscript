@@ -45,6 +45,9 @@ It's a bug. -->
 - supertypes finish and polish (search for `.getSuperType()`; maybe remove .supertype all together in favor of .supertypes)
 - rename getter/setter adds extra _ to start of usages
 - (75%) list parsing v broken for complex expressions
+- textDocument/completion failed with message: Cannot read properties of undefined (reading 'endsWith', 'length', and others)
+- add UI function hints in addition to math hints
+
 
 ## Changelog
 

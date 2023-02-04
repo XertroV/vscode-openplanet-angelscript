@@ -4,7 +4,7 @@ import * as scriptfiles from "./as_parser";
 import * as scriptsymbols from "./symbols";
 import * as completion from "./parsed_completion";
 import { getAccPrefix } from "./as_parser";
-import { Connection } from "vscode-languageserver/node";
+import { Connection, MessageType, ShowMessageNotification } from "vscode-languageserver/node";
 
 
 let connection: Connection;
@@ -72,35 +72,47 @@ export function GetCodeActions(asmodule : scriptfiles.ASModule, range : Range, d
     if (!scriptfiles.GetScriptSettings().automaticImports)
         AddImportActions(context);
 
-    // Actions for autos
-    AddAutoActions(context);
+    try {
+        // Actions for autos
+        AddAutoActions(context);
 
-    // Actions for members
-    AddMemberActions(context);
+        // Actions for members
+        AddMemberActions(context);
 
-    // Actions for generating delegate bind functions
-    AddGenerateDelegateFunctionActions(context);
+        // Actions for generating delegate bind functions
+        AddGenerateDelegateFunctionActions(context);
 
-    // Actions for method override snippets
-    AddMethodOverrideSnippets(context);
+        // Actions for method override snippets
+        AddMethodOverrideSnippets(context);
 
-    // Actions for adding casts
-    AddCastHelpers(context);
+        // Actions for adding casts
+        AddCastHelpers(context);
 
-    // Actions for adding super calls
-    AddSuperCallHelper(context);
+        // Actions for adding super calls
+        AddSuperCallHelper(context);
 
-    // Actions for promoting to member variables
-    AddVariablePromotionHelper(context);
+        // Actions for promoting to member variables
+        AddVariablePromotionHelper(context);
 
-    // Actions for switch blocks
-    AddSwitchCaseActions(context);
+        // Actions for switch blocks
+        AddSwitchCaseActions(context);
 
-    // Actions to generate a method by usage
-    AddGenerateMethodActions(context);
+        // Actions to generate a method by usage
+        AddGenerateMethodActions(context);
 
-    // Actions to generate documentation from a namespace declaration
-    AddGenerateNamespaceDocs(context);
+        // Actions to generate documentation from a namespace declaration
+        AddGenerateNamespaceDocs(context);
+    } catch (err) {
+        console.warn(`Exception in GetCodeActions: ${err}`);
+        if (err instanceof Error) {
+            console.warn(`stack: ${err.stack}`);
+            connection.sendNotification(
+                ShowMessageNotification.type,
+                { message: `Please report this bug! Exception in GetCodeActions: ${err}`,
+                type: MessageType.Warning
+            });
+        }
+    }
 
     return context.actions;
 }

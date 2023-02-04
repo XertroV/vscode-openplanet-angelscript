@@ -2483,10 +2483,12 @@ function ExtractPriorExpressionAndSymbol(context : CompletionContext, node : any
 
             // We could be calling a function in the Super class
             let parentType = context.scope.getParentType();
-            let fqtn = parentType.getQualifiedTypenameInNamespace(parentType.namespace);
-            let tn = parentType.name;
-            if (fullNamespace == fqtn || fullNamespace == tn)
-                context.priorType = context.scope.getParentType().getSuperType();
+            if (parentType) {
+                let fqtn = parentType.getQualifiedTypenameInNamespace(parentType.namespace);
+                let tn = parentType.name;
+                if (fullNamespace == fqtn || fullNamespace == tn)
+                    context.priorType = parentType.getSuperType();
+            }
 
             // We could be typing an enum value
             if (!context.priorType)
@@ -3741,7 +3743,10 @@ function AddMethodOverrideSnippets(context : CompletionContext, completions : Ar
         if (parentMethod && parentMethod.declaredModule && (!parentMethod.returnType || parentMethod.returnType == "void" || parentMethod.hasMetaData("RequireSuperCall")))
         {
             let parentType = typeOfScope.getSuperType();
-            let fqtn = parentType.getQualifiedTypenameInNamespace(parentType.namespace);
+            let fqtn = "Super";
+            if (parentType) {
+                fqtn = parentType.getQualifiedTypenameInNamespace(parentType.namespace);
+            }
             superStr += fqtn + "::" + method.name + "(";
             for (let i = 0; i < method.args.length; ++i)
             {
@@ -4075,8 +4080,8 @@ function AddSuperCallSnippet(context : CompletionContext, completions : Array<Co
 
     let superType = scopeType.getSuperType();
 
-        if (!superType)
-            return;
+    if (!superType)
+        return;
 
     let nsAccessor: string = nsNode.children[0].value;
     let superFQTN = superType.getQualifiedTypenameInNamespace(superType.namespace);

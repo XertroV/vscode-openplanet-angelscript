@@ -824,11 +824,16 @@ connection.onExecuteCommand(function (params : ExecuteCommandParams)
 
 connection.onCodeAction(function (params : CodeActionParams) : Array<CodeAction>
 {
-    let asmodule = GetAndParseModule(params.textDocument.uri);
+    let asmodule;
+    try {
+        asmodule = GetAndParseModule(params.textDocument.uri);
+    } catch(err) {
+        console.warn(`onCodeAction: Got exception parsing AS Module: ${err}`);
+    }
     if (!asmodule)
-        return null;
+    return null;
     if (!asmodule.resolved)
-        return null;
+    return null;
 
     return scriptactions.GetCodeActions(asmodule, params.range, params.context.diagnostics);
 });
