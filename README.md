@@ -53,7 +53,8 @@ It's a bug. -->
 
 ## Changelog
 
-- 0.2.24 (pre)
+- 0.2.24
+  - Maybe fix bug with defining things in namespaces that overlap with openplanet
   - fix override method warning ignoring const status
 - 0.2.23
   - fix codeActions exception spam when editing an array, and during another instance
