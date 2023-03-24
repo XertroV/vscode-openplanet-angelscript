@@ -509,6 +509,9 @@ export class DBMethod implements DBSymbol
         if ((!!this.args) != (!!otherFunc.args))
             return false;
 
+        if (this.isConst != otherFunc.isConst)
+            return false;
+
         if (this.args)
         {
             if (this.args.length != otherFunc.args.length)
@@ -2045,6 +2048,7 @@ export function LookupNamespace(namespace : DBNamespace, name : string) : DBName
         return null;
     }
 
+    // `::X::Y` -> `X::Y`
     if (namespaceIndex == 0)
     {
         namespace = RootNamespace;
@@ -2068,6 +2072,7 @@ export function LookupNamespace(namespace : DBNamespace, name : string) : DBName
 
         checkNamespace = checkNamespace.parentNamespace;
     }
+    console.warn(`Returning nothing for LookupNamespace! ${name}`);
 }
 
 export function LookupNamespacesWithPrefix(namespace : DBNamespace, prefix : string, caseSensitive = true) : Array<DBNamespace> | null
@@ -2182,7 +2187,7 @@ export function LookupType(namespace : DBNamespace, typename : string) : DBType 
         // console.warn(`checking namespace: ${namespace.name}`)
         let found = namespace.GetTypeByName(identifier);
         if (found && !(found instanceof Array)) {
-            if (found.namespace != namespace) console.warn(`Unexpected mismatching namespaces: ${found.namespace.getQualifiedNamespace()} vs ${namespace.getQualifiedNamespace()}`)
+            if (found.namespace != namespace) console.warn(`Unexpected mismatching namespaces (identifier: ${identifier}): ${found.namespace.getQualifiedNamespace()} vs ${namespace.getQualifiedNamespace()}`)
             return found;
         }
     }
@@ -2560,13 +2565,15 @@ export function AddOpenplanetClass(jData: any, kind: "classes" | "enums") {
 
     let ns = RootNamespace;
     if (type.ns) {
-        ns = LookupNamespace(ns, type.ns);
-        if (!ns) {
+        let ns2 = LookupNamespace(ns, type.ns);
+        if (!ns2) {
             let decl = new DBNamespaceDeclaration();
-            ns = DeclareNamespace(ns, type.ns, decl);
+            ns2 = DeclareNamespace(ns, type.ns, decl);
             console.log(`Declared namespace: ${type.ns}`);
+        } else {
+            console.log(`Detected namespace: ${type.ns}, Q: ${ns.qualifiedNamespace}`);
         }
-        ns.addSymbol(type);
+        ns2.addSymbol(type);
         // if (kind == "enums") console.warn(`added enum to namespace: ${type.namespace.getQualifiedNamespace()} :: ${type.name}`)
     }
     constructors.forEach(m => ns.addSymbol(m)); // add to global namespace too, not just a nonglobal one

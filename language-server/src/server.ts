@@ -76,7 +76,7 @@ let UnrealTypesTimedOut = false;
 let AddedOPVirtualTypes = false;
 
 function load_openplanet() {
-    LoadOpenplanetJson();
+    setTimeout(LoadOpenplanetJson, 500);
     if (!AddedOPVirtualTypes) {
         AddedOPVirtualTypes = true;
         typedb.AddOpenplanetIcons();

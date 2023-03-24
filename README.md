@@ -47,10 +47,14 @@ It's a bug. -->
 - (75%) list parsing v broken for complex expressions
 - textDocument/completion failed with message: Cannot read properties of undefined (reading 'endsWith', 'length', and others)
 - add UI function hints in addition to math hints
+- long chains of `.Replace` on strings (e.g., 15+) are exponential to parse
+- got some early crashes b/c dbParam in `ShouldLabelConstantNode(argNode, dbParam.name)` was null
 
 
 ## Changelog
 
+- 0.2.24 (pre)
+  - fix override method warning ignoring const status
 - 0.2.23
   - fix codeActions exception spam when editing an array, and during another instance
   - add warning notification when codeActions fails and print the traceback to the log
