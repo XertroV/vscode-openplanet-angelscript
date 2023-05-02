@@ -82,6 +82,7 @@ function load_openplanet() {
         typedb.AddOpenplanetIcons();
         typedb.AddOpenplanetFuncdefs();
         typedb.AddPrimitiveTypes(false);
+        typedb.AddOpenplanetConstants();
     }
     // InitialLoadCompleted = true;
 }

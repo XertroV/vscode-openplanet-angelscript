@@ -2649,6 +2649,17 @@ export function AddOpenplanetIcons() {
     });
 }
 
+export function AddOpenplanetConstants() {
+    let ns = LookupNamespace(null, "Math");
+    if (!ns) {
+        ns = DeclareNamespace(null, "Math", new DBNamespaceDeclaration());
+    }
+    let prop = new DBProperty();
+    prop.fromJSON({name: "PI", typedecl: "float"});
+    prop.isNoEdit = true;
+    ns.addSymbol(prop);
+}
+
 export function AddOpenplanetFuncdefs() {
     let funcdefs = [
         {
