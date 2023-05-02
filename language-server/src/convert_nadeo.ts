@@ -131,6 +131,12 @@ export function ConvertNadeoType(ty: string, tyDeets: any, docsNS: string, isJso
     if (ret.desc.length == 0) ret.desc = docsLink;
     else ret.desc = [ret.desc, docsLink].join('\n\n')
 
+    // check for undocumented stuff
+    if (ret.name == "CMwNod") {
+        addToMethods({name: "MwAddRef", returntypedecl: "void", args: [], isEnum: false, i: -1});
+        addToMethods({name: "MwRelease", returntypedecl: "void", args: [], isEnum: false, i: -2});
+    }
+
     return ret;
 }
 

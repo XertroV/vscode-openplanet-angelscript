@@ -13,17 +13,29 @@ let CommonTypenames = new Set<string>([
     "FVector", "FRotator", "FTransform", "FQuat"
 ]);
 let CommonTemplateTypes = new Set<string>(
-    ["array", "MwSArray", "MwFastArray", "MwFastBuffer", "MwNodPool", "MwRefBuffer"],
+    ["array", "MwSArray", "MwStridedArray", "MwFastArray", "MwFastBuffer", "MwNodPool", "MwRefBuffer"],
 );
 
 export interface CompletionSettings
 {
     mathCompletionShortcuts : boolean,
+    uiCompletionShortcuts : boolean,
+    mathXCompletionShortcuts : boolean,
+    uxCompletionShortcuts : boolean,
+    matCompletionShortcuts : boolean,
+    quatCompletionShortcuts : boolean,
+    stringCompletionShortcuts : boolean,
     correctFloatLiteralsWhenExpectingDoublePrecision: boolean,
 };
 
 let CompletionSettings : CompletionSettings = {
     mathCompletionShortcuts: true,
+    uiCompletionShortcuts : true,
+    mathXCompletionShortcuts : true,
+    uxCompletionShortcuts : true,
+    matCompletionShortcuts : true,
+    quatCompletionShortcuts : true,
+    stringCompletionShortcuts : true,
     correctFloatLiteralsWhenExpectingDoublePrecision: false,
 };
 
@@ -246,6 +258,11 @@ export function Complete(asmodule: scriptfiles.ASModule, position: Position): Ar
 
         // Shortcut completions from Math:: if enabled
         AddMathShortcutCompletions(context, completions);
+        AddUIShortcutCompletions(context, completions);
+        AddMathXShortcutCompletions(context, completions);
+        AddUXShortcutCompletions(context, completions);
+        AddMatShortcutCompletions(context, completions);
+        AddQuatShortcutCompletions(context, completions);
     }
 
     // Search for completions in all global and real types we are looking in
@@ -4207,12 +4224,51 @@ export function AddOpenplanetCallbackCompletions(context: CompletionContext, com
     });
 }
 
-export function AddMathShortcutCompletions(context : CompletionContext, completions : Array<CompletionItem>)
-{
+export function AddUIShortcutCompletions(context : CompletionContext, completions : Array<CompletionItem>) {
+    if (!CompletionSettings.uiCompletionShortcuts)
+        return;
+    AddNamespaceShortcutCompletions(context, completions, "UI");
+}
+
+export function AddMathXShortcutCompletions(context : CompletionContext, completions : Array<CompletionItem>) {
+    if (!CompletionSettings.mathXCompletionShortcuts)
+        return;
+    AddNamespaceShortcutCompletions(context, completions, "MathX");
+}
+
+export function AddUXShortcutCompletions(context : CompletionContext, completions : Array<CompletionItem>) {
+    if (!CompletionSettings.uxCompletionShortcuts)
+        return;
+    AddNamespaceShortcutCompletions(context, completions, "UX");
+}
+
+export function AddMatShortcutCompletions(context : CompletionContext, completions : Array<CompletionItem>) {
+    if (!CompletionSettings.matCompletionShortcuts)
+        return;
+    AddNamespaceShortcutCompletions(context, completions, "mat4");
+}
+
+export function AddQuatShortcutCompletions(context : CompletionContext, completions : Array<CompletionItem>) {
+    if (!CompletionSettings.quatCompletionShortcuts)
+        return;
+    AddNamespaceShortcutCompletions(context, completions, "quat");
+}
+
+export function AddStringShortcutCompletions(context : CompletionContext, completions : Array<CompletionItem>) {
+    if (!CompletionSettings.stringCompletionShortcuts)
+        return;
+    AddNamespaceShortcutCompletions(context, completions, "string");
+}
+
+export function AddMathShortcutCompletions(context : CompletionContext, completions : Array<CompletionItem>) {
     if (!CompletionSettings.mathCompletionShortcuts)
         return;
+    AddNamespaceShortcutCompletions(context, completions, "Math");
+}
 
-    let mathNamespace = typedb.LookupNamespace(null, "Math");
+export function AddNamespaceShortcutCompletions(context : CompletionContext, completions : Array<CompletionItem>, namespaceName: string)
+{
+    let mathNamespace = typedb.LookupNamespace(null, namespaceName);
     if (!mathNamespace)
         return;
 

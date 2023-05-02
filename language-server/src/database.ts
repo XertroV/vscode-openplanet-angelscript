@@ -2693,47 +2693,47 @@ export function AddOpenplanetFuncdefs() {
     })
 }
 
-export function FinishTypesFromUnreal()
-{
-    UnrealTypesLoaded = true;
+// export function FinishTypesFromUnreal()
+// {
+//     UnrealTypesLoaded = true;
 
-    // Some hardcoded extra information we want to add to unreal functions
-    let systemLib = RootNamespace.findChildNamespace("System");
-    if (systemLib)
-    {
-        for (let functionName of [
-            "SetTimer", "ClearTimer", "PauseTimer", "UnPauseTimer",
-            "IsTimerActive", "IsTimerPaused", "TimerExists",
-            "GetTimerElapsedTime", "GetTimerRemainingTime"
-        ])
-        {
-            let timerFunc = systemLib.findFirstSymbol(functionName, DBAllowSymbol.Functions);
-            if (timerFunc instanceof DBMethod)
-            {
-                timerFunc.isDelegateBindFunction = true;
-                timerFunc.delegateBindType = "FTimerDynamicDelegate";
-                timerFunc.delegateObjectParam = 0;
-                timerFunc.delegateFunctionParam = 1;
-            }
-        }
-    }
+//     // Some hardcoded extra information we want to add to unreal functions
+//     let systemLib = RootNamespace.findChildNamespace("System");
+//     if (systemLib)
+//     {
+//         for (let functionName of [
+//             "SetTimer", "ClearTimer", "PauseTimer", "UnPauseTimer",
+//             "IsTimerActive", "IsTimerPaused", "TimerExists",
+//             "GetTimerElapsedTime", "GetTimerRemainingTime"
+//         ])
+//         {
+//             let timerFunc = systemLib.findFirstSymbol(functionName, DBAllowSymbol.Functions);
+//             if (timerFunc instanceof DBMethod)
+//             {
+//                 timerFunc.isDelegateBindFunction = true;
+//                 timerFunc.delegateBindType = "FTimerDynamicDelegate";
+//                 timerFunc.delegateObjectParam = 0;
+//                 timerFunc.delegateFunctionParam = 1;
+//             }
+//         }
+//     }
 
-    // Annotate linear color creation functions
-    let linearColorConstructors = RootNamespace.findSymbols("FLinearColor", DBAllowSymbol.Functions);
-    for (let method of linearColorConstructors)
-    {
-        if (method instanceof DBMethod)
-            method.methodAnnotation = DBMethodAnnotation.IsLinearColor;
-    }
+//     // Annotate linear color creation functions
+//     let linearColorConstructors = RootNamespace.findSymbols("FLinearColor", DBAllowSymbol.Functions);
+//     for (let method of linearColorConstructors)
+//     {
+//         if (method instanceof DBMethod)
+//             method.methodAnnotation = DBMethodAnnotation.IsLinearColor;
+//     }
 
-    let linearColorNS = RootNamespace.findChildNamespace("FLinearColor");
-    if (linearColorNS)
-    {
-        let fromHexFunction = linearColorNS.findFirstSymbol("MakeFromHex", DBAllowSymbol.Functions);
-        if (fromHexFunction instanceof DBMethod)
-            fromHexFunction.methodAnnotation = DBMethodAnnotation.IsHexColor;
-    }
-}
+//     let linearColorNS = RootNamespace.findChildNamespace("FLinearColor");
+//     if (linearColorNS)
+//     {
+//         let fromHexFunction = linearColorNS.findFirstSymbol("MakeFromHex", DBAllowSymbol.Functions);
+//         if (fromHexFunction instanceof DBMethod)
+//             fromHexFunction.methodAnnotation = DBMethodAnnotation.IsHexColor;
+//     }
+// }
 
 export function AddTypeToDatabase(namespace : DBNamespace, dbtype : DBType)
 {
@@ -2757,7 +2757,7 @@ export function AddTypeToDatabase(namespace : DBNamespace, dbtype : DBType)
     OnDirtyTypeCaches();
 }
 
-// todo
+
 export function AddOpenplanetTypeToDatabase(namespace : DBNamespace, dbtype : DBType)
 {
     if (!namespace)

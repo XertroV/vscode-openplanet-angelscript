@@ -80,6 +80,36 @@
                     "default": true,
                     "description": "Add completions for functions in the Math:: namespace so they can be completed without typing Math:: first."
                 },
+                "OpenplanetAngelscript.helper.uiCompletionShortcuts": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Add completions for functions in the UI:: namespace so they can be completed without typing UI:: first."
+                },
+                "OpenplanetAngelscript.helper.mathXCompletionShortcuts": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Add completions for functions in the MathX:: namespace so they can be completed without typing MathX:: first."
+                },
+                "OpenplanetAngelscript.helper.uxCompletionShortcuts": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Add completions for functions in the UX:: namespace so they can be completed without typing UX:: first."
+                },
+                "OpenplanetAngelscript.helper.matCompletionShortcuts": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Add completions for functions in the mat4:: namespace so they can be completed without typing mat4:: first."
+                },
+                "OpenplanetAngelscript.helper.quatCompletionShortcuts": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Add completions for functions in the quat:: namespace so they can be completed without typing quat:: first."
+                },
+                "OpenplanetAngelscript.helper.stringCompletionShortcuts": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Add completions for functions in the string:: namespace so they can be completed without typing string:: first."
+                },
                 "OpenplanetAngelscript.helper.correctFloatLiteralsWhenExpectingDoublePrecision": {
                     "type": "boolean",
                     "default": false,

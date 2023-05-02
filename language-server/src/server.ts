@@ -1114,6 +1114,12 @@ connection.onRequest("angelscript/provideFileDecoration", (...params: any[]): an
 
     let completionSettings = parsedcompletion.GetCompletionSettings();
     completionSettings.mathCompletionShortcuts = settings.helper.mathCompletionShortcuts;
+    completionSettings.uiCompletionShortcuts = settings.helper.uiCompletionShortcuts;
+    completionSettings.mathXCompletionShortcuts = settings.helper.mathXCompletionShortcuts;
+    completionSettings.uxCompletionShortcuts = settings.helper.uxCompletionShortcuts;
+    completionSettings.matCompletionShortcuts = settings.helper.matCompletionShortcuts;
+    completionSettings.quatCompletionShortcuts = settings.helper.quatCompletionShortcuts;
+    completionSettings.stringCompletionShortcuts = settings.helper.stringCompletionShortcuts;
     completionSettings.correctFloatLiteralsWhenExpectingDoublePrecision = settings.helper.correctFloatLiteralsWhenExpectingDoublePrecision;
 
     let inlayHintSettings = inlayhints.GetInlayHintSettings();

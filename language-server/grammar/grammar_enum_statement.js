@@ -1587,7 +1587,7 @@ var grammar = {
     {"name": "case_label$ebnf$1$subexpression$1", "symbols": [{"literal":"-"}, "_"]},
     {"name": "case_label$ebnf$1", "symbols": ["case_label$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "case_label$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "case_label", "symbols": ["case_label$ebnf$1", (lexer.has("number") ? {type: "number"} : number)], "postprocess": 
+    {"name": "case_label", "symbols": ["case_label$ebnf$1", (lexer.has("const_number") ? {type: "const_number"} : const_number)], "postprocess": 
         function (d) {
             return CompoundLiteral(
                 n.ConstInteger,
