@@ -86,7 +86,7 @@ const lexer = moo.compile({
             // A statement of `TArray<int> Var` might be parsed as
             // ((TArray < int) > Var) as well, so we hardcode the template types
             // we know to avoid this in most situations.
-            template_basetype: ["array", "MwSArray", "MwFastArray", "MwFastBuffer", "MwNodPool", "MwRefBuffer"],
+            template_basetype: ["array", "MwSArray", "MwFastArray", "MwStridedArray", "MwFastBuffer", "MwNodPool", "MwRefBuffer"],
         })
     },
     number: /[0-9]+/,

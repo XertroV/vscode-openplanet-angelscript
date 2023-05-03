@@ -2542,7 +2542,7 @@ export function ConvertOpenplanetConstructorsToMethods(name: string, ns: string,
 }
 
 const OpenplanetTemplateTypes =
-        ["array", "MwSArray", "MwFastArray", "MwFastBuffer", "MwNodPool", "MwRefBuffer"];
+        ["array", "MwSArray", "MwFastArray", "MwStridedArray", "MwFastBuffer", "MwNodPool", "MwRefBuffer"];
 let OpenplanetTemplateTypeMap: Map<string, string> = new Map();
 OpenplanetTemplateTypes.forEach(t => OpenplanetTemplateTypeMap.set(t, t + "<T>"));
 

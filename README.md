@@ -3,10 +3,14 @@
 IDE features + Language Server for [Openplanet](https://openplanet.dev) flavored angelscript.
 This project is not maintained by the Openplanet team.
 
+You must open at hte root of a plugin directory (that contains an info.toml).
+
 Works in Windows and WSL.
 
 Currently only the TMNEXT engine is supported, and so only TMNEXT types will appear, be suggested, autocompleted, etc.
 Supporting MP4 and TURBO is possible but not planned unless there is demand. It's relatively simple if *simultaneous* parsing of TMNEXT/MP4/TURBO code isn't required.
+
+You can load TURBO/MP4 game binding specifications by setting the openplanet directory to the one for that game and copying `Openplanet{Turbo,4}.json` to `OpenplanetNext.json`.
 
 ## Getting Started
 
@@ -30,29 +34,16 @@ If you have issues ping @XertroV on the Openplanet discord.
 The workaround is to populate the array with one array at a time using `.InsertLast`.
 It's a bug. -->
 
-## todo:
-
-- check for redefinition of variables in same scope and squiggle
-- annotation type add `@`
-- add suggestions for settings keyword args (some done)
-- fix/add `CoroutineFunc@` data types
-- fix suggestions for fundefs -- way too many! (including missing some of the last characters + many many repetitions)
-- class properties that are funcdef types should be registered as local functions
-- cast to helper suggests pointless stuff for arrays (maybe other template types too)
-- `void` as value for `&out` vars to ignore
-- "Arguments can also be named and passed to a specific argument independent of the order the parameters were declared in. No positional arguments may follow any named arguments."
-- `const obj @ const d = obj();` -- const syntax
-- supertypes finish and polish (search for `.getSuperType()`; maybe remove .supertype all together in favor of .supertypes)
-- rename getter/setter adds extra _ to start of usages
-- (75%) list parsing v broken for complex expressions
-- textDocument/completion failed with message: Cannot read properties of undefined (reading 'endsWith', 'length', and others)
-- add UI function hints in addition to math hints
-- long chains of `.Replace` on strings (e.g., 15+) are exponential to parse
-- got some early crashes b/c dbParam in `ShouldLabelConstantNode(argNode, dbParam.name)` was null
-
 
 ## Changelog
 
+- 0.2.25
+  - fix hex numbers in switch statements
+  - add type detection for `mat4 * vec3` et al
+  - add MwAddRef and MwRelease undocumented methods
+  - add `Math::PI`
+  - add `MwStridedArray` template type
+  - add namespace completions for UI, MathX, UX, mat4, quat, and string
 - 0.2.24
   - Maybe fix bug with defining things in namespaces that overlap with openplanet
   - fix override method warning ignoring const status
@@ -171,6 +162,23 @@ It's a bug. -->
 - 0.1.0
   - initial support, openplanet types (no game enums) and inheritance
 
------
 
-for build instructions or other notes and stuff, see `./OLD_README.md`
+## todo:
+
+- check for redefinition of variables in same scope and squiggle
+- annotation type add `@`
+- add suggestions for settings keyword args (some done)
+- fix/add `CoroutineFunc@` data types
+- fix suggestions for fundefs -- way too many! (including missing some of the last characters + many many repetitions)
+- class properties that are funcdef types should be registered as local functions
+- cast to helper suggests pointless stuff for arrays (maybe other template types too)
+- `void` as value for `&out` vars to ignore
+- "Arguments can also be named and passed to a specific argument independent of the order the parameters were declared in. No positional arguments may follow any named arguments."
+- `const obj @ const d = obj();` -- const syntax
+- supertypes finish and polish (search for `.getSuperType()`; maybe remove .supertype all together in favor of .supertypes)
+- rename getter/setter adds extra _ to start of usages
+- (75%) list parsing v broken for complex expressions
+- textDocument/completion failed with message: Cannot read properties of undefined (reading 'endsWith', 'length', and others)
+- add UI function hints in addition to math hints
+- long chains of `.Replace` on strings (e.g., 15+) are exponential to parse
+- got some early crashes b/c dbParam in `ShouldLabelConstantNode(argNode, dbParam.name)` was null
