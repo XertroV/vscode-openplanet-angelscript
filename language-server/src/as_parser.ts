@@ -3767,6 +3767,14 @@ function ResolveTypeFromOperator(scope : ASScope, leftType : typedb.DBType, righ
     // If both types are primitives we upgrade to the highest
     if (leftType && leftType.isPrimitive && rightType && rightType.isPrimitive)
     {
+        if (leftType.name == "mat4" && (rightType.name == "vec3" || rightType.name == "vec4"))
+            return typedb.GetTypeByName("vec4");
+        if (rightType.name == "mat4" && (leftType.name == "vec3" || leftType.name == "vec4"))
+            return typedb.GetTypeByName("vec4");
+        if (leftType.name == "mat3" && (rightType.name == "vec2" || rightType.name == "vec3"))
+            return typedb.GetTypeByName("vec3");
+        if (rightType.name == "mat3" && (leftType.name == "vec2" || leftType.name == "vec3"))
+            return typedb.GetTypeByName("vec3");
         if (leftType.name == "double")
             return leftType;
         if (rightType.name == "double")
