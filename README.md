@@ -37,6 +37,9 @@ It's a bug. -->
 
 ## Changelog
 
+- 0.2.26
+  - fix switch case statements for numbers
+  - add `vec * float` type detection
 - 0.2.25
   - fix hex numbers in switch statements
   - add type detection for `mat4 * vec3` et al
