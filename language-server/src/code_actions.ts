@@ -622,6 +622,35 @@ function AddGenerateNamespaceDocs(context: CodeActionContext) {
     });
 }
 
+// todo
+function AddExportFunctionsAction(context: CodeActionContext) {
+    if (!context.scope) return;
+    if (!context.statement) return;
+    if (!context.statement.ast) return;
+    if (context.statement.ast.type != scriptfiles.node_types.NamespaceDefinition) return;
+    return;
+    // todo
+    let nsdef = context.statement.ast;
+    let nsIdentifier: string = nsdef.name.value;
+    nsIdentifier = nsIdentifier.split("::").slice(-1)[0];
+
+    let ns = context.scope.getNamespace();
+    let fullName = ns.getQualifiedNamespace();
+
+    context.actions.push(<CodeAction> {
+        kind: CodeActionKind.QuickFix,
+        title: `Add Exports for all Functions in ${fullName}`,
+        source: "angelscript",
+        data: {
+            uri: context.module.displayUri,
+            type: "generateFunctionExports",
+            qualifiedName: fullName,
+            name: nsIdentifier,
+            position: context.module.getPosition(context.module.getScopeAt(context.range_start).start_offset)
+        }
+    });
+}
+
 function ResolveNamespaceDocsMethod(asmodule: scriptfiles.ASModule, action: CodeAction, data: any) {
     // console.log(`Called: ResolveNamespaceDocsMethod for ${data.name}`);
     // console.dir(action); // {title, kind, data: data}

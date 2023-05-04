@@ -452,7 +452,7 @@ export function* PerformRename(uri : string, position : Position, baseReplaceWit
 
     let accessorReplaceText = replaceText;
     if (accessorReplaceText.startsWith(getAccPrefix) || accessorReplaceText.startsWith(setAccPrefix))
-        accessorReplaceText = accessorReplaceText.substr(3);
+        accessorReplaceText = accessorReplaceText.substr(4);
 
     // Some symbol types are limited to scope
     let scopeLimited = false;

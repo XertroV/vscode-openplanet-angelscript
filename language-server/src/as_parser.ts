@@ -3595,7 +3595,12 @@ function ResolvePropertyType(dbtype : typedb.DBType, name : string) : typedb.DBT
     }
 
     // Find function / funcdef
-    // todo
+    let funcTy = dbtype.findFirstSymbol(name, typedb.DBAllowSymbol.Functions);
+    if (funcTy && funcTy instanceof typedb.DBMethod) {
+        return typedb.LookupType(dbtype.namespace, funcTy.returnType);
+    }
+
+    // todo: funcdef?
 
     return null;
 }
@@ -3775,6 +3780,12 @@ function ResolveTypeFromOperator(scope : ASScope, leftType : typedb.DBType, righ
             return typedb.GetTypeByName("vec3");
         if (rightType.name == "mat3" && (leftType.name == "vec2" || leftType.name == "vec3"))
             return typedb.GetTypeByName("vec3");
+        if (leftType.name == "vec2" && (rightType.name == "float" || rightType.name == "double"))
+            return typedb.GetTypeByName("vec2");
+        if (leftType.name == "vec3" && (rightType.name == "float" || rightType.name == "double"))
+            return typedb.GetTypeByName("vec3");
+        if (leftType.name == "vec4" && (rightType.name == "float" || rightType.name == "double"))
+            return typedb.GetTypeByName("vec4");
         if (leftType.name == "double")
             return leftType;
         if (rightType.name == "double")

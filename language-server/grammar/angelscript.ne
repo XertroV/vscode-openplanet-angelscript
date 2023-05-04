@@ -1553,7 +1553,7 @@ case_label -> %lparen _ case_label _ %rparen {%
     function (d) { return d[2]; }
 %}
 # use const_number insteast of number here to include e.g., hex numbers. might include additional cases that aren't valid angelscript.
-case_label -> ("-" _):? %const_number {%
+case_label -> ("-" _):? const_number {%
     function (d) {
         return CompoundLiteral(
             n.ConstInteger,
