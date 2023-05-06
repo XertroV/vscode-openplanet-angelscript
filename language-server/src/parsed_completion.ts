@@ -4102,6 +4102,7 @@ function AddSuperCallSnippet(context : CompletionContext, completions : Array<Co
 
     let nsAccessor: string = nsNode.children[0].value;
     let superFQTN = superType.getQualifiedTypenameInNamespace(superType.namespace);
+    if (!nsAccessor) return;
     if (!nsAccessor.endsWith(superType.name) && !nsAccessor.endsWith(superFQTN)) return;
 
     let superFunction = superType.findFirstSymbol(scopeFunction.name, typedb.DBAllowSymbol.Functions);
@@ -4567,7 +4568,7 @@ export function GetExpressionForAccessingObjInstance(context: CompletionContext)
             break;
         }
         default: {
-            console.log(`unknown node type for getting expression of the object being accessed: bs.content: ${bs.content}`);
+            console.log(`unknown node type for getting expression of the object being accessed: bs.content: ${bs.content_trimmed}`);
         }
     }
 

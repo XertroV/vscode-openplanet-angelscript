@@ -37,6 +37,8 @@ It's a bug. -->
 
 ## Changelog
 
+- 0.2.27
+  - fix lookup failure for UI enum value names
 - 0.2.26
   - fix switch case statements for numbers
   - add `vec * float` type detection

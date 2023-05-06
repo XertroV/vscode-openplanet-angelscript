@@ -2187,7 +2187,8 @@ export function LookupType(namespace : DBNamespace, typename : string) : DBType 
         // console.warn(`checking namespace: ${namespace.name}`)
         let found = namespace.GetTypeByName(identifier);
         if (found && !(found instanceof Array)) {
-            if (found.namespace != namespace) console.warn(`Unexpected mismatching namespaces (identifier: ${identifier}): ${found.namespace.getQualifiedNamespace()} vs ${namespace.getQualifiedNamespace()}`)
+            if (found.namespace != namespace)
+                console.warn(`Unexpected mismatching namespaces (identifier: ${identifier}): ${found.namespace.getQualifiedNamespace()} vs ${namespace.getQualifiedNamespace()}`)
             return found;
         }
     }
