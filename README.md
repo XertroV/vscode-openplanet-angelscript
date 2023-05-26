@@ -3,9 +3,9 @@
 IDE features + Language Server for [Openplanet](https://openplanet.dev) flavored angelscript.
 This project is not maintained by the Openplanet team.
 
-You must open at hte root of a plugin directory (that contains an info.toml).
+You must open at the root of a plugin directory (that contains an `info.toml` file).
 
-Works in Windows and WSL.
+Works in Windows and WSL. You don't need to use WSL. (it probably also works under linux and macos if you set config paths correctly, but those environments are unsupported. will help with issues if I can, but YMMV.)
 
 Currently only the TMNEXT engine is supported, and so only TMNEXT types will appear, be suggested, autocompleted, etc.
 Supporting MP4 and TURBO is possible but not planned unless there is demand. It's relatively simple if *simultaneous* parsing of TMNEXT/MP4/TURBO code isn't required.
@@ -17,7 +17,7 @@ You can load TURBO/MP4 game binding specifications by setting the openplanet dir
 This plugin should autodetect your OpenplanetNext folder and the Trackmania\Openplanet game folder, too.
 If this doesn't work, then you'll need to add paths in the settings.
 
-*Note:* in WSL you should symlink `~/OpenplanetNext` to the corresponding directory in your userprofile dir.
+*Note:* if you are using this extension under vscode running in WSL, you should symlink `~/OpenplanetNext` to the corresponding directory in your userprofile dir for the default settings to work.
 ```bash
 (
   OP_DIR="$(wslpath -u $(cmd.exe /C 'echo %userprofile%\\OpenplanetNext' 2>&1 | tr -d '\r' | tail -n1))";
