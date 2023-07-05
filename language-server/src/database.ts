@@ -2674,6 +2674,36 @@ export function AddOpenplanetFuncdefs() {
             args: [{name: "userdata", typedecl: "ref@"}]
         },
         {
+            name: "CoroutineFuncUserdataInt64",
+            returntypedecl: "void",
+            args: [{name: "userdata", typedecl: "const int64"}]
+        },
+        {
+            name: "CoroutineFuncUserdataInt64",
+            returntypedecl: "void",
+            args: [{name: "userdata", typedecl: "const int"}]
+        },
+        {
+            name: "CoroutineFuncUserdataUint64",
+            returntypedecl: "void",
+            args: [{name: "userdata", typedecl: "const uint"}]
+        },
+        {
+            name: "CoroutineFuncUserdataUint64",
+            returntypedecl: "void",
+            args: [{name: "userdata", typedecl: "const uint64"}]
+        },
+        {
+            name: "CoroutineFuncUserdataDouble",
+            returntypedecl: "void",
+            args: [{name: "userdata", typedecl: "const double"}]
+        },
+        {
+            name: "CoroutineFuncUserdataString",
+            returntypedecl: "void",
+            args: [{name: "userdata", typedecl: "const string &in"}]
+        },
+        {
             name: "ProcIntercept",
             returntypedecl: "bool",
             args: [{name: "stack", typedecl: "CMwStack &in"}]
