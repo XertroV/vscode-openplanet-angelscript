@@ -1,5 +1,6 @@
 'use strict';
 
+import "dotenv/config";
 import {
     IPCMessageReader, IPCMessageWriter, createConnection, Connection, TextDocuments,
     Diagnostic, DiagnosticSeverity, InitializeResult, TextDocumentPositionParams, CompletionItem,
@@ -23,6 +24,7 @@ import {
     ProtocolNotificationType0,
     ShowMessageNotification,
     MessageType,
+    ProposedFeatures,
 } from 'vscode-languageserver/node';
 import { TextDocument, TextDocumentContentChangeEvent } from 'vscode-languageserver-textdocument';
 
@@ -55,8 +57,8 @@ import * as AdmZip from 'adm-zip';
 import { _DEBUG } from './as_parser';
 import { FileDecoration } from 'vscode';
 
-// Create a connection for the server. The connection uses Node's IPC as a transport
-let connection: Connection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
+// Create a connection for the server. Allows command line arguments to select the transport.
+let connection: Connection = createConnection(ProposedFeatures.all);
 scriptactions.SetConnectionForActions(connection);
 
 let ParseQueue : Array<scriptfiles.ASModule> = [];

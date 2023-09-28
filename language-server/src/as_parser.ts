@@ -71,19 +71,28 @@ let ScriptSettings : ASSettings = {
 };
 
 function GetDefaultOpenplanetNextDir(): string {
-    let defaultDir = path.join(os.homedir(), 'OpenplanetNext')
-    if (fs.existsSync(defaultDir)) return defaultDir;
-    console.log(`Could not find default OpenplanetNext directory: ${defaultDir}`)
+    const defaultDir = path.join(os.homedir(), "OpenplanetNext");
+    const openplanetNextDir = process.env.OPENPLANET_NEXT_DIR || defaultDir;
+    if (fs.existsSync(openplanetNextDir)) {
+        return openplanetNextDir;
+    }
+    console.warn(`Could not find default OpenplanetNext directory: ${defaultDir}`);
     return defaultDir;
 }
 
 function GetDefaultOpenplanetPluginsDir(): string {
-    let winDefault = `C:\\Program Files (x86)\\Ubisoft\\Ubisoft Game Launcher\\games\\Trackmania\\Openplanet\\Plugins\\`;
-    let wslDefault = `/mnt/c/Program Files (x86)/Ubisoft/Ubisoft Game Launcher/games/Trackmania/Openplanet/Plugins/`;
-    if (fs.existsSync(winDefault)) return winDefault;
-    if (fs.existsSync(wslDefault)) return wslDefault;
-    console.log(`Could not find default Openplanet Plugins directory: ${winDefault}`)
-    return os.platform() == "win32" ? winDefault : wslDefault;
+    const winDefault = `C:\\Program Files (x86)\\Ubisoft\\Ubisoft Game Launcher\\games\\Trackmania\\Openplanet\\Plugins\\`;
+    const wslDefault = `/mnt/c/Program Files (x86)/Ubisoft/Ubisoft Game Launcher/games/Trackmania/Openplanet/Plugins/`;
+    if (process.env.OPENPLANET_PLUGINS_DIR && fs.existsSync(process.env.OPENPLANET_PLUGINS_DIR)) {
+        return process.env.OPENPLANET_PLUGINS_DIR;
+    } else if (fs.existsSync(winDefault)) {
+        return winDefault;
+    } else if (fs.existsSync(wslDefault)) {
+        return wslDefault;
+    } else {
+        console.warn(`Could not find default Openplanet Plugins directory: ${winDefault}`);
+        return os.platform() == "win32" ? winDefault : wslDefault;
+    }
 }
 
 let PreParsedIdentifiersInModules = new Map<string, Set<ASModule>>();
