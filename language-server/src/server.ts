@@ -158,11 +158,11 @@ connection.onInitialize((_params): InitializeResult => {
         }
     }
 
-    connection.console.log("Workspace roots: " + Roots);
+    // console.log("Workspace roots: " + Roots);
     console.log("Workspace roots: " + Roots);
 
-    //connection.console.log("RootPath: "+RootPath);
-    //connection.console.log("RootUri: "+RootUri+" from "+_params.rootUri);
+    //console.log("RootPath: "+RootPath);
+    //console.log("RootUri: "+RootUri+" from "+_params.rootUri);
 
     WaitForInitialUserConfigAndLoadWorkspace();
     ReadAndParseAllFiles(false);
@@ -980,7 +980,7 @@ connection.onRequest("angelscript/getModuleForSymbol", (...params: any[]) : stri
     let definitions = scriptsymbols.GetDefinition(asmodule, pos.position);
     if (definitions == null)
     {
-        connection.console.log(`Definition not found`);
+        // console.log(`Definition not found`);
         return "";
     }
     {
