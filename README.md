@@ -37,6 +37,11 @@ It's a bug. -->
 
 ## Changelog
 
+- 0.2.28
+  - Don't error when using `order=` in SettingsTab
+  - Don't error when assigning variables in an expression, e.g., `while ((@app = GetApp()) !is null) { DoStuff(); yield(); }`
+  - add Coroutine userdata funcdefs
+  - merge LSP generalization PR (thanks KripperOldman)
 - 0.2.27
   - fix lookup failure for UI enum value names
 - 0.2.26
