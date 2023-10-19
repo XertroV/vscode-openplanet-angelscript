@@ -278,7 +278,7 @@ function MkSettingsTabKwarg(d) {
     return MkSettingKwarg(d, n.SettingsTabKwarg)
 }
 
-settingArgNames = ["name", "category", "description", "min", "max", "hidden", "drag", "color", "multiline", "password", "icon"];
+settingArgNames = ["name", "category", "description", "min", "max", "hidden", "drag", "color", "multiline", "password", "icon", "order"];
 
 const tokenPartialSettingArg = {
     test: x => !settingArgNames.every(n => !n.substring(0, n.length - 1).startsWith(x))
@@ -1036,10 +1036,12 @@ var grammar = {
     {"name": "op_binary_compare$subexpression$1", "symbols": [{"literal":"<"}]},
     {"name": "op_binary_compare$subexpression$1", "symbols": [{"literal":">"}]},
     {"name": "op_binary_compare", "symbols": ["op_binary_compare$subexpression$1"], "postprocess": function (d) { return d[0][0]; }},
+    {"name": "expr_binary_compare$subexpression$1", "symbols": ["expr_binary_compare"]},
+    {"name": "expr_binary_compare$subexpression$1", "symbols": ["assignment"]},
     {"name": "expr_binary_compare$ebnf$1$subexpression$1", "symbols": ["_", "expr_binary_sum"]},
     {"name": "expr_binary_compare$ebnf$1", "symbols": ["expr_binary_compare$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "expr_binary_compare$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "expr_binary_compare", "symbols": ["expr_binary_compare", "_", "op_binary_compare", "expr_binary_compare$ebnf$1"], "postprocess": 
+    {"name": "expr_binary_compare", "symbols": ["expr_binary_compare$subexpression$1", "_", "op_binary_compare", "expr_binary_compare$ebnf$1"], "postprocess": 
         function (d) { return {
             ...Compound(d, n.BinaryOperation, [d[0], d[3] ? d[3][1] : null]),
             operator: Operator(d[2]),
@@ -1829,6 +1831,7 @@ var grammar = {
     {"name": "settings_tab_kwarg$subexpression$1", "symbols": [{"literal":"order"}]},
     {"name": "settings_tab_kwarg$subexpression$2", "symbols": [(lexer.has("dqstring") ? {type: "dqstring"} : dqstring)]},
     {"name": "settings_tab_kwarg$subexpression$2", "symbols": [(lexer.has("sqstring") ? {type: "sqstring"} : sqstring)]},
+    {"name": "settings_tab_kwarg$subexpression$2", "symbols": [(lexer.has("number") ? {type: "number"} : number)]},
     {"name": "settings_tab_kwarg", "symbols": ["settings_tab_kwarg$subexpression$1", (lexer.has("op_assignment") ? {type: "op_assignment"} : op_assignment), "settings_tab_kwarg$subexpression$2"], "postprocess": MkSettingsTabKwarg},
     {"name": "main", "symbols": ["_", "array_expr_list", "_"], "postprocess": 
         function (d) { return d[1]; }

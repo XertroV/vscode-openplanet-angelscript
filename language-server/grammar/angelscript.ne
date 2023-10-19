@@ -274,7 +274,7 @@ function MkSettingsTabKwarg(d) {
     return MkSettingKwarg(d, n.SettingsTabKwarg)
 }
 
-settingArgNames = ["name", "category", "description", "min", "max", "hidden", "drag", "color", "multiline", "password", "icon"];
+settingArgNames = ["name", "category", "description", "min", "max", "hidden", "drag", "color", "multiline", "password", "icon", "order"];
 
 const tokenPartialSettingArg = {
     test: x => !settingArgNames.every(n => !n.substring(0, n.length - 1).startsWith(x))
@@ -990,7 +990,7 @@ expr_binary_bitwise -> expr_binary_compare {% id %}
 
 op_binary_compare -> (%op_binary_compare | "<" | ">") {% function (d) { return d[0][0]; } %}
 
-expr_binary_compare -> expr_binary_compare _ op_binary_compare (_ expr_binary_sum):? {%
+expr_binary_compare -> (expr_binary_compare | assignment) _ op_binary_compare (_ expr_binary_sum):? {%
     function (d) { return {
         ...Compound(d, n.BinaryOperation, [d[0], d[3] ? d[3][1] : null]),
         operator: Operator(d[2]),
@@ -1721,7 +1721,7 @@ settings_tab_kwargs -> (settings_tab_kwarg _):* settings_tab_kwarg {%
         return Compound(d, n.SettingsTabKwarg, result);
     }
 %}
-settings_tab_kwarg -> ("icon" | "name" | "order") %op_assignment (%dqstring | %sqstring) {% MkSettingsTabKwarg %}
+settings_tab_kwarg -> ("icon" | "name" | "order") %op_assignment (%dqstring | %sqstring | %number) {% MkSettingsTabKwarg %}
 
 # floatNumber -> %number %dot %number "e" %op_unary:? %number
 # floatNumber -> %number %dot %number
