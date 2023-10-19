@@ -1036,12 +1036,10 @@ var grammar = {
     {"name": "op_binary_compare$subexpression$1", "symbols": [{"literal":"<"}]},
     {"name": "op_binary_compare$subexpression$1", "symbols": [{"literal":">"}]},
     {"name": "op_binary_compare", "symbols": ["op_binary_compare$subexpression$1"], "postprocess": function (d) { return d[0][0]; }},
-    {"name": "expr_binary_compare$subexpression$1", "symbols": ["expr_binary_compare"]},
-    {"name": "expr_binary_compare$subexpression$1", "symbols": ["assignment"]},
     {"name": "expr_binary_compare$ebnf$1$subexpression$1", "symbols": ["_", "expr_binary_sum"]},
     {"name": "expr_binary_compare$ebnf$1", "symbols": ["expr_binary_compare$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "expr_binary_compare$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "expr_binary_compare", "symbols": ["expr_binary_compare$subexpression$1", "_", "op_binary_compare", "expr_binary_compare$ebnf$1"], "postprocess": 
+    {"name": "expr_binary_compare", "symbols": ["expr_binary_compare", "_", "op_binary_compare", "expr_binary_compare$ebnf$1"], "postprocess": 
         function (d) { return {
             ...Compound(d, n.BinaryOperation, [d[0], d[3] ? d[3][1] : null]),
             operator: Operator(d[2]),
@@ -1067,7 +1065,17 @@ var grammar = {
             operator: Operator(d[2]),
         };}
         },
-    {"name": "expr_binary_product", "symbols": ["expr_unary"], "postprocess": id},
+    {"name": "expr_binary_product", "symbols": ["expr_assignment_test"], "postprocess": id},
+    {"name": "expr_assignment_test$ebnf$1$subexpression$1", "symbols": ["_", "expr_binary_sum"]},
+    {"name": "expr_assignment_test$ebnf$1", "symbols": ["expr_assignment_test$ebnf$1$subexpression$1"], "postprocess": id},
+    {"name": "expr_assignment_test$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "expr_assignment_test", "symbols": [(lexer.has("lparen") ? {type: "lparen"} : lparen), "_", "assignment", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen), "_", "op_binary_compare", "expr_assignment_test$ebnf$1"], "postprocess": 
+        function (d) { return {
+            ...Compound(d, n.BinaryOperation, [d[0], d[3] ? d[3][1] : null]),
+            operator: Operator(d[2]),
+        };}
+        },
+    {"name": "expr_assignment_test", "symbols": ["expr_unary"], "postprocess": id},
     {"name": "expr_unary", "symbols": ["unary_operator", "_", "expr_unary"], "postprocess": 
         function (d) { return {
             ...Compound(d, n.UnaryOperation, [d[2]]),

@@ -990,7 +990,7 @@ expr_binary_bitwise -> expr_binary_compare {% id %}
 
 op_binary_compare -> (%op_binary_compare | "<" | ">") {% function (d) { return d[0][0]; } %}
 
-expr_binary_compare -> (expr_binary_compare | assignment) _ op_binary_compare (_ expr_binary_sum):? {%
+expr_binary_compare -> expr_binary_compare _ op_binary_compare (_ expr_binary_sum):? {%
     function (d) { return {
         ...Compound(d, n.BinaryOperation, [d[0], d[3] ? d[3][1] : null]),
         operator: Operator(d[2]),
@@ -1012,7 +1012,15 @@ expr_binary_product -> expr_binary_product _ %op_binary_product (_ expr_unary):?
         operator: Operator(d[2]),
     };}
 %}
-expr_binary_product -> expr_unary {% id %}
+expr_binary_product -> expr_assignment_test {% id %}
+
+expr_assignment_test -> %lparen _ assignment _ %rparen _ op_binary_compare (_ expr_binary_sum):? {%
+    function (d) { return {
+        ...Compound(d, n.BinaryOperation, [d[0], d[3] ? d[3][1] : null]),
+        operator: Operator(d[2]),
+    };}
+%}
+expr_assignment_test -> expr_unary {% id %}
 
 expr_unary -> unary_operator _ expr_unary {%
     function (d) { return {
