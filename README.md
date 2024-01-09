@@ -38,6 +38,8 @@ It's a bug. -->
 ## Changelog
 
 - 0.2.28
+  - add GetManialinkPages on Network
+  - add GetCurrentEntityID
   - Don't error when using `order=` in SettingsTab
   - Don't error when assigning variables in an expression, e.g., `while ((@app = GetApp()) !is null) { DoStuff(); yield(); }`
   - add Coroutine userdata funcdefs
