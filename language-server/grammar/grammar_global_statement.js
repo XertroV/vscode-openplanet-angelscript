@@ -971,9 +971,13 @@ var grammar = {
             );
         }
         },
+    {"name": "assignment_expression", "symbols": [(lexer.has("lparen") ? {type: "lparen"} : lparen), "_", "assignment", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess":  function(d) {
+            return Compound(d, n.AssignmentExpression, d[2]);
+        } },
     {"name": "expression", "symbols": ["expr_ternary"], "postprocess": id},
     {"name": "expression", "symbols": ["expr_array"], "postprocess": id},
     {"name": "expression", "symbols": ["expr_inline_function"], "postprocess": id},
+    {"name": "expression", "symbols": ["assignment_expression"], "postprocess": id},
     {"name": "expr_array$ebnf$1$subexpression$1", "symbols": ["typename", "_", {"literal":"="}, "_"]},
     {"name": "expr_array$ebnf$1", "symbols": ["expr_array$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "expr_array$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
@@ -1066,13 +1070,13 @@ var grammar = {
         };}
         },
     {"name": "expr_binary_product", "symbols": ["expr_assignment_test"], "postprocess": id},
-    {"name": "expr_assignment_test$ebnf$1$subexpression$1", "symbols": ["_", "expr_binary_sum"]},
+    {"name": "expr_assignment_test$ebnf$1$subexpression$1", "symbols": ["_", "expr_binary_logic"]},
     {"name": "expr_assignment_test$ebnf$1", "symbols": ["expr_assignment_test$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "expr_assignment_test$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "expr_assignment_test", "symbols": [(lexer.has("lparen") ? {type: "lparen"} : lparen), "_", "assignment", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen), "_", "op_binary_compare", "expr_assignment_test$ebnf$1"], "postprocess": 
         function (d) { return {
-            ...Compound(d, n.BinaryOperation, [d[0], d[3] ? d[3][1] : null]),
-            operator: Operator(d[2]),
+            ...Compound(d, n.BinaryOperation, [d[2], d[7] ? d[7][1] : null]),
+            operator: Operator(d[6]),
         };}
         },
     {"name": "expr_assignment_test", "symbols": ["expr_unary"], "postprocess": id},
@@ -1083,6 +1087,7 @@ var grammar = {
         };}
         },
     {"name": "expr_unary", "symbols": ["expr_postfix"], "postprocess": id},
+    {"name": "expr_unary", "symbols": [(lexer.has("lparen") ? {type: "lparen"} : lparen), "_", "assignment", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": d => d[2]},
     {"name": "expr_postfix", "symbols": ["expr_postfix", "_", (lexer.has("postfix_operator") ? {type: "postfix_operator"} : postfix_operator)], "postprocess": 
         function (d) { return {
             ...Compound(d, n.PostfixOperation, [d[0]]),

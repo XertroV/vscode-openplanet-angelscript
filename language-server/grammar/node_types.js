@@ -13,6 +13,7 @@ module.exports = {
     CastOperation: indexed ? i++ : "CastOperation",
     Assignment: indexed ? i++ : "Assignment",
     CompoundAssignment: indexed ? i++ : "CompoundAssignment",
+    AssignmentExpression: indexed ? i++ : "AssignmentExpression",
     MemberAccess: indexed ? i++ : "MemberAccess",
     NamespaceAccess: indexed ? i++ : "NamespaceAccess",
     FunctionCall: indexed ? i++ : "FunctionCall",

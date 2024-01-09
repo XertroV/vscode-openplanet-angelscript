@@ -2028,6 +2028,8 @@ function FindMemberFunctionCallNodes(node : any, statement : scriptfiles.ASState
     if (!node)
         return;
 
+    // console.warn(`Node: ${JSON.stringify(node)}`);
+
     if (node.type == scriptfiles.node_types.FunctionCall)
     {
         if (node.children && node.children[0] && node.children[0].type == scriptfiles.node_types.Identifier)

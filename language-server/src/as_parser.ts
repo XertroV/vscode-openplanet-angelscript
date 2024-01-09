@@ -3433,6 +3433,10 @@ export function ResolveTypeFromExpression(scope : ASScope, node : any) : typedb.
                 return arrTy.createTemplateInstance([type.name]);
             return arrTy;
         }
+        // ( x = 1 )
+        case node_types.AssignmentExpression: {
+            throw Error("todo");
+        }
         break;
     }
     return null;
@@ -4754,6 +4758,17 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
             }
         }
         break;
+
+        // ( x = y )
+        case node_types.AssignmentExpression:
+        {
+            parseContext.isWriteAccess = outerWriteAccess;
+            parseContext.argumentFunction = outerArgumentFunction;
+            parseContext.isRootIdentifier = outerRootIdentifier;
+            let identified = DetectIdentifierSymbols(scope, statement, node, parseContext, symbol_type);
+            return identified;
+        }
+        break;
         // X[]
         case node_types.IndexOperator:
         {
@@ -5189,6 +5204,10 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
             }
         }
         break;
+        // ( x = y )
+        // case node_types.AssignmentExpression: {
+        //     // todo
+        // }
         // Assignment should recurse, and mark the left hand side as write access
         case node_types.Assignment:
         case node_types.CompoundAssignment:

@@ -940,10 +940,14 @@ macro_value -> ("-" _):? const_number {%
     }
 %}
 
+assignment_expression -> %lparen _ assignment _ %rparen {% function(d) {
+    return Compound(d, n.AssignmentExpression, d[2]);
+} %}
 # expression -> lvalue {% id %}
 expression -> expr_ternary {% id %}
 expression -> expr_array {% id %}
 expression -> expr_inline_function {% id %}
+expression -> assignment_expression {% id %}
 
 expr_array -> (typename _ "=" _):? %lbrace _ %rbrace:? {%
     function(d) { return Compound(d, n.ArrayInline, []); }
@@ -1014,10 +1018,16 @@ expr_binary_product -> expr_binary_product _ %op_binary_product (_ expr_unary):?
 %}
 expr_binary_product -> expr_assignment_test {% id %}
 
-expr_assignment_test -> %lparen _ assignment _ %rparen _ op_binary_compare (_ expr_binary_sum):? {%
+# expr_assignment_test -> assignment_expression _ op_binary_compare (_ assignment_expression):? {%
+#     function (d) { return {
+#         ...Compound(d, n.BinaryOperation, [d[0], d[3] ? d[3][1] : null]),
+#         operator: Operator(d[6]),
+#     };}
+# %}
+expr_assignment_test -> %lparen _ assignment _ %rparen _ op_binary_compare (_ expr_binary_logic):? {%
     function (d) { return {
-        ...Compound(d, n.BinaryOperation, [d[0], d[3] ? d[3][1] : null]),
-        operator: Operator(d[2]),
+        ...Compound(d, n.BinaryOperation, [d[2], d[7] ? d[7][1] : null]),
+        operator: Operator(d[6]),
     };}
 %}
 expr_assignment_test -> expr_unary {% id %}
@@ -1029,6 +1039,7 @@ expr_unary -> unary_operator _ expr_unary {%
     };}
 %}
 expr_unary -> expr_postfix {% id %}
+expr_unary -> %lparen _ assignment _ %rparen {% d => d[2] %}
 
 expr_postfix -> expr_postfix _ %postfix_operator {%
     function (d) { return {
