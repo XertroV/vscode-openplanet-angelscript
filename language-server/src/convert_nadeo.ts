@@ -141,6 +141,10 @@ export function ConvertNadeoType(ty: string, tyDeets: any, docsNS: string, isJso
         addToMethods({name: "GetCurrentEntityID", returntypedecl: "uint", args: [], isEnum: false, i: -1});
     }
 
+    if (ret.name == "CGameCtnNetwork") {
+        addToMethods({name: "GetManialinkPages", returntypedecl: "CGameManialinkPage@[]&", args: [], isEnum: false, i: -1});
+    }
+
     return ret;
 }
 
