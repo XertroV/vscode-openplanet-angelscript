@@ -137,6 +137,10 @@ export function ConvertNadeoType(ty: string, tyDeets: any, docsNS: string, isJso
         addToMethods({name: "MwRelease", returntypedecl: "void", args: [], isEnum: false, i: -2});
     }
 
+    if (ret.name == "CGamePlayer") {
+        addToMethods({name: "GetCurrentEntityID", returntypedecl: "uint", args: [], isEnum: false, i: -1});
+    }
+
     return ret;
 }
 
