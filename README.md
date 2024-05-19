@@ -34,6 +34,7 @@ If you have issues ping @XertroV on the Openplanet discord.
 The workaround is to populate the array with one array at a time using `.InsertLast`.
 It's a bug. -->
 
+<!-- https://dev.azure.com/vscode-openplanet/_usersSettings/tokens -->
 
 ## Changelog
 

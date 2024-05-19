@@ -4762,6 +4762,7 @@ function DetectNodeSymbols(scope : ASScope, statement : ASStatement, node : any,
         // ( x = y )
         case node_types.AssignmentExpression:
         {
+            console.log(`AssignmentExpression: ${JSON.stringify(node)}`);
             parseContext.isWriteAccess = outerWriteAccess;
             parseContext.argumentFunction = outerArgumentFunction;
             parseContext.isRootIdentifier = outerRootIdentifier;
@@ -5571,7 +5572,7 @@ function DetectIdentifierSymbols(scope : ASScope, statement : ASStatement, node 
     if (parseContext.allow_errors)
     {
         let hasPotentialCompletions = false;
-        if (scope.module.isEditingNode(statement, node))
+        if (scope.module.isEditingNode(statement, node) && node.value)
         {
             // Check if the symbol that we're editing can still complete to something valid later
             hasPotentialCompletions = CheckIdentifierIsPrefixForValidSymbol(scope, statement, parseContext, node.value, typedb.DBAllowSymbol.PropertiesAndFunctions);
@@ -5738,6 +5739,9 @@ function DetectSymbolFromDelegateBindFunctionName(scope : ASScope, statement : A
 
 function CheckIdentifierIsPrefixForValidSymbol(scope : ASScope, statement : ASStatement, parseContext : ASParseContext, identifierPrefix : string, symbol_type : typedb.DBAllowSymbol) : boolean
 {
+    if (!identifierPrefix) {
+        return true;
+    }
     if (identifierPrefix.length < 2)
         return true;
 

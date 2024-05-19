@@ -972,7 +972,7 @@ var grammar = {
         }
         },
     {"name": "assignment_expression", "symbols": [(lexer.has("lparen") ? {type: "lparen"} : lparen), "_", "assignment", "_", (lexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess":  function(d) {
-            return Compound(d, n.AssignmentExpression, d[2]);
+            return Compound(d, n.AssignmentExpression, [d[2]]);
         } },
     {"name": "expression", "symbols": ["expr_ternary"], "postprocess": id},
     {"name": "expression", "symbols": ["expr_array"], "postprocess": id},
@@ -1167,6 +1167,9 @@ var grammar = {
         },
     {"name": "namespace_access", "symbols": [(lexer.has("ns") ? {type: "ns"} : ns), "_", (lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": 
         function (d) { return Compound(d, n.NamespaceAccess, [null, Identifier(d[2])]); }
+        },
+    {"name": "lvalue_inner", "symbols": ["assignment_expression"], "postprocess": 
+        function (d) { return d[0]; }
         },
     {"name": "lvalue_inner", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), "_", (lexer.has("ns") ? {type: "ns"} : ns)], "postprocess": 
         function (d) { return Compound(d, n.NamespaceAccess, [Identifier(d[0]), null]); }
@@ -1512,14 +1515,17 @@ var grammar = {
     {"name": "const_qualifier", "symbols": [(lexer.has("const_token") ? {type: "const_token"} : const_token), "_"], "postprocess": 
         function (d) { return Identifier(d[0]); }
         },
-    {"name": "ref_qualifiers$ebnf$1$subexpression$1$subexpression$1", "symbols": [{"literal":"in"}]},
-    {"name": "ref_qualifiers$ebnf$1$subexpression$1$subexpression$1", "symbols": [{"literal":"out"}]},
-    {"name": "ref_qualifiers$ebnf$1$subexpression$1$subexpression$1", "symbols": [{"literal":"inout"}]},
-    {"name": "ref_qualifiers$ebnf$1$subexpression$1", "symbols": ["_", "ref_qualifiers$ebnf$1$subexpression$1$subexpression$1"]},
+    {"name": "ref_qualifiers$ebnf$1$subexpression$1", "symbols": [{"literal":"const"}, "_"]},
     {"name": "ref_qualifiers$ebnf$1", "symbols": ["ref_qualifiers$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "ref_qualifiers$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "ref_qualifiers", "symbols": ["_", {"literal":"&"}, "ref_qualifiers$ebnf$1"], "postprocess": 
-        function (d) { return d[2] ? d[1].value+d[2][1][0].value : d[1].value; }
+    {"name": "ref_qualifiers$ebnf$2$subexpression$1$subexpression$1", "symbols": [{"literal":"in"}]},
+    {"name": "ref_qualifiers$ebnf$2$subexpression$1$subexpression$1", "symbols": [{"literal":"out"}]},
+    {"name": "ref_qualifiers$ebnf$2$subexpression$1$subexpression$1", "symbols": [{"literal":"inout"}]},
+    {"name": "ref_qualifiers$ebnf$2$subexpression$1", "symbols": ["_", "ref_qualifiers$ebnf$2$subexpression$1$subexpression$1"]},
+    {"name": "ref_qualifiers$ebnf$2", "symbols": ["ref_qualifiers$ebnf$2$subexpression$1"], "postprocess": id},
+    {"name": "ref_qualifiers$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "ref_qualifiers", "symbols": ["_", "ref_qualifiers$ebnf$1", {"literal":"&"}, "ref_qualifiers$ebnf$2"], "postprocess": 
+        function (d) { return d[3] ? d[2].value+d[3][1][0].value : d[2].value; }
         },
     {"name": "func_qualifiers", "symbols": [], "postprocess": 
         function(d) { return null; }

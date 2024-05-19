@@ -941,7 +941,7 @@ macro_value -> ("-" _):? const_number {%
 %}
 
 assignment_expression -> %lparen _ assignment _ %rparen {% function(d) {
-    return Compound(d, n.AssignmentExpression, d[2]);
+    return Compound(d, n.AssignmentExpression, [d[2]]);
 } %}
 # expression -> lvalue {% id %}
 expression -> expr_ternary {% id %}
@@ -1126,6 +1126,11 @@ namespace_access -> %ns _ %identifier {%
     function (d) { return Compound(d, n.NamespaceAccess, [null, Identifier(d[2])]); }
 %}
 
+lvalue_inner -> assignment_expression {%
+    function (d) { return d[0]; }
+%}
+
+
 # INCOMPLETE: Attempts to parse an incomplete namespace access while the user is typing
 lvalue_inner -> %identifier _ %ns {%
     function (d) { return Compound(d, n.NamespaceAccess, [Identifier(d[0]), null]); }
@@ -1148,7 +1153,6 @@ lvalue_inner -> namespace_access _ ":" {%
         incomplete_colon: true
      } }
 %}
-
 # INCOMPLETE: Attempts to parse an incomplete member access while the user is typing
 lvalue_inner -> lvalue_inner _ %dot {%
     function (d) { return Compound(d, n.MemberAccess, [d[0], null]); }
@@ -1503,8 +1507,8 @@ typename_identifier -> (%ns _):? (%identifier _ %ns _ ):* %identifier atref:? {%
 const_qualifier -> %const_token _ {%
     function (d) { return Identifier(d[0]); }
 %}
-ref_qualifiers -> _ "&" (_ ("in" | "out" | "inout")):? {%
-    function (d) { return d[2] ? d[1].value+d[2][1][0].value : d[1].value; }
+ref_qualifiers -> _ ("const" _):? "&" (_ ("in" | "out" | "inout")):? {%
+    function (d) { return d[3] ? d[2].value+d[3][1][0].value : d[2].value; }
 %}
 
 func_qualifiers -> null {%

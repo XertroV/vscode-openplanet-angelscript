@@ -2040,6 +2040,7 @@ function FindMemberFunctionCallNodes(node : any, statement : scriptfiles.ASState
 
     if (node.children)
     {
+        // console.log(`node.children: ${JSON.stringify(node.children)}`);
         for (let child of node.children)
             FindMemberFunctionCallNodes(child, statement, callNodes);
     }
