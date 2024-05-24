@@ -1177,13 +1177,13 @@ var grammar = {
     {"name": "lvalue_inner", "symbols": ["namespace_access", "_", (lexer.has("ns") ? {type: "ns"} : ns)], "postprocess": 
         function (d) { return Compound(d, n.NamespaceAccess, [d[0], null]); }
         },
-    {"name": "lvalue_inner", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), "_", {"literal":":"}], "postprocess": 
+    {"name": "lvalue_inner", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), "_", (lexer.has("colon") ? {type: "colon"} : colon)], "postprocess": 
         function (d) { return {
             ...Compound(d, n.NamespaceAccess, [Identifier(d[0]), null]),
             incomplete_colon: true
          } }
         },
-    {"name": "lvalue_inner", "symbols": ["namespace_access", "_", {"literal":":"}], "postprocess": 
+    {"name": "lvalue_inner", "symbols": ["namespace_access", "_", (lexer.has("colon") ? {type: "colon"} : colon)], "postprocess": 
         function (d) { return {
             ...Compound(d, n.NamespaceAccess, [d[0], null]),
             incomplete_colon: true
@@ -1235,7 +1235,10 @@ var grammar = {
             return Compound(d, n.ArgumentList, args);
         }
         },
-    {"name": "argument", "symbols": ["expression"], "postprocess": id},
+    {"name": "argument$ebnf$1", "symbols": []},
+    {"name": "argument$ebnf$1$subexpression$1", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), {"literal":":"}, "_"]},
+    {"name": "argument$ebnf$1", "symbols": ["argument$ebnf$1", "argument$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "argument", "symbols": ["argument$ebnf$1", "expression"], "postprocess": (d) => d[1]},
     {"name": "argument", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), "_", {"literal":"="}, "optional_expression"], "postprocess": 
         function (d) { return Compound(d, n.NamedArgument, [Identifier(d[0]), d[3]]); }
         },
@@ -1274,11 +1277,11 @@ var grammar = {
     {"name": "a_complete_scope$ebnf$1", "symbols": [(lexer.has("semicolon") ? {type: "semicolon"} : semicolon)], "postprocess": id},
     {"name": "a_complete_scope$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "a_complete_scope$ebnf$2", "symbols": []},
-    {"name": "a_complete_scope$ebnf$2$subexpression$1", "symbols": ["_", (lexer.has("semicolon") ? {type: "semicolon"} : semicolon), "_", "expression_or_assignment_or_var_decl"]},
+    {"name": "a_complete_scope$ebnf$2$subexpression$1", "symbols": ["_", "expression_or_assignment_or_var_decl", "_", (lexer.has("semicolon") ? {type: "semicolon"} : semicolon)]},
     {"name": "a_complete_scope$ebnf$2", "symbols": ["a_complete_scope$ebnf$2", "a_complete_scope$ebnf$2$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "a_complete_scope$ebnf$3", "symbols": [(lexer.has("semicolon") ? {type: "semicolon"} : semicolon)], "postprocess": id},
     {"name": "a_complete_scope$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "a_complete_scope", "symbols": ["_", (lexer.has("lbrace") ? {type: "lbrace"} : lbrace), "_", "a_complete_scope$ebnf$1", "_", "expression_or_assignment_or_var_decl", "a_complete_scope$ebnf$2", "_", "a_complete_scope$ebnf$3", "_", (lexer.has("rbrace") ? {type: "rbrace"} : rbrace)], "postprocess": 
+    {"name": "a_complete_scope", "symbols": ["_", (lexer.has("lbrace") ? {type: "lbrace"} : lbrace), "_", "a_complete_scope$ebnf$1", "a_complete_scope$ebnf$2", "_", "expression_or_assignment_or_var_decl", "_", "a_complete_scope$ebnf$3", "_", (lexer.has("rbrace") ? {type: "rbrace"} : rbrace)], "postprocess": 
         d => { return []; }
         },
     {"name": "const_number", "symbols": [(lexer.has("number") ? {type: "number"} : number)], "postprocess": 

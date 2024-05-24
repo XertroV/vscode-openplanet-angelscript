@@ -1140,14 +1140,14 @@ lvalue_inner -> namespace_access _ %ns {%
     function (d) { return Compound(d, n.NamespaceAccess, [d[0], null]); }
 %}
 # INCOMPLETE: Attempts to parse an incomplete namespace access while the user is typing
-lvalue_inner -> %identifier _ ":" {%
+lvalue_inner -> %identifier _ %colon {%
     function (d) { return {
         ...Compound(d, n.NamespaceAccess, [Identifier(d[0]), null]),
         incomplete_colon: true
      } }
 %}
 # INCOMPLETE: Attempts to parse an incomplete namespace access while the user is typing
-lvalue_inner -> namespace_access _ ":" {%
+lvalue_inner -> namespace_access _ %colon {%
     function (d) { return {
         ...Compound(d, n.NamespaceAccess, [d[0], null]),
         incomplete_colon: true
@@ -1194,10 +1194,15 @@ argumentlist -> _ (%comma _):* (argument _ (%comma _):+ ):* argument (_ %comma):
     }
 %}
 
-argument -> expression {% id %}
+# named kw args
+argument -> (%identifier ":" _):* expression {% (d) => d[1] %}
 argument -> %identifier _ "=" optional_expression {%
     function (d) { return Compound(d, n.NamedArgument, [Identifier(d[0]), d[3]]); }
 %}
+# argument -> %identifier ":" _ expression {%
+#     function (d) { return [d[3]]; }
+# %}
+
 
 # INCOMPLETE: We might be typing a named argument in front of an expression,
 # but we haven't typed the = yet
@@ -1235,7 +1240,8 @@ expr_inline_function -> %function_token _ %lparen _ parameter_list _ %rparen {%
 %}
 
 a_complete_scope -> _ %lbrace _ %rbrace {% d => { return []; } %}
-a_complete_scope -> _ %lbrace _ %semicolon:? _ expression_or_assignment_or_var_decl (_ %semicolon _ expression_or_assignment_or_var_decl):* _ %semicolon:? _ %rbrace {%
+# a_complete_scope -> _ %lbrace _ %semicolon:? _ expression_or_assignment_or_var_decl (_ %semicolon _ expression_or_assignment_or_var_decl):* _ %semicolon:? _ %rbrace {%
+a_complete_scope -> _ %lbrace _ %semicolon:? (_ expression_or_assignment_or_var_decl _ %semicolon):* _ expression_or_assignment_or_var_decl _ %semicolon:? _ %rbrace {%
     d => { return []; }
 %}
 
