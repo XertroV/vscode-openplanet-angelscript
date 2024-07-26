@@ -9,6 +9,11 @@ npm install
 npm package
 ```
 
+If you want to use this with Neovim (that is when using the `--stdio` option) you need to disable all console logging by running this before `npm run package`:
+```sh
+find src/ -name '*.ts' | xargs sed -i -e 's,console\.,{} // console.,'
+```
+
 This should create a file called `openplanet-angelscript-ls-1.0.0.tgz` which can be installed by running:
 
 ```sh
