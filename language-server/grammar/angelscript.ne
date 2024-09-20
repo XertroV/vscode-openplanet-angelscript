@@ -51,6 +51,7 @@ const lexer = moo.compile({
             break_token: "break",
             import_token: "import",
             class_token: "class",
+            abstract_token: "abstract",
             interface_token: "interface",
             struct_token: "struct",
             default_token: "default",
@@ -512,7 +513,7 @@ global_declaration -> typename {%
 #     }}
 # %}
 
-class_decl_keyword -> (%shared_token | %mixin_token) _ {%
+class_decl_keyword -> (%shared_token | %mixin_token | %abstract_token) _ {%
     function(d) {
         return d[0][0];
     }

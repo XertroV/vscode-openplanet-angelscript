@@ -111,7 +111,7 @@ export function SetInitialParseDone()
 export let node_types = require("../grammar/node_types.js");
 
 export let ASKeywords = [
-    "for", "if", "enum", "return", "continue", "break", "import", "class", "interface", "struct", "default",
+    "for", "if", "enum", "return", "continue", "break", "import", "class", "abstract", "interface", "struct", "default",
     "void", "const", "else", "while", "do", "case", "cast", "namespace",
     "true", "false", "this", "auto", "null", "shared", "funcdef", "function",
     "final", "property", "override", "mixin", "switch", "try", "catch", "get", "set",
@@ -2130,6 +2130,7 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
             dbtype.isShared = classdef.is_shared;
             dbtype.isMixin = classdef.is_mixin;
             dbtype.isInterface = classdef.is_interface;
+            // dbtype.isAbstract = classdef.is_abstract;
 
             scope.module.types.push(dbtype);
             scope.dbtype = dbtype;

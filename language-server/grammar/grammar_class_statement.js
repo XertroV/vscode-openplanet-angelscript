@@ -55,6 +55,7 @@ const lexer = moo.compile({
             break_token: "break",
             import_token: "import",
             class_token: "class",
+            abstract_token: "abstract",
             interface_token: "interface",
             struct_token: "struct",
             default_token: "default",
@@ -502,6 +503,7 @@ var grammar = {
         },
     {"name": "class_decl_keyword$subexpression$1", "symbols": [(lexer.has("shared_token") ? {type: "shared_token"} : shared_token)]},
     {"name": "class_decl_keyword$subexpression$1", "symbols": [(lexer.has("mixin_token") ? {type: "mixin_token"} : mixin_token)]},
+    {"name": "class_decl_keyword$subexpression$1", "symbols": [(lexer.has("abstract_token") ? {type: "abstract_token"} : abstract_token)]},
     {"name": "class_decl_keyword", "symbols": ["class_decl_keyword$subexpression$1", "_"], "postprocess": 
         function(d) {
             return d[0][0];

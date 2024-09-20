@@ -12,7 +12,7 @@
         },
         {
             "name": "keyword.type.angelscript",
-            "match": "\\b(void|auto|const|property|final|override|mixin|local|shared|funcdef|function)\\b"
+            "match": "\\b(void|auto|const|property|final|override|mixin|abstract|local|shared|funcdef|function)\\b"
         },
         {
             "name": "keyword.code.angelscript",
