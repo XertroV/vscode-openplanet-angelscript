@@ -548,7 +548,8 @@ var grammar = {
             is_reference: d[3],
             is_interface: d[1][0].value == "interface",
             is_shared: (d[0]) ? NodesAny(d[0], n => n.value == "shared") : false,
-            is_mixin: (d[0]) ? NodesAny(d[0], n => n.value == "mixin") : false
+            is_mixin: (d[0]) ? NodesAny(d[0], n => n.value == "mixin") : false,
+            is_abstract: (d[0]) ? NodesAny(d[0], n => n.value == "abstract") : false
         }}
         },
     {"name": "global_declaration$ebnf$7$subexpression$1", "symbols": [(lexer.has("shared_token") ? {type: "shared_token"} : shared_token), "_"]},

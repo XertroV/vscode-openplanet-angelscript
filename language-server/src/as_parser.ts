@@ -2130,7 +2130,7 @@ function GenerateTypeInformation(scope : ASScope, _previous?: ASElement)
             dbtype.isShared = classdef.is_shared;
             dbtype.isMixin = classdef.is_mixin;
             dbtype.isInterface = classdef.is_interface;
-            // dbtype.isAbstract = classdef.is_abstract;
+            dbtype.isAbstract = classdef.is_abstract;
 
             scope.module.types.push(dbtype);
             scope.dbtype = dbtype;

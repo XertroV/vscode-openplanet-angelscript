@@ -600,6 +600,7 @@ export class DBType implements DBSymbol
     isShared : boolean = false;
     isMixin : boolean = false;
     isInterface : boolean = false;
+    isAbstract : boolean = false;
 
     classification : DBTypeClassification = DBTypeClassification.Unknown;
     acccessSpecifiers : Array<DBAccessSpecifier> = null;
