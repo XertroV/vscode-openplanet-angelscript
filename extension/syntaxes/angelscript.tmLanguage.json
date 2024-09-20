@@ -4,7 +4,7 @@
     "patterns": [
         {
             "name": "keyword.declaration.angelscript",
-            "match": "\\b(class|abstract|interface|struct|import|enum|namespace)\\b"
+            "match": "\\b(class|interface|struct|import|enum|namespace)\\b"
         },
         {
             "name": "keyword.statement.angelscript",
@@ -12,7 +12,7 @@
         },
         {
             "name": "keyword.type.angelscript",
-            "match": "\\b(void|auto|const|property|final|override|mixin|local|shared|funcdef|function)\\b"
+            "match": "\\b(void|auto|const|property|final|override|mixin|abstract|local|shared|funcdef|function)\\b"
         },
         {
             "name": "keyword.code.angelscript",
