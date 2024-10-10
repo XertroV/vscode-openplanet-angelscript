@@ -458,13 +458,13 @@
     },
     "devDependencies": {
         "@types/mocha": "^8.2.2",
-        "@types/node": "^12.12.0",
+        "@types/node": "^12.20.55",
         "@typescript-eslint/eslint-plugin": "^4.21.0",
         "@typescript-eslint/parser": "^4.21.0",
         "esbuild": "^0.15.10",
         "eslint": "^7.23.0",
         "mocha": "^10.0.0",
         "npm": "^8.19.2",
-        "typescript": "^4.6.2"
+        "typescript": "^4.9.5"
     }
 }

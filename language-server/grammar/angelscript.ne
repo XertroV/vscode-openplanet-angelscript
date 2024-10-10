@@ -275,7 +275,7 @@ function MkSettingsTabKwarg(d) {
     return MkSettingKwarg(d, n.SettingsTabKwarg)
 }
 
-settingArgNames = ["name", "category", "description", "min", "max", "hidden", "drag", "color", "multiline", "password", "icon", "order"];
+settingArgNames = ["name", "category", "description", "if", "beforerender", "afterrender", "min", "max", "hidden", "drag", "color", "multiline", "password", "icon", "order"];
 
 const tokenPartialSettingArg = {
     test: x => !settingArgNames.every(n => !n.substring(0, n.length - 1).startsWith(x))
@@ -1709,7 +1709,7 @@ setting_var_decl -> %lsqbracket "Setting" _ %rsqbracket:? {% function(d) { retur
 setting_var_decl -> %lsqbracket "Setting" _ setting_type_kwargs _ %rsqbracket {% function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5]]); } %}
 # setting_var_decl -> %lsqbracket "Setting" _ setting_type_kwargs _ setting_std_optional_kwargs _ %rsqbracket:? {% function(d) { return Compound(d, n.SettingDeclaration, [d[3], d[5], d[7]]); } %}
 
-setting_std_optional_kwarg -> "hidden" | ("name" | "category" | "description") %op_assignment (%dqstring | %sqstring) {% MkSettingKwarg %}
+setting_std_optional_kwarg -> "hidden" | ("name" | "category" | "description" | "if" | "beforerender" | "afterrender") %op_assignment (%dqstring | %sqstring) {% MkSettingKwarg %}
 setting_std_optional_kwarg -> %tokenPartialSettingArg {% MkSettingKwarg %}
 # sneak in partials
 setting_std_optional_kwargs -> (setting_std_optional_kwarg _):* setting_std_optional_kwarg {%

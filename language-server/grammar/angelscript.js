@@ -279,7 +279,7 @@ function MkSettingsTabKwarg(d) {
     return MkSettingKwarg(d, n.SettingsTabKwarg)
 }
 
-settingArgNames = ["name", "category", "description", "min", "max", "hidden", "drag", "color", "multiline", "password", "icon", "order"];
+settingArgNames = ["name", "category", "description", "if", "beforerender", "afterrender", "min", "max", "hidden", "drag", "color", "multiline", "password", "icon", "order"];
 
 const tokenPartialSettingArg = {
     test: x => !settingArgNames.every(n => !n.substring(0, n.length - 1).startsWith(x))
@@ -1762,6 +1762,9 @@ var grammar = {
     {"name": "setting_std_optional_kwarg$subexpression$1", "symbols": [{"literal":"name"}]},
     {"name": "setting_std_optional_kwarg$subexpression$1", "symbols": [{"literal":"category"}]},
     {"name": "setting_std_optional_kwarg$subexpression$1", "symbols": [{"literal":"description"}]},
+    {"name": "setting_std_optional_kwarg$subexpression$1", "symbols": [{"literal":"if"}]},
+    {"name": "setting_std_optional_kwarg$subexpression$1", "symbols": [{"literal":"beforerender"}]},
+    {"name": "setting_std_optional_kwarg$subexpression$1", "symbols": [{"literal":"afterrender"}]},
     {"name": "setting_std_optional_kwarg$subexpression$2", "symbols": [(lexer.has("dqstring") ? {type: "dqstring"} : dqstring)]},
     {"name": "setting_std_optional_kwarg$subexpression$2", "symbols": [(lexer.has("sqstring") ? {type: "sqstring"} : sqstring)]},
     {"name": "setting_std_optional_kwarg", "symbols": ["setting_std_optional_kwarg$subexpression$1", (lexer.has("op_assignment") ? {type: "op_assignment"} : op_assignment), "setting_std_optional_kwarg$subexpression$2"], "postprocess": MkSettingKwarg},
