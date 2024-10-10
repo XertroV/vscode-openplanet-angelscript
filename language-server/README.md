@@ -6,7 +6,7 @@
 
 ```sh
 npm install
-npm package
+npm run package
 ```
 
 This should create a file called `openplanet-angelscript-ls-1.0.0.tgz` which can be installed by running:
